@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/common/">
+    <File Path=".editorconfig" />
+    <File Path=".gitlab-ci.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
+  </Folder>
+  <Folder Name="/tests/" />
+</Solution>

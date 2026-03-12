@@ -1,0 +1,6 @@
+@Vertr.Market.Host_HostAddress = http://localhost:5127
+
+GET {{Vertr.Market.Host_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
