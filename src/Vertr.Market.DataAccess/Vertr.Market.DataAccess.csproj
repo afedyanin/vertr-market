@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Vertr.Market.Application\Vertr.Market.Application.csproj" />
+  </ItemGroup>
+</Project>
