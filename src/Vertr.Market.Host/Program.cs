@@ -1,10 +1,55 @@
+using System.Diagnostics;
+using Serilog;
+using StackExchange.Redis;
+using Vertr.Common.Clients.Moex;
+using Vertr.Common.Clients.Tinvest;
+using Vertr.Common.Contracts;
+using Vertr.Common.Contracts.Configuration;
+using Vertr.Market.Host.BackgroundServices;
+using Vertr.Market.Application;
+
 namespace Vertr.Market.Host;
 
 public static class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        var configuration = builder.Configuration;
+
+        var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+        Debug.Assert(!string.IsNullOrEmpty(redisConnectionString));
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(redisConnectionString));
+
+        var tinvestGatewayUrl = configuration.GetValue<string>("TinvestGateway:BaseAddress");
+        Debug.Assert(!string.IsNullOrEmpty(tinvestGatewayUrl));
+        builder.Services.AddTinvestGateway(tinvestGatewayUrl);
+
+        builder.Services.AddMoexApiClient();
+        builder.Services.AddApplication();
+
+        builder.Services
+            .AddOptionsWithValidateOnStart<ThresholdSettings>()
+            .Bind(configuration.GetSection(nameof(ThresholdSettings)));
+
+        builder.Services
+            .AddOptionsWithValidateOnStart<InstrumentSettings>()
+            .Bind(configuration.GetSection(nameof(InstrumentSettings)));
+
+        builder.Services.AddHostedService<MarketOrderBookSubscriber>();
+        builder.Services.AddHostedService<OrderBookWatcher>();
+        builder.Services.AddHostedService<StaticDataLoaderService>();
+
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(configuration)
+            .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
+            .CreateBootstrapLogger();
+
+        builder.Host.UseSerilog((context, configuration) => configuration
+            .ReadFrom.Configuration(context.Configuration) // Read from appsettings.json
+            .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName));
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
@@ -25,6 +70,6 @@ public static class Program
         app.UseAuthorization();
         app.MapControllers();
 
-        app.Run();
+        await app.RunAsync();
     }
 }
