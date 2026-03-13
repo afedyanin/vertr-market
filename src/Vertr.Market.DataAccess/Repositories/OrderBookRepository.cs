@@ -1,5 +1,11 @@
-﻿namespace Vertr.Market.DataAccess.Repositories;
+﻿using Microsoft.EntityFrameworkCore;
+using Vertr.Market.Application.Abstractions;
 
-internal class OrderBookRepository
+namespace Vertr.Market.DataAccess.Repositories;
+
+internal sealed class OrderBookRepository : RepositoryBase, IOrderBookRepository
 {
+    public OrderBookRepository(IDbContextFactory<MarketDataDbContext> contextFactory) : base(contextFactory)
+    {
+    }
 }

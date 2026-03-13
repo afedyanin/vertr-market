@@ -4,7 +4,7 @@ using Vertr.Market.DataAccess.Entities;
 
 namespace Vertr.Market.DataAccess;
 
-internal class MarketDataDbContext : DbContext
+internal sealed class MarketDataDbContext : DbContext
 {
     public DbSet<OrderBookDbo> OrderBooks { get; set; }
 

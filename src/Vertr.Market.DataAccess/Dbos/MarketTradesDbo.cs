@@ -9,5 +9,4 @@ internal sealed class MarketTradesDbo
     public Guid InstrumentId { get; set; }
 
     public string? JsonContent { get; set; }
-
 }

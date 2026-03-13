@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Vertr.Market.DataAccess;
 
-internal class MarketDataDbContextFactory : IDesignTimeDbContextFactory<MarketDataDbContext>
+internal sealed class MarketDataDbContextFactory : IDesignTimeDbContextFactory<MarketDataDbContext>
 {
     private const string LocalConnection = "Server=localhost;Port=5432;User Id=postgres;Password=admin;Database=market_data;";
 

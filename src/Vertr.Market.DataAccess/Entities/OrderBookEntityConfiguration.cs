@@ -4,7 +4,7 @@ using Vertr.Market.DataAccess.Dbos;
 
 namespace Vertr.Market.DataAccess.Entities;
 
-internal class OrderBookEntityConfiguration : IEntityTypeConfiguration<OrderBookDbo>
+internal sealed class OrderBookEntityConfiguration : IEntityTypeConfiguration<OrderBookDbo>
 {
     public void Configure(EntityTypeBuilder<OrderBookDbo> builder)
     {

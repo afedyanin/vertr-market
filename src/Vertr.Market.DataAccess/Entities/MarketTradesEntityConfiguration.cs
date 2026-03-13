@@ -4,7 +4,7 @@ using Vertr.Market.DataAccess.Dbos;
 
 namespace Vertr.Market.DataAccess.Entities;
 
-internal class MarketTradesEntityConfiguration : IEntityTypeConfiguration<MarketTradesDbo>
+internal sealed class MarketTradesEntityConfiguration : IEntityTypeConfiguration<MarketTradesDbo>
 {
     public void Configure(EntityTypeBuilder<MarketTradesDbo> builder)
     {
