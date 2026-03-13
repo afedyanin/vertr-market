@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\vertr-common\Vertr.Common.Contracts\Vertr.Common.Contracts.csproj" />
+    <ProjectReference Include="..\..\vertr-common\Vertr.Common.Contracts\Vertr.Common.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

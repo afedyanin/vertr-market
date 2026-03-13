@@ -11,9 +11,9 @@
     <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
   </Folder>
   <Folder Name="/src/vertr-common/">
-    <Project Path="../vertr-common/Vertr.Common.Clients.Moex/Vertr.Common.Clients.Moex.csproj" />
-    <Project Path="../vertr-common/Vertr.Common.Clients.Tinvest/Vertr.Common.Clients.Tinvest.csproj" />
-    <Project Path="../vertr-common/Vertr.Common.Contracts/Vertr.Common.Contracts.csproj" />
+    <Project Path="vertr-common/Vertr.Common.Clients.Moex/Vertr.Common.Clients.Moex.csproj" />
+    <Project Path="vertr-common/Vertr.Common.Clients.Tinvest/Vertr.Common.Clients.Tinvest.csproj" />
+    <Project Path="vertr-common/Vertr.Common.Contracts/Vertr.Common.Contracts.csproj" />
   </Folder>
   <Folder Name="/tests/" />
 </Solution>

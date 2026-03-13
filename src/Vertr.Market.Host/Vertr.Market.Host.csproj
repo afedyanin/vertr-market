@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\vertr-common\Vertr.Common.Clients.Moex\Vertr.Common.Clients.Moex.csproj" />
-    <ProjectReference Include="..\..\..\vertr-common\Vertr.Common.Clients.Tinvest\Vertr.Common.Clients.Tinvest.csproj" />
-    <ProjectReference Include="..\..\..\vertr-common\Vertr.Common.Contracts\Vertr.Common.Contracts.csproj" />
+    <ProjectReference Include="..\..\vertr-common\Vertr.Common.Clients.Moex\Vertr.Common.Clients.Moex.csproj" />
+    <ProjectReference Include="..\..\vertr-common\Vertr.Common.Clients.Tinvest\Vertr.Common.Clients.Tinvest.csproj" />
+    <ProjectReference Include="..\..\vertr-common\Vertr.Common.Contracts\Vertr.Common.Contracts.csproj" />
     <ProjectReference Include="..\Vertr.Market.Application\Vertr.Market.Application.csproj" />
   </ItemGroup>
 
