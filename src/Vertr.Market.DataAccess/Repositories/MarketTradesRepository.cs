@@ -35,7 +35,7 @@ internal sealed class MarketTradesRepository : RepositoryBase, IMarketTradesRepo
             {
                 Id = Guid.NewGuid(),
                 InstrumentId = trade.InstrumentId,
-                TimeUtc = trade.Time,
+                TimeUtc = trade.TimeUtc,
             };
 
             context.Trades.Add(dbo);

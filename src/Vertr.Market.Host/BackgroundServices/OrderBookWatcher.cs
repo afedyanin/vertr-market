@@ -7,7 +7,7 @@ namespace Vertr.Market.Host.BackgroundServices;
 public class OrderBookWatcher : BackgroundService
 {
     private readonly TimeSpan _watchInterval = TimeSpan.FromSeconds(2);
-    private readonly IOrderBooksLocalStorage _orderBookRepository;
+    private readonly ITimeKeyedLocalStorage _orderBookRepository;
     private readonly bool _isEnabled;
     private readonly string _serviceName;
     private readonly ILogger _logger;
@@ -18,7 +18,7 @@ public class OrderBookWatcher : BackgroundService
         _serviceName = GetType().Name;
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         _logger = loggerFactory.CreateLogger(_serviceName);
-        _orderBookRepository = serviceProvider.GetRequiredService<IOrderBooksLocalStorage>();
+        _orderBookRepository = serviceProvider.GetRequiredService<ITimeKeyedLocalStorage>();
         _instrumentSettings = serviceProvider.GetRequiredService<IOptions<InstrumentSettings>>().Value;
         _isEnabled = false;
     }

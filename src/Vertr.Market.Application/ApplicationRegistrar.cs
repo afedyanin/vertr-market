@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Vertr.Common.Contracts;
 using Vertr.Common.Contracts.Abstractions;
 using Vertr.Market.Application.LocalStorage;
 
@@ -11,9 +12,8 @@ public static class ApplicationRegistrar
         services.AddSingleton<IInstrumentsLocalStorage, InstrumentsLocalStorage>();
         services.AddSingleton<IIndexRatesRepository, IndexRatesLocalStorage>();
         services.AddSingleton<IFutureInfoRepository, FutureInfoLocalStorage>();
-        services.AddSingleton<OrderBooksLocalStorage>();
-        services.AddSingleton<IOrderBooksLocalStorage>(sp => sp.GetRequiredService<OrderBooksLocalStorage>());
-        services.AddSingleton<IMarketQuoteProvider>(sp => sp.GetRequiredService<OrderBooksLocalStorage>());
+        services.AddSingleton<ITimeKeyedLocalStorage<OrderBook>, TimeKeyedLocalStorage<OrderBook>>();
+        services.AddSingleton<ITimeKeyedLocalStorage<MarketTrade>, TimeKeyedLocalStorage<MarketTrade>>();
 
         return services;
     }
