@@ -15,5 +15,7 @@
     <Project Path="vertr-common/Vertr.Common.Clients.Tinvest/Vertr.Common.Clients.Tinvest.csproj" />
     <Project Path="vertr-common/Vertr.Common.Contracts/Vertr.Common.Contracts.csproj" />
   </Folder>
-  <Folder Name="/tests/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="7105149f-316d-4773-9260-aa220c04949c" />
+  </Folder>
 </Solution>
