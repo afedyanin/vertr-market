@@ -14,6 +14,7 @@ public static class ApplicationRegistrar
         services.AddSingleton<IFutureInfoRepository, FutureInfoLocalStorage>();
         services.AddSingleton<ITimeKeyedLocalStorage<OrderBook>, TimeKeyedLocalStorage<OrderBook>>();
         services.AddSingleton<ITimeKeyedLocalStorage<MarketTrade>, TimeKeyedLocalStorage<MarketTrade>>();
+        services.AddSingleton<ITimeKeyedLocalStorage<OpenInterest>, TimeKeyedLocalStorage<OpenInterest>>();
 
         return services;
     }

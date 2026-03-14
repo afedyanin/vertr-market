@@ -6,32 +6,31 @@ using Vertr.Market.DataAccess.Dbos;
 
 namespace Vertr.Market.DataAccess.Repositories;
 
-internal sealed class OrderBookRepository : RepositoryBase, IOrderBookRepository
+internal sealed class OpenInterestRepository : RepositoryBase, IOpenInterestRepository
 {
-    public OrderBookRepository(IDbContextFactory<MarketDataDbContext> contextFactory) : base(contextFactory)
+    public OpenInterestRepository(IDbContextFactory<MarketDataDbContext> contextFactory) : base(contextFactory)
     {
     }
-
-    public async Task<bool> Save(DateTime timeBefore, IEnumerable<OrderBook> orderBooks)
+    public async Task<bool> Save(DateTime timeBefore, IEnumerable<OpenInterest> openInterests)
     {
-        if (!orderBooks.Any())
+        if (!openInterests.Any())
         {
             return false;
         }
 
-        var first = orderBooks.First();
+        var first = openInterests.First();
 
         using var context = await GetDbContext();
 
-        var dbo = new OrderBookDbo
+        var dbo = new OpenInterestDbo
         {
             Id = Guid.NewGuid(),
             TimeUtc = timeBefore,
             InstrumentId = first.InstrumentId,
-            JsonContent = JsonSerializer.Serialize(orderBooks, JsonOptions.DefaultOptions)
+            JsonContent = JsonSerializer.Serialize(openInterests, JsonOptions.DefaultOptions)
         };
 
-        context.OrderBooks.Add(dbo);
+        context.OpenInterests.Add(dbo);
         var savedRecords = await context.SaveChangesAsync();
         return savedRecords > 0;
     }

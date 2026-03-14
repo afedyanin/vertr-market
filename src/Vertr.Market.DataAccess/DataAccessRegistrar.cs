@@ -12,8 +12,9 @@ public static class DataAccessRegistrar
         services.AddSingleton<IDbConnectionFactory>(sp => new DbConnectionFactory(connectionString!));
         services.AddDbContextFactory<MarketDataDbContext>(options => options.UseNpgsql(connectionString));
 
-        services.AddSingleton<IMarketTradesRepository, MarketTradesRepository>();
+        services.AddSingleton<IMarketTradeRepository, MarketTradesRepository>();
         services.AddSingleton<IOrderBookRepository, OrderBookRepository>();
+        services.AddSingleton<IOpenInterestRepository, OpenInterestRepository>();
 
         return services;
     }

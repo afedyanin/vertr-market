@@ -1,6 +1,6 @@
 ﻿namespace Vertr.Market.DataAccess.Dbos;
 
-internal sealed class MarketTradesDbo
+internal sealed class MarketTradeDbo
 {
     public Guid Id { get; set; }
 

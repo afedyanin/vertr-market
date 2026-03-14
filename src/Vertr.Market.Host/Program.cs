@@ -43,7 +43,15 @@ public static class Program
             .Bind(configuration.GetSection(nameof(InstrumentSettings)));
 
         builder.Services.AddHostedService<MarketOrderBookSubscriber>();
-        builder.Services.AddHostedService<OrderBookWatcher>();
+        builder.Services.AddHostedService<MarketOrderBookPersistenceService>();
+
+        builder.Services.AddHostedService<MarketTradeSubscriber>();
+        builder.Services.AddHostedService<MarketTradePersistenceService>();
+
+        builder.Services.AddHostedService<MarketOpenInterestSubscriber>();
+        builder.Services.AddHostedService<MarketOpenInterestPersistenceService>();
+
+        //builder.Services.AddHostedService<OrderBookWatcher>();
         builder.Services.AddHostedService<StaticDataLoaderService>();
 
         Log.Logger = new LoggerConfiguration()

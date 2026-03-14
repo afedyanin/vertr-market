@@ -4,14 +4,14 @@ using Vertr.Market.DataAccess.Dbos;
 
 namespace Vertr.Market.DataAccess.Entities;
 
-internal sealed class MarketTradesEntityConfiguration : IEntityTypeConfiguration<MarketTradesDbo>
+internal sealed class OpenInterestEntityConfiguration : IEntityTypeConfiguration<OpenInterestDbo>
 {
-    public void Configure(EntityTypeBuilder<MarketTradesDbo> builder)
+    public void Configure(EntityTypeBuilder<OpenInterestDbo> builder)
     {
-        builder.ToTable("market_trades");
+        builder.ToTable("open_interests");
 
         builder.HasKey(e => e.Id)
-            .HasName("market_trades_pkey");
+            .HasName("open_interests_pkey");
 
         builder.Property(e => e.Id)
             .HasColumnName("id")
