@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using Vertr.Common.Contracts;
 using Vertr.Common.Contracts.Abstractions;
 using Vertr.Common.Contracts.Configuration;
 
@@ -7,7 +8,7 @@ namespace Vertr.Market.Host.BackgroundServices;
 public class OrderBookWatcher : BackgroundService
 {
     private readonly TimeSpan _watchInterval = TimeSpan.FromSeconds(2);
-    private readonly ITimeKeyedLocalStorage _orderBookRepository;
+    private readonly ITimeKeyedLocalStorage<OrderBook> _orderBookRepository;
     private readonly bool _isEnabled;
     private readonly string _serviceName;
     private readonly ILogger _logger;
@@ -18,7 +19,7 @@ public class OrderBookWatcher : BackgroundService
         _serviceName = GetType().Name;
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         _logger = loggerFactory.CreateLogger(_serviceName);
-        _orderBookRepository = serviceProvider.GetRequiredService<ITimeKeyedLocalStorage>();
+        _orderBookRepository = serviceProvider.GetRequiredService<ITimeKeyedLocalStorage<OrderBook>>();
         _instrumentSettings = serviceProvider.GetRequiredService<IOptions<InstrumentSettings>>().Value;
         _isEnabled = false;
     }
@@ -56,7 +57,7 @@ public class OrderBookWatcher : BackgroundService
     private async Task<DateTime?> ExecuteWatchStep(DateTime? lastUpdate)
     {
         var basicAssetId = _instrumentSettings.BasicAsset;
-        var book = _orderBookRepository.GetById(basicAssetId);
+        var book = _orderBookRepository.GetLast(basicAssetId);
 
         if (book == null)
         {
@@ -64,10 +65,10 @@ public class OrderBookWatcher : BackgroundService
             return null;
         }
 
-        if (lastUpdate.HasValue && lastUpdate.Value == book.UpdatedAt)
+        if (lastUpdate.HasValue && lastUpdate.Value == book.TimeUtc)
         {
             // already processsd
-            return book.UpdatedAt;
+            return book.TimeUtc;
         }
 
         var derivedAssetPrices = _instrumentSettings.DerivedAssets.ToDictionary(item => item, _ => (decimal?)null);
@@ -83,6 +84,6 @@ public class OrderBookWatcher : BackgroundService
         _logger.LogDebug("#{Sequence} Book={Book}", evt.Sequence, evt.OrderBook);
         await _futuresProcessingPipeline.Handle(evt);
         */
-        return book.UpdatedAt;
+        return book.TimeUtc;
     }
 }

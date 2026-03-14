@@ -1,17 +1,23 @@
-﻿using Vertr.Common.Contracts.Abstractions;
+﻿using System.Collections.Concurrent;
+using Vertr.Common.Contracts.Abstractions;
 
 namespace Vertr.Market.Application.LocalStorage;
 
 internal sealed class TimeKeyedLocalStorage<T> : IDisposable, ITimeKeyedLocalStorage<T> where T : class, ITimeKeyedItem
 {
-    private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
     private readonly Dictionary<Guid, LinkedList<T>> _items = [];
+    private readonly ConcurrentDictionary<Guid, ReaderWriterLockSlim> _locks = [];
 
     public IEnumerable<Guid> GetAllKeys() => _items.Keys;
 
     public T? GetLast(Guid key)
     {
-        _lock.EnterReadLock();
+        if (!_locks.TryGetValue(key, out var keyLock))
+        {
+            return default;
+        }
+
+        keyLock.EnterReadLock();
         try
         {
             _items.TryGetValue(key, out var list);
@@ -19,13 +25,16 @@ internal sealed class TimeKeyedLocalStorage<T> : IDisposable, ITimeKeyedLocalSto
         }
         finally
         {
-            _lock.ExitReadLock();
+            keyLock.ExitReadLock();
         }
     }
 
     public bool Add(Guid key, T item)
     {
-        _lock.EnterWriteLock();
+        _locks.TryGetValue(key, out var keyLock);
+        keyLock ??= _locks.AddOrUpdate(key, new ReaderWriterLockSlim(), (key, oldLock) => oldLock);
+
+        keyLock.EnterWriteLock();
 
         try
         {
@@ -50,13 +59,18 @@ internal sealed class TimeKeyedLocalStorage<T> : IDisposable, ITimeKeyedLocalSto
         }
         finally
         {
-            _lock.ExitWriteLock();
+            keyLock.ExitWriteLock();
         }
     }
 
     public IEnumerable<T> RemoveBefore(Guid key, DateTime time)
     {
-        _lock.EnterWriteLock();
+        if (!_locks.TryGetValue(key, out var keyLock))
+        {
+            return [];
+        }
+
+        keyLock.EnterWriteLock();
 
         try
         {
@@ -81,9 +95,18 @@ internal sealed class TimeKeyedLocalStorage<T> : IDisposable, ITimeKeyedLocalSto
         }
         finally
         {
-            _lock.ExitWriteLock();
+            keyLock.ExitWriteLock();
         }
     }
 
-    public void Dispose() => _lock.Dispose();
+    public void Dispose()
+    {
+        foreach (var item in _locks.Values)
+        {
+            item?.Dispose();
+        }
+
+        _locks.Clear();
+        _items.Clear();
+    }
 }

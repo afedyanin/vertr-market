@@ -7,7 +7,7 @@ namespace Vertr.Market.Host.BackgroundServices;
 
 public class MarketOrderBookSubscriber : RedisServiceBase
 {
-    private readonly ITimeKeyedLocalStorage _orderBookRepository;
+    private readonly ITimeKeyedLocalStorage<OrderBook> _orderBookRepository;
     private readonly ILogger<MarketOrderBookSubscriber> _logger;
 
     protected override RedisChannel RedisChannel => new RedisChannel(Subscriptions.OrderBooks.Channel, PatternMode.Pattern);
@@ -15,7 +15,7 @@ public class MarketOrderBookSubscriber : RedisServiceBase
 
     public MarketOrderBookSubscriber(IServiceProvider serviceProvider, IConfiguration configuration) : base(serviceProvider, configuration)
     {
-        _orderBookRepository = serviceProvider.GetRequiredService<ITimeKeyedLocalStorage>();
+        _orderBookRepository = serviceProvider.GetRequiredService<ITimeKeyedLocalStorage<OrderBook>>();
         _logger = LoggerFactory.CreateLogger<MarketOrderBookSubscriber>();
     }
 
@@ -29,7 +29,7 @@ public class MarketOrderBookSubscriber : RedisServiceBase
             return;
         }
 
-        _orderBookRepository.Update(orderBook);
-        _logger.LogInformation("Received order book from cahnnel={Channel} OrderBook={OrderBook}", channel, orderBook);
+        var added = _orderBookRepository.Add(orderBook.InstrumentId, orderBook);
+        _logger.LogInformation("Received order book from cahnnel={Channel} Added={Added} OrderBook={OrderBook}", channel, added, orderBook);
     }
 }
