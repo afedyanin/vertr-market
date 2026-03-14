@@ -11,12 +11,8 @@ namespace Vertr.Market.DataAccess.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.EnsureSchema(
-                name: "access_control");
-
             migrationBuilder.CreateTable(
                 name: "market_trades",
-                schema: "access_control",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -31,7 +27,6 @@ namespace Vertr.Market.DataAccess.Migrations
 
             migrationBuilder.CreateTable(
                 name: "open_interests",
-                schema: "access_control",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -46,7 +41,6 @@ namespace Vertr.Market.DataAccess.Migrations
 
             migrationBuilder.CreateTable(
                 name: "order_books",
-                schema: "access_control",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -64,16 +58,13 @@ namespace Vertr.Market.DataAccess.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "market_trades",
-                schema: "access_control");
+                name: "market_trades");
 
             migrationBuilder.DropTable(
-                name: "open_interests",
-                schema: "access_control");
+                name: "open_interests");
 
             migrationBuilder.DropTable(
-                name: "order_books",
-                schema: "access_control");
+                name: "order_books");
         }
     }
 }

@@ -18,7 +18,7 @@ internal sealed class MarketDataDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("access_control");
+        // modelBuilder.HasDefaultSchema("vertr");
 
         new OrderBookEntityConfiguration().Configure(modelBuilder.Entity<OrderBookDbo>());
         new MarketTradeEntityConfiguration().Configure(modelBuilder.Entity<MarketTradeDbo>());

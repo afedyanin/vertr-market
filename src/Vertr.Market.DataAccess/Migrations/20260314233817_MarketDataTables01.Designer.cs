@@ -12,7 +12,7 @@ using Vertr.Market.DataAccess;
 namespace Vertr.Market.DataAccess.Migrations
 {
     [DbContext(typeof(MarketDataDbContext))]
-    [Migration("20260314232644_MarketDataTables01")]
+    [Migration("20260314233817_MarketDataTables01")]
     partial class MarketDataTables01
     {
         /// <inheritdoc />
@@ -20,7 +20,6 @@ namespace Vertr.Market.DataAccess.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("access_control")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -48,7 +47,7 @@ namespace Vertr.Market.DataAccess.Migrations
                     b.HasKey("Id")
                         .HasName("market_trades_pkey");
 
-                    b.ToTable("market_trades", "access_control");
+                    b.ToTable("market_trades", (string)null);
                 });
 
             modelBuilder.Entity("Vertr.Market.DataAccess.Dbos.OpenInterestDbo", b =>
@@ -73,7 +72,7 @@ namespace Vertr.Market.DataAccess.Migrations
                     b.HasKey("Id")
                         .HasName("open_interests_pkey");
 
-                    b.ToTable("open_interests", "access_control");
+                    b.ToTable("open_interests", (string)null);
                 });
 
             modelBuilder.Entity("Vertr.Market.DataAccess.Dbos.OrderBookDbo", b =>
@@ -98,7 +97,7 @@ namespace Vertr.Market.DataAccess.Migrations
                     b.HasKey("Id")
                         .HasName("order_books_pkey");
 
-                    b.ToTable("order_books", "access_control");
+                    b.ToTable("order_books", (string)null);
                 });
 #pragma warning restore 612, 618
         }
