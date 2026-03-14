@@ -3,8 +3,6 @@ using Serilog;
 using StackExchange.Redis;
 using Vertr.Common.Clients.Moex;
 using Vertr.Common.Clients.Tinvest;
-using Vertr.Common.Contracts;
-using Vertr.Common.Contracts.Configuration;
 using Vertr.Market.Host.BackgroundServices;
 using Vertr.Market.Application;
 using Vertr.Market.DataAccess;
@@ -34,14 +32,6 @@ public static class Program
         builder.Services.AddMoexApiClient();
         builder.Services.AddApplication();
 
-        builder.Services
-            .AddOptionsWithValidateOnStart<ThresholdSettings>()
-            .Bind(configuration.GetSection(nameof(ThresholdSettings)));
-
-        builder.Services
-            .AddOptionsWithValidateOnStart<InstrumentSettings>()
-            .Bind(configuration.GetSection(nameof(InstrumentSettings)));
-
         builder.Services.AddHostedService<MarketOrderBookSubscriber>();
         builder.Services.AddHostedService<MarketOrderBookPersistenceService>();
 
@@ -50,9 +40,6 @@ public static class Program
 
         builder.Services.AddHostedService<MarketOpenInterestSubscriber>();
         builder.Services.AddHostedService<MarketOpenInterestPersistenceService>();
-
-        //builder.Services.AddHostedService<OrderBookWatcher>();
-        builder.Services.AddHostedService<StaticDataLoaderService>();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
