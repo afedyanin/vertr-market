@@ -9,12 +9,12 @@ dotnet tool install --global dotnet-ef
 ## Create migrations
 
 ```shell
-dotnet ef migrations add AccessControlTables --context AccessControlDbContext
+dotnet ef migrations add MarketDataTables01 --context MarketDataDbContext
 ```
 
 ## Run migrations
 
 ```shell
-dotnet ef database update --context AccessControlDbContext
+dotnet ef database update --context MarketDataDbContext
 ```
 
