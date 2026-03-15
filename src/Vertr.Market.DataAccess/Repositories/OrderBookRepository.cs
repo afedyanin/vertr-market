@@ -12,7 +12,38 @@ internal sealed class OrderBookRepository : RepositoryBase, IOrderBookRepository
     {
     }
 
-    public async Task<bool> Save(DateTime timeBefore, IEnumerable<OrderBook> orderBooks)
+    public async IAsyncEnumerable<OrderBook> Get(Guid instrumentId, DateTime from, DateTime to)
+    {
+        await using var context = await GetDbContext();
+
+        var booksDbo = context
+            .OrderBooks
+            .Where(b =>
+                b.InstrumentId == instrumentId &&
+                b.TimeUtc >= from &&
+                b.TimeUtc <= to
+            )
+            .OrderBy(x => x.TimeUtc);
+
+        foreach (var dbo in booksDbo)
+        {
+            if (string.IsNullOrEmpty(dbo.JsonContent))
+            {
+                continue;
+            }
+
+            var books = JsonSerializer.Deserialize<OrderBook[]>(dbo.JsonContent, JsonOptions.DefaultOptions) ?? [];
+
+            foreach (var book in books
+                .Where(b => b.TimeUtc >= from && b.TimeUtc <= to)
+                .OrderBy(b => b.TimeUtc))
+            {
+                yield return book;
+            }
+        }
+    }
+
+    public async Task<bool> Save(DateTime timeBefore, OrderBook[] orderBooks)
     {
         if (!orderBooks.Any())
         {
@@ -20,8 +51,7 @@ internal sealed class OrderBookRepository : RepositoryBase, IOrderBookRepository
         }
 
         var first = orderBooks.First();
-
-        using var context = await GetDbContext();
+        await using var context = await GetDbContext();
 
         var dbo = new OrderBookDbo
         {

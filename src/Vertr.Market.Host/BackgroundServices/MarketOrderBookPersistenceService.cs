@@ -37,7 +37,7 @@ public class MarketOrderBookPersistenceService : BackgroundService
         foreach (var key in keys)
         {
             var items = _orderBookLocalStorage.RemoveBefore(key, timeBefore);
-            var saved = await _orderBookRepository.Save(timeBefore, items);
+            var saved = await _orderBookRepository.Save(timeBefore, [.. items]);
 
             if (!saved)
             {

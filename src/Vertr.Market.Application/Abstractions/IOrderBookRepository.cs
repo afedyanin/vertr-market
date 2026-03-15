@@ -4,5 +4,7 @@ namespace Vertr.Market.Application.Abstractions;
 
 public interface IOrderBookRepository
 {
-    public Task<bool> Save(DateTime timeBefore, IEnumerable<OrderBook> orderBooks);
+    public Task<bool> Save(DateTime timeBefore, OrderBook[] orderBooks);
+
+    public IAsyncEnumerable<OrderBook> Get(Guid instrumentId, DateTime from, DateTime to);
 }
