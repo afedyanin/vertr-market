@@ -1,6 +1,5 @@
-﻿using System.Globalization;
-using CsvHelper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Vertr.Market.Application.Export;
 
 namespace Vertr.Market.Host.Controllers;
 
@@ -13,28 +12,28 @@ public class ExportController : ControllerBase
         public DateTime TimeUtc { get; set; }
         public Guid InstrumentId { get; set; }
         public decimal Price { get; set; }
+
+        public byte[] Buffer { get; set; } = [];
     }
 
 
     [HttpGet("order-books")]
     public async Task<IActionResult> ExportOrderBooks(CancellationToken cancellationToken = default)
     {
-        var items = GenerateItems(Guid.NewGuid(), 100);
+        var items = GenerateItems(Guid.NewGuid(), 1_000_000);
+        var stream = await CsvStreamExporter.ToStream(items, cancellationToken);
 
-        using var memoryStream = new MemoryStream();
-        await using var streamWriter = new StreamWriter(memoryStream);
-        await using var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
-
-        csvWriter.WriteRecords(items);
-        await streamWriter.FlushAsync(cancellationToken);
-
-        return File(memoryStream.ToArray(), "text/csv", "export.csv");
+        return new FileStreamResult(stream, "text/csv")
+        {
+            FileDownloadName = "large_export.csv"
+        };
     }
 
     private static IEnumerable<Entity> GenerateItems(Guid key, int count)
     {
         var res = new List<Entity>(count);
         var time = DateTime.UtcNow;
+        var bufferLength = 128;
 
         for (var i = 0; i < count; i++)
         {
@@ -44,6 +43,7 @@ public class ExportController : ControllerBase
                 TimeUtc = time,
                 InstrumentId = key,
                 Price = 10.0m + i,
+                Buffer = new byte[bufferLength]
             };
 
             res.Add(e);
