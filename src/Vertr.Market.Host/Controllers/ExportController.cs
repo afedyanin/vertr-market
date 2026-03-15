@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Vertr.Market.Application.Abstractions;
 using Vertr.Market.Application.Export;
 
@@ -28,60 +27,60 @@ public class ExportController : ControllerBase
     [HttpGet("order-books/{instrumentId:guid}")]
     public async Task<IActionResult> ExportOrderBooks(
         Guid instrumentId,
-        [BindRequired][FromQuery] DateTime from,
+        [FromQuery] DateTime? from,
         [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
-        from = AdjustTime(from);
-        to = AdjustTime(to);
-        var books = _orderBookRepository.Get(instrumentId, from, to.Value);
+        from = AdjustTime(from, beginOfDay: true);
+        to = AdjustTime(to, beginOfDay: false);
+        var books = _orderBookRepository.Get(instrumentId, from.Value, to.Value);
         var stream = await CsvStreamExporter.ToStream(books, cancellationToken);
 
         return new FileStreamResult(stream, "text/csv")
         {
-            FileDownloadName = GetFileName("order_books", instrumentId, from, to.Value)
+            FileDownloadName = GetFileName("order_books", instrumentId, from.Value, to.Value)
         };
     }
 
     [HttpGet("trades/{instrumentId:guid}")]
     public async Task<IActionResult> ExportTrades(
         Guid instrumentId,
-        [BindRequired][FromQuery] DateTime from,
+        [FromQuery] DateTime? from,
         [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
-        from = AdjustTime(from);
-        to = AdjustTime(to);
-        var trades = _marketTradeRepository.Get(instrumentId, from, to.Value);
+        from = AdjustTime(from, beginOfDay: true);
+        to = AdjustTime(to, beginOfDay: false);
+        var trades = _marketTradeRepository.Get(instrumentId, from.Value, to.Value);
         var stream = await CsvStreamExporter.ToStream(trades, cancellationToken);
 
         return new FileStreamResult(stream, "text/csv")
         {
-            FileDownloadName = GetFileName("trades", instrumentId, from, to.Value)
+            FileDownloadName = GetFileName("trades", instrumentId, from.Value, to.Value)
         };
     }
 
     [HttpGet("open-interests/{instrumentId:guid}")]
     public async Task<IActionResult> ExportOpenInterests(
         Guid instrumentId,
-        [BindRequired][FromQuery] DateTime from,
+        [FromQuery] DateTime? from,
         [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
-        from = AdjustTime(from);
-        to = AdjustTime(to);
-        var trades = _openInterestRepository.Get(instrumentId, from, to.Value);
+        from = AdjustTime(from, beginOfDay: true);
+        to = AdjustTime(to, beginOfDay: false);
+        var trades = _openInterestRepository.Get(instrumentId, from.Value, to.Value);
         var stream = await CsvStreamExporter.ToStream(trades, cancellationToken);
 
         return new FileStreamResult(stream, "text/csv")
         {
-            FileDownloadName = GetFileName("open_interests", instrumentId, from, to.Value)
+            FileDownloadName = GetFileName("open_interests", instrumentId, from.Value, to.Value)
         };
     }
 
     private static string GetFileName(string prefix, Guid instrumentId, DateTime from, DateTime to)
         => $"{prefix}_{instrumentId}_{from.ToString(TimeFormat)}_{to.ToString(TimeFormat)}.csv";
 
-    private static DateTime AdjustTime(DateTime? time)
-        => DateTime.SpecifyKind(time ?? DateTime.UtcNow, kind: DateTimeKind.Utc);
+    private static DateTime AdjustTime(DateTime? time, bool beginOfDay = false)
+        => DateTime.SpecifyKind(time ?? (beginOfDay ? DateTime.Today : DateTime.UtcNow), kind: DateTimeKind.Utc);
 }
