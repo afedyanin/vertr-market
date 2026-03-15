@@ -49,4 +49,45 @@ public static class CsvStreamExporter
 
         return memoryStream;
     }
+
+    public static async Task<Stream> ToStream(IAsyncEnumerable<MarketTrade> trades, CancellationToken cancellationToken = default)
+    {
+        var memoryStream = new MemoryStream();
+        await using var streamWriter = new StreamWriter(memoryStream, leaveOpen: true);
+        await using var csv = new CsvWriter(streamWriter, CultureInfo.InvariantCulture, leaveOpen: true);
+
+        await foreach (var trade in trades.WithCancellation(cancellationToken))
+        {
+            csv.WriteField(trade.TimeUtc);
+            csv.WriteField(trade.Price);
+            csv.WriteField(trade.Quantity);
+            csv.WriteField(trade.Direction);
+
+            await csv.NextRecordAsync(); // Ends the row
+        }
+
+        await streamWriter.FlushAsync(cancellationToken);
+        memoryStream.Position = 0;
+
+        return memoryStream;
+    }
+
+    public static async Task<Stream> ToStream(IAsyncEnumerable<OpenInterest> interests, CancellationToken cancellationToken = default)
+    {
+        var memoryStream = new MemoryStream();
+        await using var streamWriter = new StreamWriter(memoryStream, leaveOpen: true);
+        await using var csv = new CsvWriter(streamWriter, CultureInfo.InvariantCulture, leaveOpen: true);
+
+        await foreach (var interest in interests.WithCancellation(cancellationToken))
+        {
+            csv.WriteField(interest.TimeUtc);
+            csv.WriteField(interest.Quantity);
+            await csv.NextRecordAsync(); // Ends the row
+        }
+
+        await streamWriter.FlushAsync(cancellationToken);
+        memoryStream.Position = 0;
+
+        return memoryStream;
+    }
 }

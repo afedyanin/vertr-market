@@ -11,6 +11,38 @@ internal sealed class MarketTradesRepository : RepositoryBase, IMarketTradeRepos
     public MarketTradesRepository(IDbContextFactory<MarketDataDbContext> contextFactory) : base(contextFactory)
     {
     }
+
+    public async IAsyncEnumerable<MarketTrade> Get(Guid instrumentId, DateTime from, DateTime to)
+    {
+        await using var context = await GetDbContext();
+
+        var booksDbo = context
+            .Trades
+            .Where(b =>
+                b.InstrumentId == instrumentId &&
+                b.TimeUtc >= from &&
+                b.TimeUtc <= to
+            )
+            .OrderBy(x => x.TimeUtc);
+
+        foreach (var dbo in booksDbo)
+        {
+            if (string.IsNullOrEmpty(dbo.JsonContent))
+            {
+                continue;
+            }
+
+            var trades = JsonSerializer.Deserialize<MarketTrade[]>(dbo.JsonContent, JsonOptions.DefaultOptions) ?? [];
+
+            foreach (var trade in trades
+                .Where(b => b.TimeUtc >= from && b.TimeUtc <= to)
+                .OrderBy(b => b.TimeUtc))
+            {
+                yield return trade;
+            }
+        }
+    }
+
     public async Task<bool> Save(DateTime timeBefore, IEnumerable<MarketTrade> marketTrades)
     {
         if (!marketTrades.Any())
@@ -34,20 +66,8 @@ internal sealed class MarketTradesRepository : RepositoryBase, IMarketTradeRepos
         var savedRecords = await context.SaveChangesAsync();
         return savedRecords > 0;
     }
+
     /*
-    public async Task<MarketTrade[]> GetAll()
-    {
-        using var context = await GetDbContext();
-
-        var res = await context
-            .Trades
-            .OrderBy(x => x.InstrumentId)
-            .ToArrayAsync();
-
-        // TODO: Implement this
-        return [];
-    }
-
     public async Task<int> Delete(Guid id)
     {
         using var context = await GetDbContext();

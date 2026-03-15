@@ -11,6 +11,38 @@ internal sealed class OpenInterestRepository : RepositoryBase, IOpenInterestRepo
     public OpenInterestRepository(IDbContextFactory<MarketDataDbContext> contextFactory) : base(contextFactory)
     {
     }
+
+    public async IAsyncEnumerable<OpenInterest> Get(Guid instrumentId, DateTime from, DateTime to)
+    {
+        await using var context = await GetDbContext();
+
+        var booksDbo = context
+            .OpenInterests
+            .Where(b =>
+                b.InstrumentId == instrumentId &&
+                b.TimeUtc >= from &&
+                b.TimeUtc <= to
+            )
+            .OrderBy(x => x.TimeUtc);
+
+        foreach (var dbo in booksDbo)
+        {
+            if (string.IsNullOrEmpty(dbo.JsonContent))
+            {
+                continue;
+            }
+
+            var interests = JsonSerializer.Deserialize<OpenInterest[]>(dbo.JsonContent, JsonOptions.DefaultOptions) ?? [];
+
+            foreach (var item in interests
+                .Where(b => b.TimeUtc >= from && b.TimeUtc <= to)
+                .OrderBy(b => b.TimeUtc))
+            {
+                yield return item;
+            }
+        }
+    }
+
     public async Task<bool> Save(DateTime timeBefore, IEnumerable<OpenInterest> openInterests)
     {
         if (!openInterests.Any())
