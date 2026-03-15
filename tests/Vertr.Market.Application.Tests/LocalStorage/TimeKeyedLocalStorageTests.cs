@@ -1,5 +1,5 @@
-﻿using Vertr.Common.Contracts.Abstractions;
-using Vertr.Market.Application.LocalStorage;
+﻿using Vertr.Market.Application.LocalStorage;
+using Vertr.Market.Application.Tests.Stubs;
 
 namespace Vertr.Market.Application.Tests.LocalStorage;
 
@@ -10,21 +10,14 @@ public class TimeKeyedLocalStorageTests
     private static readonly Guid InstrumentTwo = Guid.NewGuid();
     private static readonly DateTime BaseDate = new DateTime(2026, 03, 14, 20, 38, 12);
 
-    private sealed record class Entity : ITimeKeyedItem
-    {
-        public DateTime TimeUtc { get; set; }
-        public Guid InstrumentId { get; set; }
-        public decimal Price { get; set; }
-    }
-
     [Test]
     public void CanGetLastItem()
     {
-        var storage = new TimeKeyedLocalStorage<Entity>();
+        var storage = new TimeKeyedLocalStorage<EntityStub>();
 
-        var items = new List<Entity>();
-        items.AddRange(GenerateItems(InstrumentOne, 3000));
-        items.AddRange(GenerateItems(InstrumentTwo, 3000));
+        var items = new List<EntityStub>();
+        items.AddRange(EntityStub.GenerateItems(InstrumentOne, BaseDate, 3000));
+        items.AddRange(EntityStub.GenerateItems(InstrumentTwo, BaseDate, 3000));
 
         Parallel.ForEach(items, item =>
         {
@@ -43,11 +36,11 @@ public class TimeKeyedLocalStorageTests
     [Test]
     public async Task CanRemoveItems()
     {
-        var storage = new TimeKeyedLocalStorage<Entity>();
+        var storage = new TimeKeyedLocalStorage<EntityStub>();
 
         var t1 = Task.Run(() =>
         {
-            foreach (var item in GenerateItems(InstrumentOne, 3000))
+            foreach (var item in EntityStub.GenerateItems(InstrumentOne, BaseDate, 3000))
             {
                 storage.Add(item.InstrumentId, item);
             }
@@ -55,7 +48,7 @@ public class TimeKeyedLocalStorageTests
 
         var t2 = Task.Run(() =>
         {
-            foreach (var item in GenerateItems(InstrumentTwo, 3000))
+            foreach (var item in EntityStub.GenerateItems(InstrumentTwo, BaseDate, 3000))
             {
                 storage.Add(item.InstrumentId, item);
             }
@@ -70,26 +63,5 @@ public class TimeKeyedLocalStorageTests
 
         var removed2 = storage.RemoveBefore(InstrumentTwo, beforeTime);
         Assert.That(removed2.Count, Is.EqualTo(1000));
-    }
-
-    private static IEnumerable<Entity> GenerateItems(Guid key, int count)
-    {
-        var res = new List<Entity>(count);
-        var time = BaseDate;
-
-        for (var i = 0; i < count; i++)
-        {
-            time = time.AddSeconds(1);
-            var e = new Entity
-            {
-                TimeUtc = time,
-                InstrumentId = key,
-                Price = 10.0m + i,
-            };
-
-            res.Add(e);
-        }
-
-        return res;
     }
 }

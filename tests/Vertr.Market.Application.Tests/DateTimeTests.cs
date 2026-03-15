@@ -1,7 +1,7 @@
 ﻿namespace Vertr.Market.Application.Tests;
 
 [TestFixture(Category = "Unit")]
-public class UtilitiesTests
+public class DateTimeTests
 {
     [Test]
     public void CanAdjustTime()
