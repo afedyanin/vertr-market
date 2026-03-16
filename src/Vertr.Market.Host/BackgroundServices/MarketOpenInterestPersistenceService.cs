@@ -36,13 +36,21 @@ public class MarketOpenInterestPersistenceService : BackgroundService
 
         foreach (var key in keys)
         {
-            var items = _openInterestLocalStorage.RemoveBefore(key, timeBefore);
+            var items = _openInterestLocalStorage.RemoveBefore(key, timeBefore).ToArray();
             var saved = await _openInterestRepository.Save(timeBefore, items);
 
-            if (!saved)
+            var itemsCount = items.Length;
+
+            if (saved == null || saved.Value == itemsCount)
             {
-                _logger.LogError("Cannot save order books for Key={Key} TimeBefore={TimeBefore:O}", key, timeBefore);
+                continue;
             }
+
+            _logger.LogError("Cannot save open interests for Key={Key} TimeStamp={TimeBefore:O} ItemsCount={Count} SavedCount={Saved}",
+                key,
+                timeBefore,
+                itemsCount,
+                saved.Value);
         }
     }
 }

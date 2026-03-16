@@ -36,13 +36,20 @@ public class MarketTradePersistenceService : BackgroundService
 
         foreach (var key in keys)
         {
-            var items = _marketTradeLocalStorage.RemoveBefore(key, timeBefore);
+            var items = _marketTradeLocalStorage.RemoveBefore(key, timeBefore).ToArray();
             var saved = await _marketTradeRepository.Save(timeBefore, items);
+            var itemsCount = items.Length;
 
-            if (!saved)
+            if (saved == null || saved.Value == itemsCount)
             {
-                _logger.LogError("Cannot save market trades for Key={Key} TimeBefore={TimeBefore:O}", key, timeBefore);
+                continue;
             }
+
+            _logger.LogError("Cannot save market trades for Key={Key} TimeStamp={TimeBefore:O} ItemsCount={Count} SavedCount={Saved}",
+                key,
+                timeBefore,
+                itemsCount,
+                saved.Value);
         }
     }
 }

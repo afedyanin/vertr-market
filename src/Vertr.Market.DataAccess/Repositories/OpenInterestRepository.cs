@@ -43,11 +43,11 @@ internal sealed class OpenInterestRepository : RepositoryBase, IOpenInterestRepo
         }
     }
 
-    public async Task<bool> Save(DateTime timeBefore, IEnumerable<OpenInterest> openInterests)
+    public async Task<int?> Save(DateTime timeBefore, OpenInterest[] openInterests)
     {
-        if (!openInterests.Any())
+        if (openInterests.Length <= 0)
         {
-            return false;
+            return null;
         }
 
         var first = openInterests.First();
@@ -64,6 +64,6 @@ internal sealed class OpenInterestRepository : RepositoryBase, IOpenInterestRepo
 
         context.OpenInterests.Add(dbo);
         var savedRecords = await context.SaveChangesAsync();
-        return savedRecords > 0;
+        return savedRecords;
     }
 }

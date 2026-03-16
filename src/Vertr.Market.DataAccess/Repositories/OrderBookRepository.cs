@@ -43,11 +43,11 @@ internal sealed class OrderBookRepository : RepositoryBase, IOrderBookRepository
         }
     }
 
-    public async Task<bool> Save(DateTime timeBefore, OrderBook[] orderBooks)
+    public async Task<int?> Save(DateTime timeBefore, OrderBook[] orderBooks)
     {
-        if (!orderBooks.Any())
+        if (orderBooks.Length <= 0)
         {
-            return false;
+            return null;
         }
 
         var first = orderBooks.First();
@@ -63,6 +63,6 @@ internal sealed class OrderBookRepository : RepositoryBase, IOrderBookRepository
 
         context.OrderBooks.Add(dbo);
         var savedRecords = await context.SaveChangesAsync();
-        return savedRecords > 0;
+        return savedRecords;
     }
 }

@@ -36,13 +36,20 @@ public class MarketOrderBookPersistenceService : BackgroundService
 
         foreach (var key in keys)
         {
-            var items = _orderBookLocalStorage.RemoveBefore(key, timeBefore);
-            var saved = await _orderBookRepository.Save(timeBefore, [.. items]);
+            var items = _orderBookLocalStorage.RemoveBefore(key, timeBefore).ToArray();
+            var saved = await _orderBookRepository.Save(timeBefore, items);
+            var itemsCount = items.Length;
 
-            if (!saved)
+            if (saved == null || saved.Value == itemsCount)
             {
-                _logger.LogError("Cannot save order books for Key={Key} TimeBefore={TimeBefore:O}", key, timeBefore);
+                continue;
             }
+
+            _logger.LogError("Cannot save order books for Key={Key} TimeStamp={TimeBefore:O} ItemsCount={Count} SavedCount={Saved}",
+                key,
+                timeBefore,
+                itemsCount,
+                saved.Value);
         }
     }
 }

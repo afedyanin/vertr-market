@@ -29,7 +29,13 @@ public class MarketOpenInterestSubscriber : RedisServiceBase
             return;
         }
 
+        if (openInterest.InstrumentId == Guid.Empty)
+        {
+            _logger.LogError("Open Interest with empty InstrumentId received. Message={Message}", message);
+            return;
+        }
+
         var added = _openInterestLocalStorage.Add(openInterest.InstrumentId, openInterest);
-        _logger.LogInformation("Received open interest from cahnnel={Channel} Added={Added} OpenInterest={OpenInterest}", channel, added, openInterest);
+        _logger.LogDebug("Received open interest from cahnnel={Channel} Added={Added} OpenInterest={OpenInterest}", channel, added, openInterest);
     }
 }

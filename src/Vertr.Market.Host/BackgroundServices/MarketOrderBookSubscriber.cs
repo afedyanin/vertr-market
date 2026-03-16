@@ -29,7 +29,13 @@ public class MarketOrderBookSubscriber : RedisServiceBase
             return;
         }
 
+        if (orderBook.InstrumentId == Guid.Empty)
+        {
+            _logger.LogError("Order Book with empty InstrumentId received. Message={Message}", message);
+            return;
+        }
+
         var added = _orderBookLocalStorage.Add(orderBook.InstrumentId, orderBook);
-        _logger.LogInformation("Received order book from cahnnel={Channel} Added={Added} OrderBook={OrderBook}", channel, added, orderBook);
+        _logger.LogDebug("Received order book from cahnnel={Channel} Added={Added} OrderBook={OrderBook}", channel, added, orderBook);
     }
 }

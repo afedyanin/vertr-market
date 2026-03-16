@@ -43,11 +43,11 @@ internal sealed class MarketTradesRepository : RepositoryBase, IMarketTradeRepos
         }
     }
 
-    public async Task<bool> Save(DateTime timeBefore, IEnumerable<MarketTrade> marketTrades)
+    public async Task<int?> Save(DateTime timeBefore, MarketTrade[] marketTrades)
     {
-        if (!marketTrades.Any())
+        if (marketTrades.Length <= 0)
         {
-            return false;
+            return null;
         }
 
         var first = marketTrades.First();
@@ -64,7 +64,7 @@ internal sealed class MarketTradesRepository : RepositoryBase, IMarketTradeRepos
 
         context.Trades.Add(dbo);
         var savedRecords = await context.SaveChangesAsync();
-        return savedRecords > 0;
+        return savedRecords;
     }
 
     /*
