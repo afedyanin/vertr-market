@@ -2,7 +2,9 @@
   <Folder Name="/common/">
     <File Path=".editorconfig" />
     <File Path=".gitlab-ci.yml" />
+    <File Path="compose.yaml" />
     <File Path="Directory.Build.props" />
+    <File Path="Dockerfile" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/src/">

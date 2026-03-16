@@ -1,0 +1,15 @@
+services:
+  tinvest:
+    build:
+      context: .
+    ports:
+      - "8087:8080"
+    networks:
+      - vertr-infrastructure_infra
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker 
+
+networks:
+  vertr-infrastructure_infra:
+    external: true
+    driver: bridge
