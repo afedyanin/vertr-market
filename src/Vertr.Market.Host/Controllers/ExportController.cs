@@ -34,7 +34,7 @@ public class ExportController : ControllerBase
         from = AdjustTime(from, beginOfDay: true);
         to = AdjustTime(to, beginOfDay: false);
         var books = _orderBookRepository.Get(instrumentId, from.Value, to.Value);
-        var stream = await CsvStreamExporter.ToStream(books, cancellationToken);
+        var stream = await OrderBooksExporter.ToCsvStream(books, cancellationToken);
 
         return new FileStreamResult(stream, "text/csv")
         {
@@ -42,17 +42,41 @@ public class ExportController : ControllerBase
         };
     }
 
+    [HttpGet("order-books/{instrumentId:guid}/aggregated")]
+    public async Task<IActionResult> ExportAggregatedOrderBooks(
+        Guid instrumentId,
+        int aggregationIntervalSec = 30,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (aggregationIntervalSec <= 0 || aggregationIntervalSec > 59)
+        {
+            return BadRequest($"Aggregation interval must be in [1;59]s. Actual value={aggregationIntervalSec}");
+        }
+
+        from = AdjustTime(from, beginOfDay: true);
+        to = AdjustTime(to, beginOfDay: false);
+        var books = _orderBookRepository.Get(instrumentId, from.Value, to.Value);
+        var stream = await OrderBooksExporter.ToCsvStreamAggregated(books, aggregationIntervalSec, cancellationToken);
+
+        return new FileStreamResult(stream, "text/csv")
+        {
+            FileDownloadName = GetFileName($"order_books_aggregated_{aggregationIntervalSec}s", instrumentId, from.Value, to.Value)
+        };
+    }
+
     [HttpGet("trades/{instrumentId:guid}")]
     public async Task<IActionResult> ExportTrades(
         Guid instrumentId,
-        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
         from = AdjustTime(from, beginOfDay: true);
         to = AdjustTime(to, beginOfDay: false);
         var trades = _marketTradeRepository.Get(instrumentId, from.Value, to.Value);
-        var stream = await CsvStreamExporter.ToStream(trades, cancellationToken);
+        var stream = await MarketTradesExporter.ToCsvStream(trades, cancellationToken);
 
         return new FileStreamResult(stream, "text/csv")
         {
@@ -60,21 +84,69 @@ public class ExportController : ControllerBase
         };
     }
 
+    [HttpGet("trades/{instrumentId:guid}/aggregated")]
+    public async Task<IActionResult> ExportTradesAggregated(
+        Guid instrumentId,
+        int aggregationIntervalSec = 30,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (aggregationIntervalSec <= 0 || aggregationIntervalSec > 59)
+        {
+            return BadRequest($"Aggregation interval must be in [1;59]s. Actual value={aggregationIntervalSec}");
+        }
+
+        from = AdjustTime(from, beginOfDay: true);
+        to = AdjustTime(to, beginOfDay: false);
+        var trades = _marketTradeRepository.Get(instrumentId, from.Value, to.Value);
+        var stream = await MarketTradesExporter.ToCsvStreamAggregated(trades, aggregationIntervalSec, cancellationToken);
+
+        return new FileStreamResult(stream, "text/csv")
+        {
+            FileDownloadName = GetFileName($"trades_aggregated_{aggregationIntervalSec}s", instrumentId, from.Value, to.Value)
+        };
+    }
+
     [HttpGet("open-interests/{instrumentId:guid}")]
     public async Task<IActionResult> ExportOpenInterests(
         Guid instrumentId,
-        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
         from = AdjustTime(from, beginOfDay: true);
         to = AdjustTime(to, beginOfDay: false);
-        var trades = _openInterestRepository.Get(instrumentId, from.Value, to.Value);
-        var stream = await CsvStreamExporter.ToStream(trades, cancellationToken);
+        var items = _openInterestRepository.Get(instrumentId, from.Value, to.Value);
+        var stream = await OPenInterestsExporter.ToCsvStream(items, cancellationToken);
 
         return new FileStreamResult(stream, "text/csv")
         {
             FileDownloadName = GetFileName("open_interests", instrumentId, from.Value, to.Value)
+        };
+    }
+
+    [HttpGet("open-interests/{instrumentId:guid}/aggregated")]
+    public async Task<IActionResult> ExportOpenInterestsAggregated(
+        Guid instrumentId,
+        int aggregationIntervalSec = 30,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (aggregationIntervalSec <= 0 || aggregationIntervalSec > 59)
+        {
+            return BadRequest($"Aggregation interval must be in [1;59]s. Actual value={aggregationIntervalSec}");
+        }
+
+        from = AdjustTime(from, beginOfDay: true);
+        to = AdjustTime(to, beginOfDay: false);
+        var items = _openInterestRepository.Get(instrumentId, from.Value, to.Value);
+        var stream = await OPenInterestsExporter.ToCsvStreamAggregated(items, aggregationIntervalSec, cancellationToken);
+
+        return new FileStreamResult(stream, "text/csv")
+        {
+            FileDownloadName = GetFileName($"open_interests_aggregated_{aggregationIntervalSec}s", instrumentId, from.Value, to.Value)
         };
     }
 

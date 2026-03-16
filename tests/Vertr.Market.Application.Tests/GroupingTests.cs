@@ -48,6 +48,36 @@ public class GroupingTests
     }
 
     [Test]
+    public void CanCalculateStdDev()
+    {
+        var items = EntityStub.GenerateItems(InstrumentId, BaseDate, 300);
+        var aggregated = items
+            .GroupBy(x => GroupBySec(x.TimeUtc, 5))
+            .Select(g =>
+            {
+                var avg = g.Average(s => s.Price);
+                var count = g.Count();
+                var sumOfSquares = g.Sum(v => (v.Price - avg) * (v.Price - avg));
+                var stdDev = count <= 0 ? 0 : Math.Sqrt((double)sumOfSquares / count);
+
+                return new
+                {
+                    TimeUtc = g.Key,
+                    InstrumentId = InstrumentId,
+                    ClosePrice = g.Last().Price,
+                    AvgPrice = avg,
+                    StdDev = stdDev,
+                    Count = count
+                };
+            });
+
+        foreach (var item in aggregated)
+        {
+            Console.WriteLine($"--> {item.TimeUtc:O} Close={item.ClosePrice} Avg={item.AvgPrice} StdDev={item.StdDev} Count={item.Count}");
+        }
+    }
+
+    [Test]
     public void CanUseIntDiv()
     {
         Assert.That(IntDiv(23, 10), Is.EqualTo(20));
