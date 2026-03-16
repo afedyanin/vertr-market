@@ -39,18 +39,13 @@ public class MarketOpenInterestPersistenceService : BackgroundService
             var items = _openInterestLocalStorage.RemoveBefore(key, timeBefore).ToArray();
             var saved = await _openInterestRepository.Save(timeBefore, items);
 
-            var itemsCount = items.Length;
-
-            if (saved == null || saved.Value == itemsCount)
+            if (saved == 0)
             {
-                continue;
+                _logger.LogError("Cannot save open interests for Key={Key} TimeStamp={TimeBefore:O} ItemsCount={Count}",
+                    key,
+                    timeBefore,
+                    items.Length);
             }
-
-            _logger.LogError("Cannot save open interests for Key={Key} TimeStamp={TimeBefore:O} ItemsCount={Count} SavedCount={Saved}",
-                key,
-                timeBefore,
-                itemsCount,
-                saved.Value);
         }
     }
 }
