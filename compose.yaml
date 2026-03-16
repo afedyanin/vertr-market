@@ -1,5 +1,5 @@
 services:
-  tinvest:
+  market:
     build:
       context: .
     ports:
