@@ -10,7 +10,6 @@ public static class OPenInterestsExporter
     private record class AggregatedOpenInterest
     {
         public DateTime TimeUtc { get; init; }
-        public Guid InstrumentId { get; init; }
         public decimal QtyLast { get; init; }
         public double QtyAvg { get; init; }
         public double QtyStdDev { get; init; }
@@ -60,7 +59,6 @@ public static class OPenInterestsExporter
                 return new AggregatedOpenInterest
                 {
                     TimeUtc = g.Key,
-                    InstrumentId = last.InstrumentId,
                     QtyLast = last.Quantity,
                     QtyAvg = avg,
                     QtyStdDev = stdDev,

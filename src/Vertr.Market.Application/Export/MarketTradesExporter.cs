@@ -10,7 +10,6 @@ public static class MarketTradesExporter
     private record class AggregatedMarketTrade
     {
         public DateTime TimeUtc { get; init; }
-        public Guid InstrumentId { get; init; }
         public decimal PriceClose { get; init; }
         public decimal PriceAvg { get; init; }
         public double PriceStdDev { get; init; }
@@ -73,7 +72,6 @@ public static class MarketTradesExporter
                 return new AggregatedMarketTrade
                 {
                     TimeUtc = g.Key,
-                    InstrumentId = last.InstrumentId,
                     PriceClose = last.Price,
                     PriceAvg = avg,
                     PriceStdDev = stdDev,

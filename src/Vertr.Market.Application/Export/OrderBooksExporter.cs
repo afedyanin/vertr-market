@@ -10,7 +10,6 @@ public static class OrderBooksExporter
     private record class AggregatedBookItem
     {
         public DateTime TimeUtc { get; init; }
-        public Guid InstrumentId { get; init; }
         public decimal MidPriceClose { get; init; }
         public decimal MidPriceAvg { get; init; }
         public double MidPriceStdDev { get; init; }
@@ -76,7 +75,6 @@ public static class OrderBooksExporter
                 return new AggregatedBookItem
                 {
                     TimeUtc = g.Key,
-                    InstrumentId = last.InstrumentId,
                     MidPriceClose = last.MidPrice,
                     MidPriceAvg = avg,
                     MidPriceStdDev = stdDev,
