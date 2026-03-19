@@ -76,7 +76,7 @@ public static class MarketTradesExporter
                     PriceAvg = avg,
                     PriceStdDev = stdDev,
                     Count = count,
-                    BuyVolume = sellVol,
+                    BuyVolume = buyVol,
                     SellVolume = sellVol,
                     BuyValue = buyVal,
                     SellValue = sellVal,
