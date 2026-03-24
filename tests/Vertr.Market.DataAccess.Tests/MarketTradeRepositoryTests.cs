@@ -44,7 +44,6 @@ public class MarketTradeRepositoryTests : DataAccessTestBase
                 var open = ordered.First();
                 var close = ordered.Last();
                 var percentChange = open.Price == 0 ? 0 : (close.Price - open.Price) / open.Price;
-
                 var value = g.Sum(s => s.Quantity * s.Price);
 
                 return new
