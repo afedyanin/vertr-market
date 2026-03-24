@@ -19,5 +19,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="7105149f-316d-4773-9260-aa220c04949c" />
+    <Project Path="tests/Vertr.Market.DataAccess.Tests/Vertr.Market.DataAccess.Tests.csproj" Id="234b5e6b-b2f2-4fd4-8d2d-f388ebc28f28" />
   </Folder>
 </Solution>
