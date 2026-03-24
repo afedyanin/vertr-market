@@ -1,4 +1,6 @@
-﻿namespace Vertr.Market.DataAccess.Tests;
+﻿using Vertr.Market.Application.Export;
+
+namespace Vertr.Market.DataAccess.Tests;
 
 [TestFixture(Category = "Database", Explicit = true)]
 public class MarketTradeRepositoryTests : DataAccessTestBase
@@ -10,6 +12,8 @@ public class MarketTradeRepositoryTests : DataAccessTestBase
     private static readonly DateTime From = new DateTime(2026, 03, 24, 0, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime To = new DateTime(2026, 03, 24, 23, 59, 59, DateTimeKind.Utc);
 
+    private const int AggregationIntervalSec = 30;
+
     [Test]
     public async Task CanGetTrades()
     {
@@ -17,6 +21,47 @@ public class MarketTradeRepositoryTests : DataAccessTestBase
         await foreach (var trade in MarketTradeRepository.Get(Sber, From, To))
         {
             Console.WriteLine(trade);
+            count++;
+
+            if (count > 10)
+            {
+                break;
+            }
+        }
+    }
+
+    [Test]
+    public async Task CanAggregateTrades()
+    {
+        var trades = MarketTradeRepository.Get(Sber, From, To);
+
+        var aggregated = await trades
+            .Take(500)
+            .GroupBy(x => CsvStreamExporter.GroupBySec(x.TimeUtc, AggregationIntervalSec))
+            .Select(g =>
+            {
+                var ordered = g.OrderBy(t => t.TimeUtc);
+                var open = ordered.First();
+                var close = ordered.Last();
+                var percentChange = open.Price == 0 ? 0 : (close.Price - open.Price) / open.Price;
+
+                var value = g.Sum(s => s.Quantity * s.Price);
+
+                return new
+                {
+                    TimeUtc = g.Key,
+                    Open = open.Price,
+                    Close = close.Price,
+                    PercentChange = percentChange,
+                    Value = value,
+                };
+            }).ToArrayAsync();
+
+        var count = 0;
+
+        foreach (var item in aggregated)
+        {
+            Console.WriteLine(item);
             count++;
 
             if (count > 10)
