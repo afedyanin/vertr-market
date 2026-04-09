@@ -7,6 +7,20 @@
     <File Path="Dockerfile" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/2310.20431v3.pdf" />
+    <File Path="docs/2507.22712v1.pdf" />
+    <File Path="docs/books.md" />
+    <File Path="docs/context.md" />
+    <File Path="docs/drl.md" />
+    <File Path="docs/drl_scaling.md" />
+    <File Path="docs/market_making.md" />
+    <File Path="docs/micro_price.md" />
+    <File Path="docs/models.md" />
+    <File Path="docs/ofi_vs_obi.md" />
+    <File Path="docs/trades_flow.md" />
+    <File Path="docs/ts_streams.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
     <Project Path="src/Vertr.Market.DataAccess/Vertr.Market.DataAccess.csproj" Id="ab20d1c9-1752-45b0-aa0a-20701923b1f3" />
