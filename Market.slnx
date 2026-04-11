@@ -20,6 +20,7 @@
     <File Path="docs/ofi_vs_obi.md" />
     <File Path="docs/trades_flow.md" />
     <File Path="docs/ts_streams.md" />
+    <File Path="ob_emu.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
