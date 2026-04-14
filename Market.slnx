@@ -25,6 +25,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
+    <Project Path="src/Vertr.Market.ByBit.ConsoleApp/Vertr.Market.ByBit.ConsoleApp.csproj" Id="132eb57f-d80e-434f-8da0-943ab444f197" />
     <Project Path="src/Vertr.Market.DataAccess/Vertr.Market.DataAccess.csproj" Id="ab20d1c9-1752-45b0-aa0a-20701923b1f3" />
     <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
   </Folder>
