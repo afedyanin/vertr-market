@@ -2,6 +2,14 @@
 
 ## 2026-04-24
 
+- [ ] Disruptor - примеры и тесты с многопоточностью
+- [ ] Роутинг маркет даты в Disruptor Dict
+- [ ] Простой хендлер для формирования свечей из трейдов
+- [ ] Сборка индикаторов для LOB
+- [ ] Постинг результатов в Redis (pub/sub)
+- [ ] Интеграция с Python по WS
+- [ ] 
+
 ### Disruptor
 
 - https://lmax-exchange.github.io/disruptor/user-guide/index.html
