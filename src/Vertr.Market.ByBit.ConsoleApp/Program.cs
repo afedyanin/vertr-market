@@ -5,7 +5,7 @@ namespace Vertr.Market.ByBit.ConsoleApp;
 
 internal sealed class Program
 {
-    public static async Task MainByBit(string[] args)
+    public static async Task Main(string[] args)
     {
         Console.WriteLine("Запуск Bybit WebSocket клиента...");
 
@@ -59,7 +59,7 @@ internal sealed class Program
         await Task.Delay(Timeout.Infinite);
     }
 
-    static async Task Main(string[] args)
+    static async Task Main_(string[] args)
     {
         Console.WriteLine("=== Binance WebSocket Client ===");
 
