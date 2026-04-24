@@ -1,13 +1,18 @@
 # vertr-market
 
+## 2026-04-24
+
+### Disruptor
+
+- https://lmax-exchange.github.io/disruptor/user-guide/index.html
+- https://github.com/disruptor-net/Disruptor-net
+
 
 ## 2026-04-11
 
 - https://github.com/ctj01/OpenHFT-Lab-High-Frequency-Trading-Laboratory
 - https://github.com/visualHFT/VisualHFT
 - https://github.com/quantconnect/lean
-- https://lmax-exchange.github.io/disruptor/user-guide/index.html
-
 
 [Feeds, Algos, Processing] -> Tensor -> [Research, Strategy, DRL models] 
 
