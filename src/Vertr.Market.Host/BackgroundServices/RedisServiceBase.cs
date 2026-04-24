@@ -7,19 +7,14 @@ public abstract class RedisServiceBase : BackgroundService
 {
     protected IServiceProvider ServiceProvider { get; private set; }
     protected IConnectionMultiplexer Redis { get; private set; }
-
     protected ILoggerFactory LoggerFactory { get; private set; }
-
     protected SubscriptionSettings Subscriptions { get; private set; }
-
     protected abstract RedisChannel RedisChannel { get; }
 
     protected abstract bool IsEnabled { get; }
 
     private readonly string _serviceName;
-
     private ISubscriber? _subscriber;
-
     private readonly ILogger _logger;
 
     protected RedisServiceBase(IServiceProvider serviceProvider, IConfiguration configuration)
@@ -48,11 +43,11 @@ public abstract class RedisServiceBase : BackgroundService
 
             await OnBeforeStart(stoppingToken);
             _subscriber = Redis.GetSubscriber();
-            await _subscriber.SubscribeAsync(RedisChannel, (channel, message) =>
+            await _subscriber.SubscribeAsync(RedisChannel, async (channel, message) =>
             {
                 try
                 {
-                    HandleSubscription(channel, message);
+                    await HandleSubscription(channel, message);
                 }
                 catch (Exception ex)
                 {
@@ -73,7 +68,7 @@ public abstract class RedisServiceBase : BackgroundService
         _logger.LogInformation($"{_serviceName} execution completed at {DateTime.UtcNow:O}");
     }
 
-    public abstract void HandleSubscription(RedisChannel channel, RedisValue message);
+    public abstract ValueTask HandleSubscription(RedisChannel channel, RedisValue message);
 
     protected virtual ValueTask OnBeforeStart(CancellationToken cancellationToken)
     {

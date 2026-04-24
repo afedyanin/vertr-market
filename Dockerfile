@@ -14,7 +14,6 @@ WORKDIR /src
 COPY Directory.Build.props ./ 
 COPY ["vertr-common/Vertr.Common.Contracts/Vertr.Common.Contracts.csproj", "Vertr.Common.Contracts/"]
 COPY ["src/Vertr.Market.Application/Vertr.Market.Application.csproj", "Vertr.Market.Application/"]
-COPY ["src/Vertr.Market.DataAccess/Vertr.Market.DataAccess.csproj", "Vertr.Market.DataAccess/"]
 COPY ["src/Vertr.Market.Host/Vertr.Market.Host.csproj", "Vertr.Market.Host/"]
 
 RUN dotnet restore "Vertr.Market.Host/Vertr.Market.Host.csproj"

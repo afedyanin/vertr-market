@@ -19,24 +19,25 @@ public class MarketTradeSubscriber : RedisServiceBase
         _logger = LoggerFactory.CreateLogger<MarketTradeSubscriber>();
     }
 
-    public override void HandleSubscription(RedisChannel channel, RedisValue message)
+    public override ValueTask HandleSubscription(RedisChannel channel, RedisValue message)
     {
         var marketTrade = MarketTrade.FromJson(message.ToString());
 
         if (marketTrade == null)
         {
             _logger.LogWarning("Cannot deserialize Market Trade from message={Message}", message);
-            return;
+            return ValueTask.CompletedTask;
         }
 
         if (marketTrade.InstrumentId == Guid.Empty)
         {
             _logger.LogError("Market Trade with empty InstrumentId received. Message={Message}", message);
-            return;
+            return ValueTask.CompletedTask;
         }
-
 
         var added = _tradesLocalStorage.Add(marketTrade.InstrumentId, marketTrade);
         _logger.LogDebug("Received Market Trade from cahnnel={Channel} Added={Added} Trade={OrderBook}", channel, added, marketTrade);
+
+        return ValueTask.CompletedTask;
     }
 }
