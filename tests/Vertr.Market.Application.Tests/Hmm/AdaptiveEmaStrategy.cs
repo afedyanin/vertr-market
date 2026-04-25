@@ -1,6 +1,5 @@
 ﻿namespace Vertr.Market.Application.Tests.Hmm;
 
-// https://github.com/accord-net/framework
 
 /*
 Основные стратегии адаптации:

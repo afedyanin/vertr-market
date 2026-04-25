@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Accord.Statistics" Version="3.8.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Disruptor" Version="6.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
