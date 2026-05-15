@@ -34,5 +34,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="7105149f-316d-4773-9260-aa220c04949c" />
+    <Project Path="tests/Vertr.Market.Kalman.Tests/Vertr.Market.Kalman.Tests.csproj" Id="0205332f-90ab-45a0-b3b7-b6beb1f7caa8" />
   </Folder>
 </Solution>
