@@ -1,10 +1,9 @@
 ﻿namespace Vertr.Market.Application.Models;
 
 
-public record struct Trade
+public class Trade
 {
-    public DateTime TimeUtc;
-    public decimal Price;
-    public long Qty;
+    public int InstrumentId { get; set; }
+    public decimal Price { get; set; }
+    public long Quantity { get; set; }
 }
-
