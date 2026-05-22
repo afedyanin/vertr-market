@@ -7,3 +7,5 @@ dotnet_diagnostic.CA1851.severity = none # Possible multiple enumerations of 'IE
 dotnet_diagnostic.CA1305.severity = none # The behavior of 'StringBuilder.AppendLine(ref StringBuilder.AppendInterpolatedStringHandler)' could vary based on the current user's locale settings. 
 dotnet_diagnostic.CA1873.severity = none # Evaluation of this argument may be expensive and unnecessary if logging is disabled
 dotnet_diagnostic.MA0176.severity = none # Optimize guid creation
+dotnet_diagnostic.CA1051.severity = none # Do not declare visible instance fields
+
