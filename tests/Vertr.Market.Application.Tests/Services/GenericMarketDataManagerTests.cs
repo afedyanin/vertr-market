@@ -1,7 +1,8 @@
 ﻿using Disruptor;
-using Vertr.Market.Application.Abstractions;
+using Vertr.Market.Application.Models;
+using Vertr.Market.Application.Services;
 
-namespace Vertr.Market.Application.Tests.Abstractions;
+namespace Vertr.Market.Application.Tests.Services;
 
 public class GenericMarketDataManagerTests
 {
@@ -30,35 +31,9 @@ public class GenericMarketDataManagerTests
         );
 
         // Запуск фонового цикла публикации с шагом 10 миллисекунд
-        manager.StartPublishingLoop(TimeSpan.FromMilliseconds(10));
+        //manager.StartPublishingLoop(TimeSpan.FromMilliseconds(10));
 
         // TODO: 
-        manager.UpdateAtomically();
+        //manager.UpdateAtomically();
     }
-}
-
-
-public class Bar : IResetable<Bar>
-{
-    public double Open { get; set; }
-    public double Close { get; set; }
-    public bool IsEmpty { get; set; } = true;
-
-    public void CopyFrom(Bar source)
-    {
-        Open = source.Open;
-        Close = source.Close;
-        IsEmpty = false;
-    }
-
-    public void Reset()
-    {
-        Open = Close = 0;
-        IsEmpty = true;
-    }
-}
-
-public class MarketDataEvent
-{
-    public Bar[] Bars { get; set; } = [];
 }

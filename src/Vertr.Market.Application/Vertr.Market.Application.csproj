@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="Vertr.Market.Application.Tests" />
+		<InternalsVisibleTo Include="Vertr.Market.Palyground.Tests" />
 	</ItemGroup>
 	
 </Project>

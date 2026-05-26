@@ -1,4 +1,4 @@
-﻿namespace Vertr.Market.Application.Tests.Candles;
+﻿namespace Vertr.Market.Palyground.Tests.Candles;
 
 [TestFixture(Category = "Unit")]
 public class CandlesBuilderTests

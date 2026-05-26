@@ -3,7 +3,7 @@ using Accord.Statistics.Models.Markov;
 using Accord.Statistics.Models.Markov.Learning;
 using Accord.Statistics.Models.Markov.Topology;
 
-namespace Vertr.Market.Application.Tests.Hmm;
+namespace Vertr.Market.Palyground.Tests.Hmm;
 
 /*
 

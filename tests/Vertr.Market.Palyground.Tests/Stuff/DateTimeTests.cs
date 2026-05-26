@@ -1,4 +1,4 @@
-﻿namespace Vertr.Market.Application.Tests;
+﻿namespace Vertr.Market.Palyground.Tests.Stuff;
 
 [TestFixture(Category = "Unit")]
 public class DateTimeTests

@@ -1,7 +1,7 @@
 ﻿using Disruptor;
 using Disruptor.Dsl;
 
-namespace Vertr.Market.Application.Tests.Disruptor;
+namespace Vertr.Market.Palyground.Tests.Disruptor;
 
 [TestFixture(Category = "Unit")]
 public class DisruptorTests

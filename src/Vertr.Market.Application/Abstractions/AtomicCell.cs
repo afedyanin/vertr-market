@@ -1,6 +1,4 @@
-﻿using Vertr.Market.Application.Abstractions;
-
-namespace Vertr.Market.Application.Models;
+﻿namespace Vertr.Market.Application.Abstractions;
 
 public class AtomicCell<T> where T : class, IResetable<T>, new()
 {

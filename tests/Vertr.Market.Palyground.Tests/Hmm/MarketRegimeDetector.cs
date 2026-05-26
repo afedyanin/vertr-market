@@ -3,7 +3,7 @@ using Accord.Statistics.Models.Markov.Learning;
 using Accord.Statistics.Models.Markov.Topology;
 using Accord.Statistics.Distributions.Multivariate;
 
-namespace Vertr.Market.Application.Tests.Hmm;
+namespace Vertr.Market.Palyground.Tests.Hmm;
 
 // https://github.com/accord-net/framework
 

@@ -1,6 +1,6 @@
 ﻿using Vertr.Common.Contracts.Abstractions;
 
-namespace Vertr.Market.Application.Tests.Stubs;
+namespace Vertr.Market.Palyground.Tests.Stubs;
 
 internal sealed record class EntityStub : ITimeKeyedItem
 {

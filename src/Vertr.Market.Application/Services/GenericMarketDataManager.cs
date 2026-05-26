@@ -1,7 +1,7 @@
 ﻿using Disruptor;
 using Vertr.Market.Application.Abstractions;
 
-namespace Vertr.Market.Application.Models;
+namespace Vertr.Market.Application.Services;
 
 public class GenericMarketDataManager<T, TEvent>
     where T : class, IResetable<T>, new()
@@ -10,6 +10,7 @@ public class GenericMarketDataManager<T, TEvent>
     private readonly RingBuffer<TEvent> _ringBuffer;
     private readonly int _arraySize;
     private readonly AtomicCell<T>[] _sharedStorage;
+
     private readonly Func<TEvent, T[]> _arrayExtractor;
 
     public GenericMarketDataManager(

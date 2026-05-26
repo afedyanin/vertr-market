@@ -1,4 +1,6 @@
-﻿namespace Vertr.Market.Application.Models;
+﻿using Vertr.Market.Application.Models;
+
+namespace Vertr.Market.Application.Services;
 
 public class TradeProcessor
 {

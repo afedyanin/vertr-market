@@ -1,7 +1,7 @@
 ﻿using Vertr.Market.Application.LocalStorage;
-using Vertr.Market.Application.Tests.Stubs;
+using Vertr.Market.Palyground.Tests.Stubs;
 
-namespace Vertr.Market.Application.Tests.LocalStorage;
+namespace Vertr.Market.Palyground.Tests.LocalStorage;
 
 [TestFixture(Category = "Unit")]
 public class TimeKeyedLocalStorageTests

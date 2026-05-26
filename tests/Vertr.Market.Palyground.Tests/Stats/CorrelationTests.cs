@@ -1,4 +1,4 @@
-﻿namespace Vertr.Market.Application.Tests;
+﻿namespace Vertr.Market.Palyground.Tests.Stats;
 
 [TestFixture(Category = "Unit")]
 public class CorrelationTests

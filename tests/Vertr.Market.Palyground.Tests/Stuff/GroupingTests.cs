@@ -1,7 +1,6 @@
-﻿
-using Vertr.Market.Application.Tests.Stubs;
+﻿using Vertr.Market.Palyground.Tests.Stubs;
 
-namespace Vertr.Market.Application.Tests;
+namespace Vertr.Market.Palyground.Tests.Stuff;
 
 [TestFixture(Category = "Unit")]
 public class GroupingTests
