@@ -7,10 +7,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\vertr-common\Vertr.Common.Contracts\Vertr.Common.Contracts.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<InternalsVisibleTo Include="Vertr.Market.Application.Tests" />
 		<InternalsVisibleTo Include="Vertr.Market.Palyground.Tests" />
 	</ItemGroup>
