@@ -1,39 +1,18 @@
 <Solution>
   <Folder Name="/common/">
     <File Path=".editorconfig" />
-    <File Path=".gitlab-ci.yml" />
-    <File Path="compose.yaml" />
+    <File Path="AGENTS.md" />
     <File Path="Directory.Build.props" />
-    <File Path="Dockerfile" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/2310.20431v3.pdf" />
-    <File Path="docs/2507.22712v1.pdf" />
-    <File Path="docs/books.md" />
-    <File Path="docs/context.md" />
-    <File Path="docs/drl.md" />
-    <File Path="docs/drl_basic.md" />
-    <File Path="docs/drl_scaling.md" />
-    <File Path="docs/market_making.md" />
-    <File Path="docs/micro_price.md" />
-    <File Path="docs/models.md" />
-    <File Path="docs/ob_emu.md" />
-    <File Path="docs/ofi_vs_obi.md" />
-    <File Path="docs/trades_flow.md" />
-    <File Path="docs/ts_streams.md" />
+    <File Path="docs/task001.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
     <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
   </Folder>
-  <Folder Name="/src/vertr-common/">
-    <Project Path="vertr-common/Vertr.Common.Clients.Moex/Vertr.Common.Clients.Moex.csproj" />
-    <Project Path="vertr-common/Vertr.Common.Clients.Tinvest/Vertr.Common.Clients.Tinvest.csproj" />
-    <Project Path="vertr-common/Vertr.Common.Contracts/Vertr.Common.Contracts.csproj" />
-  </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="7105149f-316d-4773-9260-aa220c04949c" />
-    <Project Path="tests/Vertr.Market.Palyground.Tests/Vertr.Market.Palyground.Tests.csproj" Id="fd37eb30-3e03-445e-9309-d8c2fb862a21" />
+    <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="ff7b8f24-9d57-4d65-88fa-c6a6cf8b5392" />
   </Folder>
 </Solution>
