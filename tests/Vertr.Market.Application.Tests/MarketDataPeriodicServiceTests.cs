@@ -23,7 +23,7 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Service_CreatesNonNullInstance()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
         var logger = NullLogger<MarketDataPeriodicService>.Instance;
         var options = Options.Create(new MarketDataPeriodicServiceOptions());
 
@@ -35,7 +35,7 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Service_IntervalProperty_ReturnsConfiguredValue()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
         var customInterval = TimeSpan.FromMilliseconds(50);
         var logger = NullLogger<MarketDataPeriodicService>.Instance;
         var options = Options.Create(new MarketDataPeriodicServiceOptions { Interval = customInterval });
@@ -48,7 +48,7 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public async Task Service_SnapshotTakenEvent_FiresDuringExecuteAsync()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
         var logger = NullLogger<MarketDataPeriodicService>.Instance;
         var interval = TimeSpan.FromMilliseconds(50);
         var options = Options.Create(new MarketDataPeriodicServiceOptions { Interval = interval });
@@ -87,21 +87,23 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Manager_TakeSnapshot_RaisesConsistentData()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
 
         manager.WriteSignal(0, 1.0);
-        var snap1 = manager.TakeSnapshot();
+        var snap1 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap1);
         Assert.Equal(1.0, snap1[0]);
 
         manager.WriteSignal(0, 2.0);
-        var snap2 = manager.TakeSnapshot();
+        var snap2 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap2);
         Assert.Equal(2.0, snap2[0]);
     }
 
     [Fact]
     public void Manager_SnapshotDataConsistentAcrossIntervals()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
 
         var snapshotDataList = new List<double[]>();
         var lockObj = new object();
@@ -113,7 +115,8 @@ public class MarketDataPeriodicServiceTests
                 manager.WriteSignal(i, interval * 100.0 + i);
             }
 
-            var snap = manager.TakeSnapshot();
+            var snap = new MarketDataSnapshot(64);
+            manager.TakeSnapshot(snap);
 
             lock (lockObj)
             {
@@ -134,15 +137,17 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Manager_MultipleSnapshots_ReturnDifferentData()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
 
         manager.WriteSignal(0, 1.0);
-        var snap1 = manager.TakeSnapshot();
+        var snap1 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap1);
         var data1 = new double[snap1.TotalCapacity];
         snap1.CopyTo(data1);
 
         manager.WriteSignal(0, 2.0);
-        var snap2 = manager.TakeSnapshot();
+        var snap2 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap2);
         var data2 = new double[snap2.TotalCapacity];
         snap2.CopyTo(data2);
 
@@ -154,15 +159,17 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Manager_SnapshotDataNotAffectedBySubsequentWrites()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
 
         manager.WriteSignal(0, 100.0);
-        var snap1 = manager.TakeSnapshot();
+        var snap1 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap1);
         var data1 = new double[snap1.TotalCapacity];
         snap1.CopyTo(data1);
 
         manager.WriteSignal(0, 200.0);
-        manager.TakeSnapshot();
+        var snap2 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap2);
 
         Assert.Equal(100.0, data1[0]);
     }
@@ -170,16 +177,18 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Manager_SnapshotDataNotMutatedBySubsequentWrites()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
 
         var capturedData = new double[64];
 
         manager.WriteSignal(0, 42.0);
-        var snap = manager.TakeSnapshot();
+        var snap = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap);
         snap.CopyTo(capturedData);
 
         manager.WriteSignal(0, 999.0);
-        manager.TakeSnapshot();
+        var snap2 = new MarketDataSnapshot(64);
+        manager.TakeSnapshot(snap2);
 
         Assert.Equal(42.0, capturedData[0]);
     }
@@ -187,7 +196,7 @@ public class MarketDataPeriodicServiceTests
     [Fact]
     public void Dispose_ServiceDisposesGracefully()
     {
-        using var manager = new SignalManager(64);
+        var manager = new SignalManager(64);
         var logger = NullLogger<MarketDataPeriodicService>.Instance;
         var options = Options.Create(new MarketDataPeriodicServiceOptions());
 

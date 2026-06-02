@@ -58,7 +58,8 @@ public sealed class MarketDataPeriodicService : BackgroundService
         {
             try
             {
-                var snapshot = _signalManager.TakeSnapshot();
+                var snapshot = new MarketDataSnapshot(_signalManager.Capacity);
+                _signalManager.TakeSnapshot(snapshot);
 
                 _logger.LogDebug(
                     "MarketDataPeriodicService captured snapshot with capacity {Capacity}",

@@ -1,20 +1,14 @@
 namespace Vertr.Market.Application;
 
 /// <summary>
-/// Lock-free signal array manager using two buffers for snapshot isolation.
-///
-/// Design:
-/// - Uses two arrays: one for active signal values, one for the current snapshot.
-/// - Sequence counter coordinates between writers and snapshot takers without locks.
-/// - Duplicate indices within the same interval are resolved by keeping the last write.
+/// Lock-free signal array manager using a single buffer for signal storage.
 ///
 /// Lock-free snapshot mechanism:
 /// 1. Snapshotter atomically swaps sequence from 0 to 1. If old value was 0,
 ///    no writers are currently writing.
-/// 2. Snapshotter copies the active buffer into the snapshot buffer.
-/// 3. Snapshotter swaps the two buffers so subsequent writes go to the new active.
-/// 4. Snapshotter clears the old active buffer (now the snapshot buffer) to remove stale data.
-/// 5. Exiting snapshot mode (setting sequence = 0) resumes writes.
+/// 2. Snapshotter copies the active buffer into the caller-provided snapshot.
+/// 3. Snapshotter clears the active buffer to remove stale data.
+/// 4. Exiting snapshot mode (setting sequence = 0) resumes writes.
 ///
 /// Writers check sequence at the start of WriteSignal: if it is 1, they spin-wait.
 /// Since the snapshotter atomically swaps sequence from 0 to 1, and no writer can
@@ -23,20 +17,16 @@ namespace Vertr.Market.Application;
 ///
 /// This ensures snapshot consistency: all values in a snapshot come from the same
 /// time interval because the sequence counter acts as a barrier between intervals.
-/// The dedicated snapshot buffer ensures data independence from subsequent writes.
 /// </summary>
-public sealed class SignalManager : IDisposable
+public sealed class SignalManager
 {
     private readonly int _capacity;
-    private double[] _activeBuffer;
-    private double[] _snapshotBuffer;
+    private readonly double[] _activeBuffer;
 
     // Separate from _activeBuffer to avoid cache-line bouncing between writers and snapshotter.
     // Writers read this to check if a snapshot is in progress; snapshotter writes this to enter/exit snapshot mode.
     // Accessed via Volatile.Read/Write and Interlocked for memory ordering.
     private int _sequence;
-
-    private bool _disposed;
 
     /// <summary>
     /// Creates a new SignalManager with the specified signal array capacity.
@@ -52,7 +42,6 @@ public sealed class SignalManager : IDisposable
 
         _capacity = capacity;
         _activeBuffer = new double[capacity];
-        _snapshotBuffer = new double[capacity];
         _sequence = 0;
     }
 
@@ -71,8 +60,6 @@ public sealed class SignalManager : IDisposable
     /// <exception cref="ArgumentOutOfRangeException">Thrown when index is out of range.</exception>
     public void WriteSignal(int index, double value)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
         if (index < 0 || index >= _capacity)
         {
             throw new ArgumentOutOfRangeException(nameof(index), "Index must be within [0, Capacity).");
@@ -107,58 +94,30 @@ public sealed class SignalManager : IDisposable
     ///
     /// The snapshot captures all signals at a single point in time by:
     /// 1. Atomically swapping sequence from 0 to 1. If old value was 0, no writers are active.
-    /// 2. Copying the active buffer into the snapshot buffer.
-    /// 3. Swapping the active and snapshot buffers so subsequent writes go to a fresh buffer.
-    /// 4. Clearing the old active buffer to remove stale data.
-    /// 5. Exiting snapshot mode (setting sequence = 0), which resumes writes.
+    /// 2. Copying the active buffer into the caller-provided snapshot (writers blocked).
+    /// 3. Clearing the active buffer to remove stale data before writers resume.
+    /// 4. Exiting snapshot mode (setting sequence = 0), which resumes writes.
     ///
     /// This ensures that all values in the snapshot originate from the same
     /// time interval — no partial data from adjacent intervals can leak in.
-    /// The dedicated snapshot buffer ensures data independence from subsequent writes.
     /// </summary>
-    /// <returns>A read-only snapshot view of the signal values at the capture point.</returns>
+    /// <param name="snapshot">The snapshot instance to populate with captured data.</param>
     /// <exception cref="InvalidOperationException">Thrown when a nested snapshot is attempted.</exception>
-    public MarketDataSnapshot TakeSnapshot()
+    public void TakeSnapshot(MarketDataSnapshot snapshot)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
         var previous = Interlocked.Exchange(ref _sequence, 1);
         if (previous != 0)
         {
             throw new InvalidOperationException("Nested snapshots are not supported.");
         }
 
-        // Copy active buffer into snapshot buffer.
-        _activeBuffer.AsSpan(0, _capacity).CopyTo(_snapshotBuffer);
+        // Copy active buffer directly into the caller-provided snapshot while writers are blocked.
+        snapshot.CopyFrom(_activeBuffer.AsSpan(0, _capacity));
 
-        // Swap buffers: the snapshot buffer (with captured data) becomes the new active,
-        // and the active buffer (with stale data) becomes the new snapshot buffer to be cleared.
-        var capturedBuffer = _snapshotBuffer;
-        _snapshotBuffer = _activeBuffer;
-        _activeBuffer = capturedBuffer;
-
-        // Clear the old snapshot buffer (now _activeBuffer) to remove stale data before writers resume.
+        // Clear the active buffer to remove stale data before writers resume.
         Array.Clear(_activeBuffer, 0, _capacity);
 
         // Memory barrier ensures all buffer writes are visible before releasing the barrier.
         Volatile.Write(ref _sequence, 0);
-
-        return new MarketDataSnapshot(_snapshotBuffer.AsSpan(0, _capacity));
-    }
-
-    /// <summary>
-    /// Disposes the SignalManager, freeing all buffers.
-    /// </summary>
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-
-        _activeBuffer = null!;
-        _snapshotBuffer = null!;
     }
 }

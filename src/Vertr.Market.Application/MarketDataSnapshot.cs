@@ -2,19 +2,28 @@ namespace Vertr.Market.Application;
 
 /// <summary>
 /// Provides read-only access to a captured snapshot of market data.
-/// This is a ref struct to ensure it remains on the stack and cannot be captured by closures or heap allocations.
+/// Owns its own backing array so it is independent of the SignalManager's buffers.
 /// </summary>
-public ref struct MarketDataSnapshot
+public sealed class MarketDataSnapshot
 {
-    private readonly ReadOnlySpan<double> _data;
+    private readonly double[] _data;
 
     /// <summary>
-    /// Creates a new MarketDataSnapshot that wraps the given data span.
+    /// Creates a new MarketDataSnapshot with the specified capacity.
     /// </summary>
-    /// <param name="data">The span containing the snapshot data.</param>
-    public MarketDataSnapshot(ReadOnlySpan<double> data)
+    /// <param name="capacity">The number of signal slots.</param>
+    public MarketDataSnapshot(int capacity)
     {
-        _data = data;
+        _data = new double[capacity];
+    }
+
+    /// <summary>
+    /// Copies the source span data into this snapshot's internal array.
+    /// </summary>
+    /// <param name="source">The source span to copy from.</param>
+    public void CopyFrom(ReadOnlySpan<double> source)
+    {
+        source.CopyTo(_data);
     }
 
     /// <summary>
