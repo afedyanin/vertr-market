@@ -1,54 +1,31 @@
-using Microsoft.Extensions.Hosting;
+using Disruptor;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Vertr.Market.Application;
 
-/// <summary>
-/// Background service that periodically captures snapshots of market signal data
-/// and raises the SnapshotTaken event with the consistent snapshot data.
-///
-/// The service uses PeriodicTimer for precise interval-based scheduling and
-/// delegates snapshot consistency to SignalManager's ring-buffer double-buffering.
-///
-/// This service is designed to run as a hosted background service in ASP.NET Core
-/// or any IHostedService implementation.
-/// </summary>
-public sealed class MarketDataPeriodicService : BackgroundService
+public sealed class MarketDataPeriodicService
 {
     private readonly SignalManager _signalManager;
     private readonly ILogger<MarketDataPeriodicService> _logger;
     private readonly MarketDataPeriodicServiceOptions _options;
+    private readonly RingBuffer<MarketDataSnapshot> _ringBuffer;
 
-    /// <summary>
-    /// Raised on each successful snapshot capture.
-    /// The event handler receives the snapshot data.
-    /// </summary>
-    public Action<MarketDataSnapshot>? SnapshotTaken;
-
-    /// <summary>
-    /// Creates a new MarketDataPeriodicService.
-    /// </summary>
-    /// <param name="signalManager">The shared signal manager for snapshotting.</param>
-    /// <param name="logger">Logger for diagnostic output.</param>
-    /// <param name="options">Configuration options for snapshot interval.</param>
     public MarketDataPeriodicService(
         SignalManager signalManager,
+        RingBuffer<MarketDataSnapshot> ringBuffer,
         ILogger<MarketDataPeriodicService> logger,
         IOptions<MarketDataPeriodicServiceOptions> options)
     {
         _signalManager = signalManager;
         _logger = logger;
         _options = options.Value;
+        _ringBuffer = ringBuffer;
     }
 
-    /// <summary>
-    /// Gets the configured snapshot interval.
-    /// </summary>
     public TimeSpan Interval => _options.Interval;
 
-    /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("MarketDataPeriodicService starting with interval {Interval}", _options.Interval);
 
@@ -58,14 +35,16 @@ public sealed class MarketDataPeriodicService : BackgroundService
         {
             try
             {
-                var snapshot = new MarketDataSnapshot(_signalManager.Capacity);
-                _signalManager.TakeSnapshot(snapshot);
+                var sequence = _ringBuffer.Next();
 
-                _logger.LogDebug(
-                    "MarketDataPeriodicService captured snapshot with capacity {Capacity}",
-                    snapshot.TotalCapacity);
-
-                SnapshotTaken?.Invoke(snapshot);
+                try
+                {
+                    _signalManager.TakeSnapshot(_ringBuffer[sequence]);
+                }
+                finally
+                {
+                    _ringBuffer.Publish(sequence);
+                }
             }
             catch (Exception ex)
             {
@@ -74,11 +53,5 @@ public sealed class MarketDataPeriodicService : BackgroundService
         }
 
         _logger.LogInformation("MarketDataPeriodicService stopped");
-    }
-
-    /// <inheritdoc />
-    public override void Dispose()
-    {
-        base.Dispose();
     }
 }

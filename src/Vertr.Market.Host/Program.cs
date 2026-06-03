@@ -1,5 +1,6 @@
 using Serilog;
 using Vertr.Market.Application;
+using Vertr.Market.Host.BackgroundServices;
 
 namespace Vertr.Market.Host;
 
@@ -22,6 +23,9 @@ public static class Program
             .Enrich.WithThreadId());
 
         // add Background services
+
+        builder.Services.AddHostedService<MarketDataSnapshotService>();
+        builder.Services.AddHostedService<SynteticDataGenerationService>();
 
         builder.Services.AddApplication();
 
