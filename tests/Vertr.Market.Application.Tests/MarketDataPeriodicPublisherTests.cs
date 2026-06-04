@@ -25,14 +25,7 @@ public class MarketDataPeriodicPublisherTests
     {
         var publisher = _serviceProvider.GetRequiredService<MarketDataPeriodicPublisher>();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-
-        try
-        {
-            await publisher.ExecuteAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
+        await publisher.ExecuteAsync(cts.Token);
 
         Assert.Pass();
     }

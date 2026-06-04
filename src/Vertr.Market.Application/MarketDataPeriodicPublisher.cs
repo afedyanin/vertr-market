@@ -32,25 +32,31 @@ public sealed class MarketDataPeriodicPublisher
 
         using var timer = new PeriodicTimer(_options.PublishingInterval);
 
-        while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
+        try
         {
-            try
+            while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
             {
-                var sequence = _ringBuffer.Next();
-
                 try
                 {
-                    _signalManager.TakeSnapshot(_ringBuffer[sequence]);
+                    var sequence = _ringBuffer.Next();
+
+                    try
+                    {
+                        _signalManager.TakeSnapshot(_ringBuffer[sequence]);
+                    }
+                    finally
+                    {
+                        _ringBuffer.Publish(sequence);
+                    }
                 }
-                finally
+                catch (Exception ex)
                 {
-                    _ringBuffer.Publish(sequence);
+                    _logger.LogError(ex, "MarketDataPeriodicService failed to capture snapshot");
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "MarketDataPeriodicService failed to capture snapshot");
-            }
+        }
+        catch (OperationCanceledException)
+        {
         }
 
         _logger.LogInformation("MarketDataPeriodicService stopped");
