@@ -10,7 +10,6 @@ public static class Program
         var builder = WebApplication.CreateBuilder(args);
         var configuration = builder.Configuration;
 
-        // add Logging
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)

@@ -38,7 +38,7 @@ public sealed class MarketDataSnapshot
         {
             if (_data[i] != 0)
             {
-                sb.Append($"{i}:{_data[i]:F4},");
+                sb.Append($"{i}:{_data[i]:F4}, ");
             }
         }
 
