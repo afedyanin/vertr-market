@@ -1,3 +1,4 @@
+using System.Buffers;
 using Microsoft.Extensions.Options;
 
 namespace Vertr.Market.Application;
@@ -6,11 +7,13 @@ public sealed class MarketDataSnapshotManager
 {
     private readonly int _capacity;
     private readonly double[] _activeBuffer;
+    private readonly bool _resetBuffer;
     private int _sequence; // 0 = writing allowed, 1 = snapshot in progress
 
     public MarketDataSnapshotManager(IOptions<MarketDataOptions> options)
     {
         _capacity = options.Value.SnapshotCapacity;
+        _resetBuffer = options.Value.ResetBufferAfterPublish;
         _activeBuffer = new double[_capacity];
         _sequence = 0;
     }
@@ -41,11 +44,73 @@ public sealed class MarketDataSnapshotManager
         try
         {
             snapshot.CopyFrom(_activeBuffer.AsSpan(0, _capacity));
-            _activeBuffer.AsSpan().Clear();
+            if (_resetBuffer)
+            {
+                _activeBuffer.AsSpan().Clear();
+            }
         }
         finally
         {
             Interlocked.Exchange(ref _sequence, 0);
         }
+    }
+}
+
+public sealed class MarketDataSnapshotManager<T> : IDisposable where T : class
+{
+    private readonly int _capacity;
+    private readonly T[] _activeBuffer;
+    private readonly bool _resetBuffer;
+    private int _sequence; // 0 = запись разрешена, 1 = снимок выполняется
+
+    public MarketDataSnapshotManager(IOptions<MarketDataOptions> options)
+    {
+        _capacity = options.Value.SnapshotCapacity;
+        _resetBuffer = options.Value.ResetBufferAfterPublish;
+        _activeBuffer = ArrayPool<T>.Shared.Rent(_capacity);
+    }
+
+    public int Capacity => _capacity;
+
+    /// <summary>
+    /// Запись данных в пул. 
+    /// ⚠️ Контракт: каждый вызывающий поток работает со своим поддиапазоном индексов.
+    /// Пересечений по индексам между потоками нет. Синхронизация на уровне индексов не требуется.
+    /// </summary>
+    public void WriteData(int index, T value)
+    {
+        // Ждём окончания предыдущего снимка
+        SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0);
+
+        // Безопасно: гарантировано отсутствие race condition на index
+        _activeBuffer[index] = value;
+    }
+
+    public void TakeSnapshot(MarketDataSnapshot<T> snapshot)
+    {
+        var previous = Interlocked.Exchange(ref _sequence, 1);
+        if (previous != 0)
+        {
+            throw new InvalidOperationException("Nested snapshots are not supported.");
+        }
+
+        try
+        {
+            snapshot.CopyFrom(_activeBuffer.AsSpan(0, _capacity));
+            if (_resetBuffer)
+            {
+                // Здесь затираем все значения, а надо бы только not null
+                _activeBuffer.AsSpan().Clear();
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _sequence, 0);
+        }
+    }
+
+    public void Dispose()
+    {
+        ArrayPool<T>.Shared.Return(_activeBuffer);
     }
 }

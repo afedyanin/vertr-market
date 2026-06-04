@@ -1,4 +1,4 @@
-using System.Text;
+using System.Buffers;
 
 namespace Vertr.Market.Application;
 
@@ -29,20 +29,35 @@ public sealed class MarketDataSnapshot
             return _data[index];
         }
     }
+}
 
-    public override string ToString()
+public sealed class MarketDataSnapshot<T> : IDisposable
+{
+    private readonly T[] _data;
+    public int TotalCapacity => _data.Length;
+
+    public MarketDataSnapshot(int capacity)
     {
-        var sb = new StringBuilder('[');
-
-        for (var i = 0; i < TotalCapacity; i++)
-        {
-            if (_data[i] != 0)
-            {
-                sb.Append($"{i}:{_data[i]:F4}, ");
-            }
-        }
-
-        sb.Append(']');
-        return sb.ToString();
+        _data = ArrayPool<T>.Shared.Rent(capacity);
     }
+
+    public void CopyFrom(ReadOnlySpan<T> source)
+    {
+        source.CopyTo(_data);
+    }
+
+    public T this[int index]
+    {
+        get
+        {
+            if (index < 0 || index >= TotalCapacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            return _data[index];
+        }
+    }
+
+    public void Dispose() => ArrayPool<T>.Shared.Return(_data);
 }
