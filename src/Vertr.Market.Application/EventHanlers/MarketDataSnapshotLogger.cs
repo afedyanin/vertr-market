@@ -14,6 +14,6 @@ internal class MarketDataSnapshotLogger : IEventHandler<MarketDataSnapshot>
 
     public void OnEvent(MarketDataSnapshot data, long sequence, bool endOfBatch)
     {
-        _logger.LogInformation("#{Sequence} MarketDataSnapshot received.", sequence);
+        _logger.LogInformation("#{Sequence} {Snapshot}", sequence, data);
     }
 }

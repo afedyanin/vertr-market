@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Vertr.Market.Application;
 
 public sealed class MarketDataSnapshot
@@ -26,5 +28,21 @@ public sealed class MarketDataSnapshot
 
             return _data[index];
         }
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder('[');
+
+        for (var i = 0; i < TotalCapacity; i++)
+        {
+            if (_data[i] != 0)
+            {
+                sb.Append($"{i}:{_data[i]:F4},");
+            }
+        }
+
+        sb.Append(']');
+        return sb.ToString();
     }
 }
