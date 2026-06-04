@@ -1,4 +1,3 @@
-using System.Buffers;
 using Microsoft.Extensions.Options;
 
 namespace Vertr.Market.Application;
@@ -27,7 +26,11 @@ public sealed class MarketDataSnapshotManager
             throw new ArgumentOutOfRangeException(nameof(index), "Index must be within [0, Capacity).");
         }
 
-        SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0);
+        // Ждём окончания предыдущего снимка с таймаутом 30 секунд
+        if (!SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0, TimeSpan.FromSeconds(30)))
+        {
+            throw new TimeoutException("Snapshot timeout - no data will be written for this interval.");
+        }
 
         _activeBuffer[index] = value;
     }
@@ -56,7 +59,7 @@ public sealed class MarketDataSnapshotManager
     }
 }
 
-public sealed class MarketDataSnapshotManager<T> : IDisposable where T : class
+public sealed class MarketDataSnapshotManager<T> where T : class
 {
     private readonly int _capacity;
     private readonly T[] _activeBuffer;
@@ -67,7 +70,8 @@ public sealed class MarketDataSnapshotManager<T> : IDisposable where T : class
     {
         _capacity = options.Value.SnapshotCapacity;
         _resetBuffer = options.Value.ResetBufferAfterPublish;
-        _activeBuffer = ArrayPool<T>.Shared.Rent(_capacity);
+        // TODO: Заменить на словарь?
+        _activeBuffer = new T[_capacity]; // It is ok for singletone
     }
 
     public int Capacity => _capacity;
@@ -79,8 +83,16 @@ public sealed class MarketDataSnapshotManager<T> : IDisposable where T : class
     /// </summary>
     public void WriteData(int index, T value)
     {
-        // Ждём окончания предыдущего снимка
-        SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0);
+        if (index < 0 || index >= _capacity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), "Index must be within [0, Capacity).");
+        }
+
+        // Ждём окончания предыдущего снимка с таймаутом 30 секунд
+        if (!SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0, TimeSpan.FromSeconds(30)))
+        {
+            throw new TimeoutException("Snapshot timeout - no data will be written for this interval.");
+        }
 
         // Безопасно: гарантировано отсутствие race condition на index
         _activeBuffer[index] = value;
@@ -97,20 +109,15 @@ public sealed class MarketDataSnapshotManager<T> : IDisposable where T : class
         try
         {
             snapshot.CopyFrom(_activeBuffer.AsSpan(0, _capacity));
+
             if (_resetBuffer)
             {
-                // Здесь затираем все значения, а надо бы только not null
-                _activeBuffer.AsSpan().Clear();
+                _activeBuffer.AsSpan(0, _capacity).Clear();
             }
         }
         finally
         {
             Interlocked.Exchange(ref _sequence, 0);
         }
-    }
-
-    public void Dispose()
-    {
-        ArrayPool<T>.Shared.Return(_activeBuffer);
     }
 }

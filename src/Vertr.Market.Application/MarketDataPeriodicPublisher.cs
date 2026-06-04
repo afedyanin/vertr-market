@@ -34,7 +34,7 @@ public sealed class MarketDataPeriodicPublisher
 
         try
         {
-            while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
                 try
                 {
@@ -57,6 +57,7 @@ public sealed class MarketDataPeriodicPublisher
         }
         catch (OperationCanceledException)
         {
+            _logger.LogDebug("MarketDataPeriodicService canceled");
         }
 
         _logger.LogInformation("MarketDataPeriodicService stopped");
@@ -92,7 +93,7 @@ public sealed class MarketDataPeriodicPublisher<T> where T : class
 
         try
         {
-            while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
                 try
                 {
@@ -115,6 +116,7 @@ public sealed class MarketDataPeriodicPublisher<T> where T : class
         }
         catch (OperationCanceledException)
         {
+            _logger.LogDebug("MarketDataPeriodicService of {Type} canceled", typeof(T).Name);
         }
 
         _logger.LogInformation("MarketDataPeriodicService of {Type} stopped", typeof(T).Name);

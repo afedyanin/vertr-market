@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Vertr.Market.Application.Models;
 
-
 namespace Vertr.Market.Application.EventHandlers;
 
 internal sealed class MarketTradeSnapshotLogger : IEventHandler<MarketDataSnapshot<MarketTrade>>
@@ -16,6 +15,6 @@ internal sealed class MarketTradeSnapshotLogger : IEventHandler<MarketDataSnapsh
 
     public void OnEvent(MarketDataSnapshot<MarketTrade> data, long sequence, bool endOfBatch)
     {
-        _logger.LogInformation("#{Sequence}", sequence);
+        _logger.LogInformation("#{Sequence} {@Snapshot}", sequence, data);
     }
 }

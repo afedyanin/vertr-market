@@ -8,7 +8,7 @@ namespace Vertr.Market.Application;
 internal class MarketDataRingBufferProvider : IRingBufferProvider<MarketDataSnapshot>, IDisposable
 {
     private readonly Disruptor<MarketDataSnapshot> _disruptor;
-    private bool _disposed;
+    private volatile bool _disposed;
 
     public RingBuffer<MarketDataSnapshot> RingBuffer { get; init; }
 
@@ -43,7 +43,7 @@ internal class MarketDataRingBufferProvider : IRingBufferProvider<MarketDataSnap
 internal class MarketDataRingBufferProvider<T> : IRingBufferProvider<MarketDataSnapshot<T>>, IDisposable where T : class
 {
     private readonly Disruptor<MarketDataSnapshot<T>> _disruptor;
-    private bool _disposed;
+    private volatile bool _disposed;
 
     public RingBuffer<MarketDataSnapshot<T>> RingBuffer { get; init; }
 

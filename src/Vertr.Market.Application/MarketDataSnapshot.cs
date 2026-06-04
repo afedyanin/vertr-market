@@ -52,7 +52,7 @@ public sealed class MarketDataSnapshot<T> : IDisposable
         {
             if (index < 0 || index >= TotalCapacity)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be within [0, TotalCapacity)");
             }
 
             return _data[index];
