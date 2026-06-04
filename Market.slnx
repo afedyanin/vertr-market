@@ -13,6 +13,6 @@
     <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="ff7b8f24-9d57-4d65-88fa-c6a6cf8b5392" />
+    <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="f6500e7a-c76e-4e9b-b7ea-8fa9f35ce58d" />
   </Folder>
 </Solution>

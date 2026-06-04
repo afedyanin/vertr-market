@@ -1,26 +1,23 @@
+using Microsoft.Extensions.Options;
+
 namespace Vertr.Market.Application;
 
-public sealed class SignalManager
+public sealed class MarketDataSnapshotManager
 {
     private readonly int _capacity;
     private readonly double[] _activeBuffer;
     private int _sequence; // 0 = writing allowed, 1 = snapshot in progress
 
-    public SignalManager(int capacity)
+    public MarketDataSnapshotManager(IOptions<MarketDataOptions> options)
     {
-        if (capacity <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be positive.");
-        }
-
-        _capacity = capacity;
-        _activeBuffer = new double[capacity];
+        _capacity = options.Value.SnapshotCapacity;
+        _activeBuffer = new double[_capacity];
         _sequence = 0;
     }
 
     public int Capacity => _capacity;
 
-    public void WriteSignal(int index, double value)
+    public void WriteData(int index, double value)
     {
         if (index < 0 || index >= _capacity)
         {

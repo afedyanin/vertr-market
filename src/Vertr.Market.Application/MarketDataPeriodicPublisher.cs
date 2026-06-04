@@ -1,35 +1,36 @@
 using Disruptor;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Vertr.Market.Application.Abstractions;
 
 namespace Vertr.Market.Application;
 
-public sealed class MarketDataPeriodicService
+public sealed class MarketDataPeriodicPublisher
 {
-    private readonly SignalManager _signalManager;
-    private readonly ILogger<MarketDataPeriodicService> _logger;
-    private readonly MarketDataPeriodicServiceOptions _options;
+    private readonly MarketDataSnapshotManager _signalManager;
+    private readonly ILogger<MarketDataPeriodicPublisher> _logger;
+    private readonly MarketDataOptions _options;
     private readonly RingBuffer<MarketDataSnapshot> _ringBuffer;
 
-    public MarketDataPeriodicService(
-        SignalManager signalManager,
-        RingBuffer<MarketDataSnapshot> ringBuffer,
-        ILogger<MarketDataPeriodicService> logger,
-        IOptions<MarketDataPeriodicServiceOptions> options)
+    public MarketDataPeriodicPublisher(
+        MarketDataSnapshotManager signalManager,
+        IRingBufferProvider<MarketDataSnapshot> ringBufferProvider,
+        ILogger<MarketDataPeriodicPublisher> logger,
+        IOptions<MarketDataOptions> options)
     {
         _signalManager = signalManager;
         _logger = logger;
         _options = options.Value;
-        _ringBuffer = ringBuffer;
+        _ringBuffer = ringBufferProvider.RingBuffer;
     }
 
-    public TimeSpan Interval => _options.Interval;
+    public TimeSpan Interval => _options.PublishingInterval;
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("MarketDataPeriodicService starting with interval {Interval}", _options.Interval);
+        _logger.LogInformation("MarketDataPeriodicService starting with interval {Interval}", _options.PublishingInterval);
 
-        using var timer = new PeriodicTimer(_options.Interval);
+        using var timer = new PeriodicTimer(_options.PublishingInterval);
 
         while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
         {
