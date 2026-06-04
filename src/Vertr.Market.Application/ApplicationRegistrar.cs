@@ -6,7 +6,7 @@ public static class ApplicationRegistrar
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddSingleton<SignalManager>();
+        services.AddSingleton(s => new SignalManager(64));
         services.AddSingleton<MarketDataPeriodicService>();
         services.Configure<MarketDataPeriodicServiceOptions>(o => { });
 
