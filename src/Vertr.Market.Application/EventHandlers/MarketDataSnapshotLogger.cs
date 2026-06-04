@@ -1,9 +1,9 @@
 ﻿using Disruptor;
 using Microsoft.Extensions.Logging;
 
-namespace Vertr.Market.Application.EventHanlers;
+namespace Vertr.Market.Application.EventHandlers;
 
-internal class MarketDataSnapshotLogger : IEventHandler<MarketDataSnapshot>
+internal sealed class MarketDataSnapshotLogger : IEventHandler<MarketDataSnapshot>
 {
     private readonly ILogger<MarketDataSnapshotLogger> _logger;
 

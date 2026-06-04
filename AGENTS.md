@@ -6,7 +6,7 @@ Instructions for AI coding agents.
 
 * .NET 10.0
 * C# 14
-* Test framework: **xUnit**
+* Test framework: **nUnit**
 * Multi-platform support (Windows, Linux, macOS, containers)
 
 ## General

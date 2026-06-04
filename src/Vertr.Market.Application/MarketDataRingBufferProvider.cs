@@ -10,7 +10,7 @@ internal class MarketDataRingBufferProvider : IRingBufferProvider<MarketDataSnap
     private readonly Disruptor<MarketDataSnapshot> _disruptor;
     private bool _disposed;
 
-    public RingBuffer<MarketDataSnapshot> RingBuffer { get; private set; }
+    public RingBuffer<MarketDataSnapshot> RingBuffer { get; init; }
 
     public MarketDataRingBufferProvider(
         IEnumerable<IEventHandler<MarketDataSnapshot>> handlers,

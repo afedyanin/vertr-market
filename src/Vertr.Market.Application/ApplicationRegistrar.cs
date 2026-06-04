@@ -1,7 +1,7 @@
 ﻿using Disruptor;
 using Microsoft.Extensions.DependencyInjection;
 using Vertr.Market.Application.Abstractions;
-using Vertr.Market.Application.EventHanlers;
+using Vertr.Market.Application.EventHandlers;
 
 namespace Vertr.Market.Application;
 

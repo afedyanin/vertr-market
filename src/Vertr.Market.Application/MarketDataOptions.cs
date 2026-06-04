@@ -1,6 +1,6 @@
 namespace Vertr.Market.Application;
 
-public class MarketDataOptions
+public sealed class MarketDataOptions
 {
     public TimeSpan PublishingInterval { get; set; } = TimeSpan.FromMilliseconds(100);
     public int SnapshotCapacity { get; set; } = 64;
