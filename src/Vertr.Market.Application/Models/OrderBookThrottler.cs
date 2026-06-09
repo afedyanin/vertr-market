@@ -25,26 +25,20 @@ public sealed class OrderBookThrottler
     /// </summary>
     public async ValueTask ParseStreamAsync(Stream stream, CancellationToken ct)
     {
-        // Арендуем массив из пула (без аллокаций в куче)
         var rentArray = ArrayPool<byte>.Shared.Rent(_orderBookSize);
-        // Отрезаем ровно столько, сколько занимает структура
         var memoryBuffer = rentArray.AsMemory(0, _orderBookSize);
 
         try
         {
             while (!ct.IsCancellationRequested)
             {
-                // Читаем фиксированное количество байт из сети/диска
                 var bytesRead = await stream.ReadAsync(memoryBuffer, ct).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
-                    break; // Стрим завершен
+                    break;
                 }
 
-                // Интерпретируем байты как структуру OrderBook без копирования памяти
                 ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(memoryBuffer.Span);
-
-                // Обновляем состояние в словаре
                 HandleIncomingOrderBook(in incomingBook);
             }
         }
@@ -57,13 +51,10 @@ public sealed class OrderBookThrottler
     /// <summary>
     /// Шаг 2: Обновление состояния по принципу "последний пришедший побеждает" (Zero-Allocation)
     /// </summary>
-    public void HandleIncomingOrderBook(ref readonly OrderBook incomingBook)
+    public void HandleIncomingOrderBook(in OrderBook incomingBook)
     {
-        // Находим или создаем структуру по ссылке прямо внутри внутреннего массива Dictionary
         ref var current = ref CollectionsMarshal.GetValueRefOrAddDefault(
             _latestBooks, incomingBook.AssetId, out var _);
-
-        // Копируем входящую структуру в ячейку словаря (перезапись памяти)
         current = incomingBook;
     }
 
@@ -78,22 +69,10 @@ public sealed class OrderBookThrottler
         {
             foreach (var kvp in _latestBooks)
             {
-                // Запрашиваем следующий свободный индекс (Sequence) в кольцевом буфере.
-                // Вызов может заблокировать поток, если буфер переполнен (зависит от WaitStrategy).
                 var sequence = _ringBuffer.Next();
-                try
-                {
-                    // Получаем пре-аллоцированный объект события по индексу
-                    var @event = _ringBuffer[sequence];
-
-                    // Копируем структуру стакана из словаря прямо в объект внутри буфера
-                    @event.Value = kvp.Value;
-                }
-                finally
-                {
-                    // Публикуем событие — теперь оно доступно для Consumer
-                    _ringBuffer.Publish(sequence);
-                }
+                var @event = _ringBuffer[sequence];
+                @event.Value = kvp.Value;
+                _ringBuffer.Publish(sequence);
             }
         }
     }

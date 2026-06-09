@@ -20,13 +20,24 @@ public sealed class CandleAggregator
     }
 
     /// <summary>
+    /// Периодический сброс незакрытых свечей в Disruptor (запускать в фоне).
+    /// </summary>
+    public async Task StartEmittingAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(_candleInterval);
+
+        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        {
+            Flush();
+        }
+    }
+
+    /// <summary>
     /// Парсинг входящего бинарного потока трейдов (0 аллокаций в куче).
     /// </summary>
     public async ValueTask ParseTradeStreamAsync(Stream stream, CancellationToken ct)
     {
-        // Арендуем массив из пула (без аллокаций в куче)
         var rentArray = ArrayPool<byte>.Shared.Rent(_tradeSize);
-        // Отрезаем ровно столько, сколько занимает структура
         var memoryBuffer = rentArray.AsMemory(0, _tradeSize);
 
         try
@@ -37,13 +48,10 @@ public sealed class CandleAggregator
 
                 if (bytesRead == 0)
                 {
-                    break; // Стрим завершен
+                    break;
                 }
 
-                // Интерпретируем байты как структуру Trade без аллокации промежуточных массивов
                 ref readonly var trade = ref MemoryMarshal.AsRef<Trade>(memoryBuffer.Span);
-
-                // Агрегируем трейд в свечу
                 ProcessTrade(in trade);
             }
         }
@@ -52,7 +60,6 @@ public sealed class CandleAggregator
             ArrayPool<byte>.Shared.Return(rentArray);
         }
 
-        // Перед остановкой принудительно сбрасываем все оставшиеся открытые свечи
         Flush();
     }
 
@@ -110,21 +117,10 @@ public sealed class CandleAggregator
     /// </summary>
     private void PublishCandleToDisruptor(in Candle candle)
     {
-        // Запрашиваем индекс в кольце (блокирует поток, если буфер переполнен)
         var sequence = _ringBuffer.Next();
-        try
-        {
-            // Получаем доступ к пре-аллоцированному объекту события
-            var @event = _ringBuffer[sequence];
-
-            // Копируем структуру свечи (64 байта) в существующий объект
-            @event.Value = candle;
-        }
-        finally
-        {
-            // Публикуем событие для Consumer
-            _ringBuffer.Publish(sequence);
-        }
+        var @event = _ringBuffer[sequence];
+        @event.Value = candle;
+        _ringBuffer.Publish(sequence);
     }
 
     /// <summary>
@@ -132,16 +128,12 @@ public sealed class CandleAggregator
     /// </summary>
     public void Flush()
     {
-        // Итерируемся по ключам (это быстрее, чем по KeyValuePair, но всё ещё создает итератор)
         foreach (var key in _activeCandles.Keys)
         {
-            // Получаем прямую ref-ссылку на Candle внутри словаря за 1 поиск
             ref var candleRef = ref CollectionsMarshal.GetValueRefOrNullRef(_activeCandles, key);
-
-            // Проверяем инициализацию без копирования структуры
             if (candleRef.IsInitialized)
             {
-                PublishCandleToDisruptor(in candleRef); // Идеально передается по ссылке
+                PublishCandleToDisruptor(in candleRef);
             }
         }
 
