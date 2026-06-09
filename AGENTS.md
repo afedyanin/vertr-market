@@ -70,6 +70,7 @@ Instructions for AI coding agents.
 ### Directory Structure
 - **`/src`**: Main source code for all Aspire packages
   - `Vertr.Market.Application/`: Core Domain Model and Services
+  - `Vertr.Market.ConsoleApp/`: Sample Console app for tests
   - `Vertr.Market.Host/`: ASP.NET Web API Host
 - **`/tests`**: Comprehensive test suites mirroring src structure
 - **`/docs`**: Documentation including contributing guides and area ownership
