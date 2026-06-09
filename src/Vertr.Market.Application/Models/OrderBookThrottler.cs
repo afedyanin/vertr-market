@@ -12,7 +12,7 @@ public sealed class OrderBookThrottler
     private readonly Dictionary<int, OrderBook> _latestBooks = new(1024);
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private readonly TimeSpan _interval;
-    private readonly int _structureSize = Unsafe.SizeOf<OrderBook>();
+    private readonly int _orderBookSize = Unsafe.SizeOf<OrderBook>();
 
     public OrderBookThrottler(TimeSpan interval, RingBuffer<OrderBookEvent> ringBuffer)
     {
@@ -26,9 +26,9 @@ public sealed class OrderBookThrottler
     public async ValueTask ParseStreamAsync(Stream stream, CancellationToken ct)
     {
         // Арендуем массив из пула (без аллокаций в куче)
-        var rentArray = ArrayPool<byte>.Shared.Rent(_structureSize);
+        var rentArray = ArrayPool<byte>.Shared.Rent(_orderBookSize);
         // Отрезаем ровно столько, сколько занимает структура
-        var memoryBuffer = rentArray.AsMemory(0, _structureSize);
+        var memoryBuffer = rentArray.AsMemory(0, _orderBookSize);
 
         try
         {

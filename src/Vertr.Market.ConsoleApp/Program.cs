@@ -9,6 +9,46 @@ public static class Program
 {
     public static async Task Main()
     {
+    }
+
+    public static async Task StartTradesProcessing()
+    {
+        // Размер буфера (строго степень двойки)
+        const int bufferSize = 2048;
+
+        // 1. Инициализация Disruptor. Фабрика создает CandleEvent один раз на старте.
+        var disruptor = new Disruptor<CandleEvent>(
+            eventFactory: () => new CandleEvent(),
+            ringBufferSize: bufferSize,
+            taskScheduler: TaskScheduler.Default,
+            producerType: ProducerType.Single, // Трейды обрабатываются последовательно в одном потоке
+            waitStrategy: new YieldingWaitStrategy() // Оптимальный баланс между задержками и CPU
+        );
+
+        // 2. Привязка обработчика свечей
+        var consumer = new CandleDisruptorConsumer();
+        disruptor.HandleEventsWith(consumer);
+
+        // 3. Старт внутренних потоков Disruptor и получение ссылки на RingBuffer
+        var ringBuffer = disruptor.Start();
+
+        // 4. Создание агрегатора с интервалом свечей в 1 минуту (60 секунд)
+        var aggregator = new CandleAggregator(TimeSpan.FromMinutes(1), ringBuffer);
+
+        // Симуляция получения данных из сети (используем CancellationToken для управления жизненным циклом)
+        using var cts = new CancellationTokenSource();
+        using var mockStream = new MemoryStream();
+
+        // Запуск парсинга и агрегации входящего потока
+        await aggregator.ParseTradeStreamAsync(mockStream, cts.Token);
+
+        // Корректная остановка системы
+        await cts.CancelAsync();
+        disruptor.Shutdown();
+    }
+
+    public static async Task StartOrderBooksProcessing()
+    {
         // Размер буфера ДОЛЖЕН быть строго степенью двойки
         const int bufferSize = 1024;
 
