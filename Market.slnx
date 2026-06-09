@@ -6,9 +6,8 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="gc_setup.md" />
-    <File Path="orderbook_sample.md" />
-    <File Path="trades_sample.md" />
+    <File Path="docs/gc_setup.md" />
+    <File Path="todos.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
