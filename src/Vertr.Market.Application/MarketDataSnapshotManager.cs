@@ -2,19 +2,19 @@ using Microsoft.Extensions.Options;
 
 namespace Vertr.Market.Application;
 
-public sealed class MarketDataSnapshotManager
+public sealed class MarketDataSnapshotManager : IDisposable
 {
     private readonly int _capacity;
     private readonly double[] _activeBuffer;
     private readonly bool _resetBuffer;
-    private int _sequence; // 0 = writing allowed, 1 = snapshot in progress
+    private int _isSnapshotInProgress;
+    private readonly ManualResetEventSlim _snapshotCompletedEvent = new(true);
 
     public MarketDataSnapshotManager(IOptions<MarketDataOptions> options)
     {
         _capacity = options.Value.SnapshotCapacity;
         _resetBuffer = options.Value.ResetBufferAfterPublish;
         _activeBuffer = new double[_capacity];
-        _sequence = 0;
     }
 
     public int Capacity => _capacity;
@@ -26,10 +26,10 @@ public sealed class MarketDataSnapshotManager
             throw new ArgumentOutOfRangeException(nameof(index), "Index must be within [0, Capacity).");
         }
 
-        // Ждём окончания предыдущего снимка с таймаутом 30 секунд
-        if (!SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0, TimeSpan.FromSeconds(30)))
+        // Блокируем запись во время снимка, ждём до 30 секунд
+        if (!_snapshotCompletedEvent.Wait(TimeSpan.FromSeconds(30)))
         {
-            throw new TimeoutException("Snapshot timeout - no data will be written for this interval.");
+            throw new TimeoutException("Timed out waiting for snapshot to complete.");
         }
 
         _activeBuffer[index] = value;
@@ -37,7 +37,7 @@ public sealed class MarketDataSnapshotManager
 
     public void TakeSnapshot(MarketDataSnapshot snapshot)
     {
-        var previous = Interlocked.Exchange(ref _sequence, 1);
+        var previous = Interlocked.Exchange(ref _isSnapshotInProgress, 1);
 
         if (previous != 0)
         {
@@ -46,7 +46,7 @@ public sealed class MarketDataSnapshotManager
 
         try
         {
-            snapshot.CopyFrom(_activeBuffer.AsSpan(0, _capacity));
+            snapshot.CopyFrom(_activeBuffer.AsSpan());
             if (_resetBuffer)
             {
                 _activeBuffer.AsSpan().Clear();
@@ -54,31 +54,39 @@ public sealed class MarketDataSnapshotManager
         }
         finally
         {
-            Interlocked.Exchange(ref _sequence, 0);
+            if (Interlocked.CompareExchange(ref _isSnapshotInProgress, 0, 1) == 1)
+            {
+                _snapshotCompletedEvent.Set();
+            }
         }
+    }
+
+    public void Dispose()
+    {
+        _snapshotCompletedEvent.Dispose();
     }
 }
 
-public sealed class MarketDataSnapshotManager<T> where T : class
+public sealed class MarketDataSnapshotManager<T> : IDisposable where T : class
 {
     private readonly int _capacity;
     private readonly T[] _activeBuffer;
     private readonly bool _resetBuffer;
-    private int _sequence; // 0 = запись разрешена, 1 = снимок выполняется
+    private int _isSnapshotInProgress;
+    private readonly ManualResetEventSlim _snapshotCompletedEvent = new(true);
 
     public MarketDataSnapshotManager(IOptions<MarketDataOptions> options)
     {
         _capacity = options.Value.SnapshotCapacity;
         _resetBuffer = options.Value.ResetBufferAfterPublish;
-        // TODO: Заменить на словарь?
-        _activeBuffer = new T[_capacity]; // It is ok for singletone
+        _activeBuffer = new T[_capacity];
     }
 
     public int Capacity => _capacity;
 
     /// <summary>
     /// Запись данных в пул. 
-    /// ⚠️ Контракт: каждый вызывающий поток работает со своим поддиапазоном индексов.
+    /// Контракт: каждый вызывающий поток работает со своим поддиапазоном индексов.
     /// Пересечений по индексам между потоками нет. Синхронизация на уровне индексов не требуется.
     /// </summary>
     public void WriteData(int index, T value)
@@ -88,19 +96,18 @@ public sealed class MarketDataSnapshotManager<T> where T : class
             throw new ArgumentOutOfRangeException(nameof(index), "Index must be within [0, Capacity).");
         }
 
-        // Ждём окончания предыдущего снимка с таймаутом 30 секунд
-        if (!SpinWait.SpinUntil(() => Volatile.Read(ref _sequence) == 0, TimeSpan.FromSeconds(30)))
+        // Блокируем запись во время снимка, ждём до 30 секунд
+        if (!_snapshotCompletedEvent.Wait(TimeSpan.FromSeconds(30)))
         {
-            throw new TimeoutException("Snapshot timeout - no data will be written for this interval.");
+            throw new TimeoutException("Timed out waiting for snapshot to complete.");
         }
 
-        // Безопасно: гарантировано отсутствие race condition на index
         _activeBuffer[index] = value;
     }
 
     public void TakeSnapshot(MarketDataSnapshot<T> snapshot)
     {
-        var previous = Interlocked.Exchange(ref _sequence, 1);
+        var previous = Interlocked.Exchange(ref _isSnapshotInProgress, 1);
         if (previous != 0)
         {
             throw new InvalidOperationException("Nested snapshots are not supported.");
@@ -108,16 +115,24 @@ public sealed class MarketDataSnapshotManager<T> where T : class
 
         try
         {
-            snapshot.CopyFrom(_activeBuffer.AsSpan(0, _capacity));
+            snapshot.CopyFrom(_activeBuffer.AsSpan());
 
             if (_resetBuffer)
             {
-                _activeBuffer.AsSpan(0, _capacity).Clear();
+                _activeBuffer.AsSpan().Clear();
             }
         }
         finally
         {
-            Interlocked.Exchange(ref _sequence, 0);
+            if (Interlocked.CompareExchange(ref _isSnapshotInProgress, 0, 1) == 1)
+            {
+                _snapshotCompletedEvent.Set();
+            }
         }
+    }
+
+    public void Dispose()
+    {
+        _snapshotCompletedEvent.Dispose();
     }
 }
