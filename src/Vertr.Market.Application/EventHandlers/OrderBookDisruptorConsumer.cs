@@ -13,18 +13,18 @@ public sealed class OrderBookDisruptorConsumer : IEventHandler<OrderBookEvent>
     /// <param name="endOfBatch">Флаг конца пачки (true, если это последнее доступное событие на данный момент)</param>
     public void OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
     {
-        // Передаем структуру по ссылке (in), чтобы избежать копирования 340+ байт в стек метода
-        ProcessSnapshot(in data.Value, endOfBatch);
+        for (var i = 0; i < data.Count; i++)
+        {
+            ProcessSnapshot(in data[i], endOfBatch);
+        }
 
-        // Никаких вызовов Release() или возвратов в пул делать НЕ НУЖНО. 
-        // Disruptor зациклит эту память автоматически, когда поток обработки пойдет на следующий круг.
+        data.Clear();
     }
 
     private void ProcessSnapshot(in OrderBook book, bool endOfBatch)
     {
-        // Чтение инлайн-массива через ReadOnlySpan (0 аллокаций)
-        ReadOnlySpan<OrderBookLevel> bids = book.Bids;
-        ReadOnlySpan<OrderBookLevel> asks = book.Asks;
+        var bids = book.Bids;
+        var asks = book.Asks;
 
         if (book.BidCount > 0 && book.AskCount > 0)
         {

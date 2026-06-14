@@ -67,13 +67,25 @@ public sealed class OrderBookThrottler
 
         while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
         {
+            var sequence = _ringBuffer.Next();
+            var @event = _ringBuffer[sequence];
+
+            @event.Clear();
+
+            var i = 0;
             foreach (var kvp in _latestBooks)
             {
-                var sequence = _ringBuffer.Next();
-                var @event = _ringBuffer[sequence];
-                @event.Value = kvp.Value;
-                _ringBuffer.Publish(sequence);
+                if (i < @event.Capacity)
+                {
+                    @event[i] = kvp.Value;
+                }
+
+                i++;
             }
+
+            @event.Count = i;
+
+            _ringBuffer.Publish(sequence);
         }
     }
 }

@@ -17,9 +17,28 @@ public struct OrderBook
 
 // Класс-контейнер события для Disruptor.
 // Экземпляры создаются ОДИН РАЗ при старте внутри Ring Buffer и используются повторно.
+// Pre-allocated array на всё время жизни — ноль аллокаций в steady-state.
 public sealed class OrderBookEvent
 {
-    public OrderBook Value;
+    private readonly OrderBook[] _books;
+    public int Count { get; internal set; }
+
+    public OrderBookEvent(int capacity)
+    {
+        _books = new OrderBook[capacity];
+    }
+
+    public void Clear()
+    {
+        if (Count > 0)
+        {
+            Array.Clear(_books, 0, Count);
+            Count = 0;
+        }
+    }
+
+    public ref OrderBook this[int index] => ref _books[index];
+    public int Capacity => _books.Length;
 }
 
 // Элемент стакана (размер: 16 байт)

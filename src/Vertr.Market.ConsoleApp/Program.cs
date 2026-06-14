@@ -51,10 +51,11 @@ public static class Program
     {
         // Размер буфера ДОЛЖЕН быть строго степенью двойки
         const int bufferSize = 1024;
+        const int maxAssets = 64;
 
         // 1. Инициализируем Disruptor. Передаем фабрику для пре-аллокации наших классов-событий.
         var disruptor = new Disruptor<OrderBookEvent>(
-            eventFactory: () => new OrderBookEvent(),
+            eventFactory: () => new OrderBookEvent(maxAssets),
             ringBufferSize: bufferSize,
             taskScheduler: TaskScheduler.Default,
             producerType: ProducerType.Single, // У нас ровно один поток-издатель (таймер троттлера)
