@@ -8,7 +8,6 @@ namespace Vertr.Market.Application.Models;
 
 public sealed class OrderBookPublisher
 {
-    // ВНИМАНИЕ: Убедитесь, что бинарный размер структуры в потоке ТОЧНО равен Unsafe.SizeOf
     private static readonly int OrderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private int _parserStarted;
@@ -29,7 +28,7 @@ public sealed class OrderBookPublisher
         }
 
         var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(
-            bufferSize: OrderBookSize * 8,
+            bufferSize: 8192, // Оптимальный размер буфера для минимизации системных вызовов
             minimumReadSize: OrderBookSize,
             leaveOpen: false));
 
@@ -39,6 +38,7 @@ public sealed class OrderBookPublisher
         }
         catch (OperationCanceledException)
         {
+            // Ожидаемое завершение при отмене токена
         }
         finally
         {
@@ -56,6 +56,7 @@ public sealed class OrderBookPublisher
 
             if (result.IsCanceled)
             {
+                reader.AdvanceTo(buffer.Start, buffer.Start);
                 break;
             }
 
@@ -64,43 +65,46 @@ public sealed class OrderBookPublisher
 
             try
             {
-                while (buffer.Length >= OrderBookSize)
-                {
-                    var orderBookBuffer = buffer.Slice(0, OrderBookSize);
+                var seqReader = new SequenceReader<byte>(buffer);
 
+                while (seqReader.Remaining >= OrderBookSize)
+                {
+                    // Сначала берем слот. Если Disruptor перегружен, поток заблокируется тут.
                     var sequence = _ringBuffer.Next();
-                    var eventSlot = _ringBuffer[sequence];
 
                     try
                     {
-                        ref var targetBook = ref eventSlot.OrderBook;
-                        var destination = MemoryMarshal.CreateSpan(ref Unsafe.As<OrderBook, byte>(ref targetBook), OrderBookSize);
+                        var eventSlot = _ringBuffer[sequence];
+                        OrderBook localBook = default;
 
-                        if (orderBookBuffer.FirstSpan.Length >= OrderBookSize)
+                        var destination = MemoryMarshal.CreateSpan(
+                            ref Unsafe.As<OrderBook, byte>(ref localBook),
+                            OrderBookSize);
+
+                        if (!seqReader.TryCopyTo(destination))
                         {
-                            orderBookBuffer.FirstSpan.Slice(0, OrderBookSize).CopyTo(destination);
-                        }
-                        else
-                        {
-                            orderBookBuffer.CopyTo(destination);
+                            throw new InvalidDataException("Failed to copy data from sequence reader.");
                         }
 
+                        seqReader.Advance(OrderBookSize);
+
+                        eventSlot.OrderBook = localBook;
                         eventSlot.IsValid = true;
                     }
                     catch
                     {
-                        eventSlot.IsValid = false;
-                        _ringBuffer.Publish(sequence);
+                        // Ошибка внутри конкретного слота — не публикуем инвалидный шаг в продакшн, 
+                        // а даем упасть всему пайплайну маркет-даты (Fail-Fast).
                         throw;
                     }
 
+                    // Публикуем только при успешном заполнении слота
                     _ringBuffer.Publish(sequence);
-
-                    buffer = buffer.Slice(orderBookBuffer.End);
-                    consumed = orderBookBuffer.End;
                 }
 
-                examined = buffer.Length > 0 ? buffer.End : consumed;
+                consumed = seqReader.Position;
+                // Если остались байты, изучаем буфер до конца (ждём дочитки)
+                examined = seqReader.Remaining > 0 ? buffer.End : consumed;
             }
             finally
             {
@@ -109,9 +113,11 @@ public sealed class OrderBookPublisher
 
             if (result.IsCompleted)
             {
-                if (buffer.Length > 0)
+                var remaining = buffer.Slice(consumed).Length;
+
+                if (remaining > 0)
                 {
-                    throw new EndOfStreamException($"Stream ended with incomplete OrderBook data. Remainder: {buffer.Length} bytes.");
+                    throw new EndOfStreamException($"Stream ended with incomplete OrderBook data. Remainder: {remaining} bytes.");
                 }
 
                 break;
