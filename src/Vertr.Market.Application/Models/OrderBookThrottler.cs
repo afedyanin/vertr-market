@@ -43,7 +43,7 @@ public sealed class OrderBookThrottler
                 }
             }
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
             // Нормальное завершение работы
         }
