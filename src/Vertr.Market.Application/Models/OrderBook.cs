@@ -2,11 +2,12 @@
 
 namespace Vertr.Market.Application.Models;
 
+
 // Основная структура стакана (размер: ~340 байт). Передается везде по ссылке (in / ref).
 public struct OrderBook
 {
     public int AssetId;
-    public DateTime Timestamp;
+    public long Timestamp; // Unix Timestamp
 
     public LevelBuffer Bids;
     public LevelBuffer Asks;
@@ -20,13 +21,13 @@ public struct OrderBook
 // Pre-allocated array на всё время жизни — ноль аллокаций в steady-state.
 public sealed class OrderBookEvent
 {
-    public const int Capacity = 1024;
-
     private readonly OrderBook[] _books;
 
-    public OrderBookEvent(int capacity)
+    public const int Capacity = 1024;
+
+    public OrderBookEvent()
     {
-        _books = new OrderBook[capacity];
+        _books = new OrderBook[Capacity];
     }
 
     public void Clear()

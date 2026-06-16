@@ -39,13 +39,15 @@ public sealed class OrderBookThrottler
         {
             while (!ct.IsCancellationRequested)
             {
-                var bytesRead = await stream.ReadAsync(memoryBuffer, ct).ConfigureAwait(false);
-                if (bytesRead == 0)
+                await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
+                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(memoryBuffer.Span);
+
+                if ((uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
                 {
-                    break;
+                    // Логируем ошибку / пропускаем коррумпированный пакет
+                    continue;
                 }
 
-                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(memoryBuffer.Span);
                 HandleIncomingOrderBook(in incomingBook);
             }
         }
@@ -67,7 +69,7 @@ public sealed class OrderBookThrottler
     }
 
     /// <summary>
-    /// Шаг 3: Периодический сброс (раз в 5 секунд) накопленных срезов в Disruptor
+    /// Шаг 3: Периодический сброс накопленных срезов в Disruptor
     /// </summary>
     public async Task StartEmittingAsync(CancellationToken ct)
     {
