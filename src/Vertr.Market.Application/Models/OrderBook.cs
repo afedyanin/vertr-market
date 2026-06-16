@@ -23,7 +23,6 @@ public sealed class OrderBookEvent
     public const int Capacity = 1024;
 
     private readonly OrderBook[] _books;
-    public int Count { get; internal set; }
 
     public OrderBookEvent(int capacity)
     {
@@ -32,11 +31,7 @@ public sealed class OrderBookEvent
 
     public void Clear()
     {
-        if (Count > 0)
-        {
-            Array.Clear(_books, 0, Count);
-            Count = 0;
-        }
+        Array.Clear(_books);
     }
 
     public ref OrderBook this[int index] => ref _books[index];

@@ -13,7 +13,7 @@ public sealed class OrderBookDisruptorConsumer : IEventHandler<OrderBookEvent>
     /// <param name="endOfBatch">Флаг конца пачки (true, если это последнее доступное событие на данный момент)</param>
     public void OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
     {
-        for (var i = 0; i < data.Count; i++)
+        for (var i = 0; i < OrderBookEvent.Capacity; i++)
         {
             ProcessSnapshot(in data[i], endOfBatch);
         }

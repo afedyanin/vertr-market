@@ -86,8 +86,6 @@ public sealed class OrderBookThrottler
                 {
                     @event[index] = _latestBooks[index];
                 }
-
-                @event.Count = OrderBookEvent.Capacity;
             }
 
             _ringBuffer.Publish(sequence);

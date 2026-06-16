@@ -5,12 +5,11 @@ namespace Vertr.Market.Application.Tests.Models;
 public class OrderBookEventTests
 {
     [Test]
-    public void Constructor_InitializesCountToZero()
+    public void Constructor_InitializesCorrectly()
     {
-        var sut = new OrderBookEvent(64);
+        _ = new OrderBookEvent(64);
 
         Assert.That(OrderBookEvent.Capacity, Is.EqualTo(1024));
-        Assert.That(sut.Count, Is.EqualTo(0));
     }
 
     [Test]
@@ -43,36 +42,11 @@ public class OrderBookEventTests
     }
 
     [Test]
-    public void Clear_WithCountGreaterThanZero_SetsCountToZero()
+    public void Clear_ClearsAllStoredValues()
     {
         var sut = new OrderBookEvent(10);
         sut[0] = new OrderBook { AssetId = 1 };
         sut[1] = new OrderBook { AssetId = 2 };
-        sut.Count = 2;
-
-        sut.Clear();
-
-        Assert.That(sut.Count, Is.EqualTo(0));
-    }
-
-    [Test]
-    public void Clear_WithCountEqualToZero_DoesNotThrow()
-    {
-        var sut = new OrderBookEvent(10);
-        sut.Count = 0;
-
-        Assert.DoesNotThrow(() => sut.Clear());
-
-        Assert.That(sut.Count, Is.EqualTo(0));
-    }
-
-    [Test]
-    public void Clear_WithCountGreaterThanZero_ClearsStoredValues()
-    {
-        var sut = new OrderBookEvent(10);
-        sut[0] = new OrderBook { AssetId = 1 };
-        sut[1] = new OrderBook { AssetId = 2 };
-        sut.Count = 2;
 
         sut.Clear();
 
@@ -85,26 +59,10 @@ public class OrderBookEventTests
     {
         var sut = new OrderBookEvent(10);
         sut[0] = new OrderBook { AssetId = 1 };
-        sut.Count = 1;
 
         Assert.DoesNotThrow(() => sut.Clear());
         Assert.DoesNotThrow(() => sut.Clear());
         Assert.DoesNotThrow(() => sut.Clear());
-
-        Assert.That(sut.Count, Is.EqualTo(0));
-    }
-
-    [Test]
-    public void Clear_ThenSetCount_UpdatesCountCorrectly()
-    {
-        var sut = new OrderBookEvent(10);
-        sut[0] = new OrderBook { AssetId = 1 };
-        sut.Count = 1;
-
-        sut.Clear();
-        sut.Count = 5;
-
-        Assert.That(sut.Count, Is.EqualTo(5));
     }
 
     [Test]
