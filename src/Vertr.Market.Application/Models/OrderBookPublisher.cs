@@ -71,7 +71,7 @@ public sealed class OrderBookPublisher
                 {
                     // Пишем НАПРЯМУЮ в RingBuffer без создания тяжелой структуры в стеке
                     ref var targetBook = ref _ringBuffer[sequence].OrderBook;
-                    var destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref targetBook, 1));
+                    var destination = MemoryMarshal.CreateSpan(ref Unsafe.As<OrderBook, byte>(ref targetBook), OrderBookSize);
 
                     orderBookBuffer.CopyTo(destination);
                 }
