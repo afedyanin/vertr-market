@@ -10,27 +10,28 @@ public sealed class OrderBookThrottler
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private readonly TimeSpan _interval;
 
-    // Double-buffering: два буфера чередуются через атомарный swap.
-    // _current — буфер, в который пишет парсер.
-    // _snapshot — буфер, который станет _current на следующем тике (пустой, для накопления).
-    private readonly OrderBookEvent _bufferA = new();
-    private readonly OrderBookEvent _bufferB = new();
-    private OrderBookEvent _current = null!;
-    private OrderBookEvent _snapshot = null!;
+    private readonly OrderBookEvent _accumulator = new();
+    private readonly object _syncLock = new();
+
+    private int _parserStarted;
+    private int _emitterStarted;
 
     public OrderBookThrottler(TimeSpan interval, RingBuffer<OrderBookEvent> ringBuffer)
     {
-        ArgumentNullException.ThrowIfNull(ringBuffer);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(interval, TimeSpan.Zero);
+        ArgumentNullException.ThrowIfNull(ringBuffer);
 
         _interval = interval;
         _ringBuffer = ringBuffer;
-        _current = _bufferA;
-        _snapshot = _bufferB;
     }
 
     public async ValueTask ParseStreamAsync(Stream stream, CancellationToken ct)
     {
+        if (Interlocked.CompareExchange(ref _parserStarted, 1, 0) == 1)
+        {
+            throw new InvalidOperationException("ParseStreamAsync already started.");
+        }
+
         ArgumentNullException.ThrowIfNull(stream);
 
         if (!stream.CanRead)
@@ -46,6 +47,13 @@ public sealed class OrderBookThrottler
             while (!ct.IsCancellationRequested)
             {
                 await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
+
+                // Проверяем отмену перед записью — экономим work при cancellation.
+                if (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(buffer);
 
                 if (incomingBook.AssetId < 0 || (uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
@@ -53,7 +61,11 @@ public sealed class OrderBookThrottler
                     continue;
                 }
 
-                _current[incomingBook.AssetId] = incomingBook;
+                // Защищаем неатомарное копирование структуры в аккумулятор
+                lock (_syncLock)
+                {
+                    _accumulator[incomingBook.AssetId] = incomingBook;
+                }
             }
         }
         catch (OperationCanceledException)
@@ -72,31 +84,37 @@ public sealed class OrderBookThrottler
 
     public async Task StartEmittingAsync(CancellationToken ct)
     {
+        if (Interlocked.CompareExchange(ref _emitterStarted, 1, 0) == 1)
+        {
+            throw new InvalidOperationException("StartEmittingAsync already started.");
+        }
+
         using var timer = new PeriodicTimer(_interval);
 
-        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        try
         {
-            try
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
             {
-                // Атомарный swap: _snapshot становится текущим буфером для записи,
-                // _current становится snapshot'ом для публикации.
-                // Interlocked.Exchange гарантирует, что writer либо видит старый,
-                // либо новый _current — не оба одновременно.
-                var snapshot = Interlocked.Exchange(ref _current, _snapshot);
-                _snapshot = snapshot;
-
                 var sequence = _ringBuffer.Next();
-                var targetEvent = _ringBuffer[sequence];
-                targetEvent.CopyTo(snapshot);
-                snapshot.Clear();
 
-                _ringBuffer.Publish(sequence);
+                try
+                {
+                    var targetEvent = _ringBuffer[sequence];
+
+                    lock (_syncLock)
+                    {
+                        _accumulator.CopyTo(targetEvent);
+                    }
+                }
+                finally
+                {
+                    _ringBuffer.Publish(sequence);
+                }
             }
-            catch (Exception) when (!ct.IsCancellationRequested)
-            {
-                // Disruptor может выбросить при переполнении RingBuffer или других ошибках.
-                // При отмене — не логируем, так как это ожидаемое поведение.
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Нормальное завершение при отмене таймера
         }
     }
 }

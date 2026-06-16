@@ -1,9 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Vertr.Market.Application.Models;
 
 
 // Основная структура стакана (размер: ~340 байт). Передается везде по ссылке (in / ref).
+// Sequential + Pack = 1 гарантирует, что layout на диске/в сети совпадает с layout в памяти.
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct OrderBook
 {
     public int AssetId;
