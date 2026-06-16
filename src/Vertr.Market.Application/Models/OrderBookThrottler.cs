@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Disruptor;
 
@@ -39,46 +40,34 @@ public sealed class OrderBookThrottler
             throw new InvalidOperationException("Stream does not support reading.");
         }
 
-        var buffer = new byte[OrderBookSize];
-        var memoryBuffer = buffer.AsMemory();
+        // Арендуем массив из пуста .NET (Zero allocation в рантайме)
+        var rentBuffer = ArrayPool<byte>.Shared.Rent(OrderBookSize);
+        var memoryBuffer = rentBuffer.AsMemory(0, OrderBookSize);
 
         try
         {
             while (!ct.IsCancellationRequested)
             {
                 await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
-
-                // Проверяем отмену перед записью — экономим work при cancellation.
-                if (ct.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(buffer);
+                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(rentBuffer.AsSpan(0, OrderBookSize));
 
                 if (incomingBook.AssetId < 0 || (uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
                 {
                     continue;
                 }
 
-                // Защищаем неатомарное копирование структуры в аккумулятор
                 lock (_syncLock)
                 {
-                    _accumulator[incomingBook.AssetId] = incomingBook;
+                    _accumulator.Set(incomingBook.AssetId, in incomingBook);
                 }
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) { }
+        catch (IOException) when (ct.IsCancellationRequested) { }
+        catch (ObjectDisposedException) when (ct.IsCancellationRequested) { }
+        finally
         {
-            // Нормальное завершение работы
-        }
-        catch (IOException) when (ct.IsCancellationRequested)
-        {
-            // Сеть разорвана из-за отмены — не выбрасываем повторно
-        }
-        catch (ObjectDisposedException) when (ct.IsCancellationRequested)
-        {
-            // Stream был удалён из-за отмены — не выбрасываем повторно
+            ArrayPool<byte>.Shared.Return(rentBuffer);
         }
     }
 
@@ -95,10 +84,10 @@ public sealed class OrderBookThrottler
         {
             while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
             {
-                var sequence = _ringBuffer.Next();
-
+                long sequence = -1;
                 try
                 {
+                    sequence = _ringBuffer.Next();
                     var targetEvent = _ringBuffer[sequence];
 
                     lock (_syncLock)
@@ -108,13 +97,13 @@ public sealed class OrderBookThrottler
                 }
                 finally
                 {
-                    _ringBuffer.Publish(sequence);
+                    if (sequence != -1)
+                    {
+                        _ringBuffer.Publish(sequence);
+                    }
                 }
             }
         }
-        catch (OperationCanceledException)
-        {
-            // Нормальное завершение при отмене таймера
-        }
+        catch (OperationCanceledException) { }
     }
 }
