@@ -32,17 +32,24 @@ public sealed class OrderBookPublisher
             minimumReadSize: OrderBookSize,
             leaveOpen: false));
 
+        Exception? error = null;
+
         try
         {
             await ParsePipeAsync(reader, ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            // Ожидаемое завершение при отмене токена
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+            throw;
         }
         finally
         {
-            await reader.CompleteAsync().ConfigureAwait(false);
+            await reader.CompleteAsync(error).ConfigureAwait(false);
+            Interlocked.Exchange(ref _parserStarted, 0);
         }
     }
 
@@ -68,44 +75,25 @@ public sealed class OrderBookPublisher
 
                 while (seqReader.Remaining >= OrderBookSize)
                 {
-                    // Сначала берем слот. Если Disruptor перегружен, поток заблокируется тут.
                     var sequence = _ringBuffer.Next();
+                    var eventSlot = _ringBuffer[sequence];
 
-                    try
+                    var slotSpan = MemoryMarshal.CreateSpan(ref eventSlot.OrderBook, 1);
+                    var destination = MemoryMarshal.AsBytes(slotSpan);
+
+                    if (!seqReader.TryCopyTo(destination))
                     {
-                        var eventSlot = _ringBuffer[sequence];
-                        OrderBook localBook = default;
-
-                        var destination = MemoryMarshal.CreateSpan(
-                            ref Unsafe.As<OrderBook, byte>(ref localBook),
-                            OrderBookSize);
-
-                        if (!seqReader.TryCopyTo(destination))
-                        {
-                            throw new InvalidDataException("Failed to copy data from sequence reader.");
-                        }
-
-                        seqReader.Advance(OrderBookSize);
-
-                        eventSlot.OrderBook = localBook;
-                        eventSlot.IsValid = true;
-                    }
-                    catch
-                    {
-                        // Ошибка внутри конкретного слота — не публикуем инвалидный шаг в продакшн, 
-                        // а даем упасть всему пайплайну маркет-даты (Fail-Fast).
-                        var eventSlot = _ringBuffer[sequence];
                         eventSlot.IsValid = false;
                         _ringBuffer.Publish(sequence);
-                        throw;
+                        throw new InvalidDataException("Failed to copy data from sequence reader.");
                     }
 
-                    // Публикуем только при успешном заполнении слота
+                    seqReader.Advance(OrderBookSize);
+                    eventSlot.IsValid = true;
                     _ringBuffer.Publish(sequence);
                 }
 
                 consumed = seqReader.Position;
-                // Если остались байты, изучаем буфер до конца (ждём дочитки)
                 examined = seqReader.Remaining > 0 ? buffer.End : consumed;
             }
             finally
@@ -116,7 +104,6 @@ public sealed class OrderBookPublisher
             if (result.IsCompleted)
             {
                 var remaining = buffer.Slice(consumed).Length;
-
                 if (remaining > 0)
                 {
                     throw new EndOfStreamException($"Stream ended with incomplete OrderBook data. Remainder: {remaining} bytes.");
