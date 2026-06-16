@@ -6,10 +6,10 @@ namespace Vertr.Market.Application.Models;
 
 public sealed class OrderBookThrottler
 {
+    private static readonly int OrderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly object _lock = new();
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private readonly TimeSpan _interval;
-    private readonly int _orderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly OrderBookEvent _accumulator = new();
 
     public OrderBookThrottler(TimeSpan interval, RingBuffer<OrderBookEvent> ringBuffer)
@@ -27,7 +27,7 @@ public sealed class OrderBookThrottler
             throw new InvalidOperationException("Stream does not support reading.");
         }
 
-        var buffer = new byte[_orderBookSize];
+        var buffer = new byte[OrderBookSize];
         var memoryBuffer = buffer.AsMemory();
 
         try
@@ -37,7 +37,7 @@ public sealed class OrderBookThrottler
                 await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
                 ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(buffer);
 
-                if ((uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
+                if (incomingBook.AssetId < 0 || (uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
                 {
                     // Логируем ошибку / пропускаем коррумпированный пакет
                     continue;
@@ -63,7 +63,6 @@ public sealed class OrderBookThrottler
             // Stream был удалён из-за отмены — не выбрасываем повторно
         }
     }
-
 
     public async Task StartEmittingAsync(CancellationToken ct)
     {
