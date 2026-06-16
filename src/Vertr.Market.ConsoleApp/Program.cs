@@ -49,38 +49,42 @@ public static class Program
 
     public static async Task StartOrderBooksProcessing()
     {
-        // Размер буфера ДОЛЖЕН быть строго степенью двойки
-        const int bufferSize = 1024;
-        // 1. Инициализируем Disruptor. Передаем фабрику для пре-аллокации наших классов-событий.
+        // 1. Создаем RingBuffer (размер строго степень двойки)
         var disruptor = new Disruptor<OrderBookEvent>(
-            eventFactory: () => new OrderBookEvent(),
-            ringBufferSize: bufferSize,
-            taskScheduler: TaskScheduler.Default,
-            producerType: ProducerType.Single, // У нас ровно один поток-издатель (таймер троттлера)
-            waitStrategy: new YieldingWaitStrategy() // Оптимальный компромисс между задержкой и CPU
+            () => new OrderBookEvent(),
+            ringBufferSize: 4096,
+            TaskScheduler.Default,
+            ProducerType.Single, // У нас один издатель (PipeReader), ставим Single для Low-Latency
+            new YieldingWaitStrategy() // Агрессивная стратегия ожидания для минимального latency
         );
 
-        // 2. Регистрируем наш обработчик (Consumer)
-        var consumer = new OrderBookDisruptorConsumer();
-        disruptor.HandleEventsWith(consumer);
+        // 2. Создаем пул из 4-х параллельных воркеров
+        var cpuCount = 4;
+        var processors = new OrderBookProcessor[cpuCount];
+        for (var i = 0; i < cpuCount; i++)
+        {
+            processors[i] = new OrderBookProcessor(
+                processorId: i,
+                totalProcessors: cpuCount
+            );
+        }
 
-        // 3. Запускаем внутренние потоки Disruptor и получаем доступ к RingBuffer
+        // 3. Регистрируем их в Disruptor параллельно 
+        // (Они будут читать из RingBuffer одновременно, каждый забирая свои AssetId)
+        disruptor.HandleEventsWith(processors);
+
+        // 4. Запуск инфраструктуры потребителей
         var ringBuffer = disruptor.Start();
 
-        // 4. Создаем Троттлер и передаем ему ссылку на RingBuffer
-        var throttler = new OrderBookPublisher(ringBuffer);
-
-        // Запуск фонового таймера отправки срезов (раз в 5 секунд)
-        using var cts = new CancellationTokenSource();
-        var emittingTask = throttler.StartEmittingAsync(cts.Token);
-
+        // 5. Передаем ringBuffer в наш OrderBookPublisher (код из прошлых шагов)
+        var publisher = new OrderBookPublisher(ringBuffer);
         // Симуляция: Передаем пустой стрим для демонстрации парсинга (в реальности здесь будет NetworkStream/PipeReader)
+        using var cts = new CancellationTokenSource();
         using var mockStream = new MemoryStream();
-        await throttler.ParseStreamAsync(mockStream, cts.Token);
+        await publisher.StartParsingAsync(mockStream, cts.Token);
 
         // Корректное завершение при остановке приложения
         await cts.CancelAsync();
-        await emittingTask;
         disruptor.Shutdown();
     }
 }

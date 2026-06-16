@@ -3,7 +3,6 @@ using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Disruptor;
-using Microsoft.Extensions.Logging;
 
 namespace Vertr.Market.Application.Models;
 
@@ -11,16 +10,13 @@ public sealed class OrderBookPublisher
 {
     private static readonly int OrderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
-    private readonly ILogger<OrderBookPublisher> _logger;
 
     private int _parserStarted;
 
-    public OrderBookPublisher(RingBuffer<OrderBookEvent> ringBuffer, ILogger<OrderBookPublisher> logger)
+    public OrderBookPublisher(RingBuffer<OrderBookEvent> ringBuffer)
     {
         ArgumentNullException.ThrowIfNull(ringBuffer);
-        ArgumentNullException.ThrowIfNull(logger);
         _ringBuffer = ringBuffer;
-        _logger = logger;
     }
 
     public async Task StartParsingAsync(Stream stream, CancellationToken ct)
@@ -45,11 +41,6 @@ public sealed class OrderBookPublisher
         catch (OperationCanceledException)
         {
             // Ожидаемое завершение
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Critical error in OrderBook PipeReader loop");
-            throw;
         }
         finally
         {
