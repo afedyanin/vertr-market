@@ -81,7 +81,7 @@ public static class Program
         // Симуляция: Передаем пустой стрим для демонстрации парсинга (в реальности здесь будет NetworkStream/PipeReader)
         using var cts = new CancellationTokenSource();
         using var mockStream = new MemoryStream();
-        await publisher.StartParsingAsync(mockStream, cts.Token);
+        await publisher.ParseStreamAsync(mockStream, cts.Token);
 
         // Корректное завершение при остановке приложения
         await cts.CancelAsync();

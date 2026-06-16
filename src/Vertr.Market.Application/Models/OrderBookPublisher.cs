@@ -19,7 +19,7 @@ public sealed class OrderBookPublisher
         _ringBuffer = ringBuffer;
     }
 
-    public async Task StartParsingAsync(Stream stream, CancellationToken ct)
+    public async Task ParseStreamAsync(Stream stream, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
@@ -32,7 +32,7 @@ public sealed class OrderBookPublisher
         var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(
             bufferSize: OrderBookSize * 4, // Оптимальный размер буфера под несколько структур
             minimumReadSize: OrderBookSize,
-            leaveOpen: false));
+            leaveOpen: true));
 
         try
         {
