@@ -5,25 +5,12 @@ namespace Vertr.Market.Application.Tests.Models;
 public class OrderBookEventTests
 {
     [Test]
-    public void Constructor_WithCapacity_InitializesCorrectly()
+    public void Constructor_InitializesCountToZero()
     {
-        const int capacity = 64;
-        var sut = new OrderBookEvent(capacity);
+        var sut = new OrderBookEvent(64);
 
-        Assert.That(sut.Capacity, Is.EqualTo(capacity));
+        Assert.That(OrderBookEvent.Capacity, Is.EqualTo(1024));
         Assert.That(sut.Count, Is.EqualTo(0));
-    }
-
-    [Test]
-    public void Constructor_WithDifferentCapacities_SetsCorrectCapacity()
-    {
-        var sut1 = new OrderBookEvent(16);
-        var sut2 = new OrderBookEvent(128);
-        var sut3 = new OrderBookEvent(1024);
-
-        Assert.That(sut1.Capacity, Is.EqualTo(16));
-        Assert.That(sut2.Capacity, Is.EqualTo(128));
-        Assert.That(sut3.Capacity, Is.EqualTo(1024));
     }
 
     [Test]
@@ -108,20 +95,6 @@ public class OrderBookEventTests
     }
 
     [Test]
-    public void Capacity_WithSmallCapacity_ReturnsCorrectSize()
-    {
-        var sut = new OrderBookEvent(4);
-        Assert.That(sut.Capacity, Is.EqualTo(4));
-    }
-
-    [Test]
-    public void Capacity_WithLargeCapacity_ReturnsCorrectSize()
-    {
-        var sut = new OrderBookEvent(4096);
-        Assert.That(sut.Capacity, Is.EqualTo(4096));
-    }
-
-    [Test]
     public void Clear_ThenSetCount_UpdatesCountCorrectly()
     {
         var sut = new OrderBookEvent(10);
@@ -137,11 +110,11 @@ public class OrderBookEventTests
     [Test]
     public void Indexer_OutOfCapacityRange_ThrowsException()
     {
-        var sut = new OrderBookEvent(4);
+        var sut = new OrderBookEvent(OrderBookEvent.Capacity);
 
         Assert.Throws<IndexOutOfRangeException>(() =>
         {
-            var _ = sut[100];
+            var _ = sut[OrderBookEvent.Capacity];
         });
     }
 }

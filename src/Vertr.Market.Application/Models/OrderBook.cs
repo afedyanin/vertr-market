@@ -20,6 +20,8 @@ public struct OrderBook
 // Pre-allocated array на всё время жизни — ноль аллокаций в steady-state.
 public sealed class OrderBookEvent
 {
+    public const int Capacity = 1024;
+
     private readonly OrderBook[] _books;
     public int Count { get; internal set; }
 
@@ -38,7 +40,6 @@ public sealed class OrderBookEvent
     }
 
     public ref OrderBook this[int index] => ref _books[index];
-    public int Capacity => _books.Length;
 }
 
 // Элемент стакана (размер: 16 байт)

@@ -7,9 +7,16 @@ namespace Vertr.Market.Application.Models;
 
 public sealed class OrderBookThrottler
 {
-    // Хранилище актуальных стаканов по ID актива. Память выделяется один раз при заполнении.
+    // Хранилище актуальных стаканов по индексу AssetId. Память выделяется один раз при заполнении.
     // При поступлении новых данных ячейки памяти просто перезаписываются.
-    private readonly Dictionary<int, OrderBook> _latestBooks = new(1024);
+    //
+    // Thread-safety: _latestBooks читается в StartEmittingAsync (поток таймера) и записывается
+    // в HandleIncomingOrderBook (поток парсера). Lock гарантирует, что emitter видит
+    // консистентный снимок — либо все предыдущие записи, либо все новые, но никогда
+    // промежуточное состояние, когда часть элементов обновлена, а часть — нет.
+    private readonly OrderBook[] _latestBooks = new OrderBook[OrderBookEvent.Capacity];
+    private readonly object _lock = new();
+
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private readonly TimeSpan _interval;
     private readonly int _orderBookSize = Unsafe.SizeOf<OrderBook>();
@@ -53,9 +60,10 @@ public sealed class OrderBookThrottler
     /// </summary>
     public void HandleIncomingOrderBook(in OrderBook incomingBook)
     {
-        ref var current = ref CollectionsMarshal.GetValueRefOrAddDefault(
-            _latestBooks, incomingBook.AssetId, out var _);
-        current = incomingBook;
+        lock (_lock)
+        {
+            _latestBooks[incomingBook.AssetId] = incomingBook;
+        }
     }
 
     /// <summary>
@@ -72,18 +80,15 @@ public sealed class OrderBookThrottler
 
             @event.Clear();
 
-            var i = 0;
-            foreach (var kvp in _latestBooks)
+            lock (_lock)
             {
-                if (i < @event.Capacity)
+                for (var index = 0; index < OrderBookEvent.Capacity; index++)
                 {
-                    @event[i] = kvp.Value;
+                    @event[index] = _latestBooks[index];
                 }
 
-                i++;
+                @event.Count = OrderBookEvent.Capacity;
             }
-
-            @event.Count = i;
 
             _ringBuffer.Publish(sequence);
         }
