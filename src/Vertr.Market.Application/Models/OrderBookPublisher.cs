@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Disruptor;
+using Microsoft.Extensions.Logging;
 
 namespace Vertr.Market.Application.Models;
 
@@ -9,23 +10,26 @@ public sealed class OrderBookPublisher
 {
     private static readonly int OrderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
+    private readonly ILogger<OrderBookPublisher> _logger;
 
-    private int _parserStarted;
+    private static int _parserStarted;
 
-    public OrderBookPublisher(RingBuffer<OrderBookEvent> ringBuffer)
+    public OrderBookPublisher(RingBuffer<OrderBookEvent> ringBuffer, ILogger<OrderBookPublisher> logger)
     {
         ArgumentNullException.ThrowIfNull(ringBuffer);
+        ArgumentNullException.ThrowIfNull(logger);
         _ringBuffer = ringBuffer;
+        _logger = logger;
     }
 
     public Task StartParsingAsync(Stream stream, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
         if (Interlocked.CompareExchange(ref _parserStarted, 1, 0) == 1)
         {
             throw new InvalidOperationException("Parser already started.");
         }
-
-        ArgumentNullException.ThrowIfNull(stream);
 
         return Task.Factory.StartNew(
             () => ParseStreamSyncLoop(stream, ct),
@@ -79,12 +83,21 @@ public sealed class OrderBookPublisher
                 }
             }
         }
-        catch (OperationCanceledException) { }
-        catch (IOException) { }
-        catch (ObjectDisposedException) { }
+        catch (OperationCanceledException)
+        {
+            // Ожидаемое завершение при отмене токена.
+        }
+        catch (IOException)
+        {
+            // Ожидаемое завершение при закрытии/разрыве stream.
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ожидаемое завершение при dispose stream.
+        }
         catch (Exception ex)
         {
-            Console.WriteLine($"Critical error in ParseStreamSyncLoop: {ex.Message}");
+            _logger.LogError(ex, "Critical error in ParseStreamSyncLoop");
             throw;
         }
         finally
@@ -115,7 +128,7 @@ public sealed class OrderBookEvent
     public void Update(in OrderBook newBook)
     {
         Volatile.Write(ref _version, _version + 1);
-        Interlocked.MemoryBarrier();
+        Thread.MemoryBarrier();
 
         _orderBook = newBook;
 
@@ -125,24 +138,29 @@ public sealed class OrderBookEvent
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRead(out OrderBook result)
     {
-        for (var spin = 0; spin < 3; spin++)
+        var spinWait = new SpinWait();
+
+        for (var i = 0; i < 30; i++)
         {
             var startVersion = Volatile.Read(ref _version);
 
+            // Нечётная версия означает, что запись идёт.
             if ((startVersion & 1) != 0)
             {
-                Thread.SpinWait(1);
+                spinWait.SpinOnce();
                 continue;
             }
 
+            Thread.MemoryBarrier();
             result = _orderBook;
-
-            Interlocked.MemoryBarrier();
+            Thread.MemoryBarrier();
 
             if (startVersion == Volatile.Read(ref _version))
             {
                 return true;
             }
+
+            spinWait.SpinOnce();
         }
 
         result = default;
