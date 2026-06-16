@@ -20,6 +20,13 @@ public sealed class OrderBookThrottler
 
     public async ValueTask ParseStreamAsync(Stream stream, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        if (!stream.CanRead)
+        {
+            throw new InvalidOperationException("Stream does not support reading.");
+        }
+
         var buffer = new byte[_orderBookSize];
         var memoryBuffer = buffer.AsMemory();
 
@@ -47,6 +54,14 @@ public sealed class OrderBookThrottler
         {
             // Нормальное завершение работы
         }
+        catch (IOException) when (ct.IsCancellationRequested)
+        {
+            // Сеть разорвана из-за отмены — не выбрасываем повторно
+        }
+        catch (ObjectDisposedException) when (ct.IsCancellationRequested)
+        {
+            // Stream был удалён из-за отмены — не выбрасываем повторно
+        }
     }
 
 
@@ -56,22 +71,31 @@ public sealed class OrderBookThrottler
 
         while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
         {
-            // 1. Аллоцируем слот в RingBuffer силами консьюмера/таймера
-            var sequence = _ringBuffer.Next();
-            var targetEvent = _ringBuffer[sequence];
-
-            // 2. Копируем накопленные за интервал стаканы под локом
-            lock (_lock)
+            try
             {
-                // Быстрое копирование всего массива структур (Блиц-перенос памяти)
-                _accumulator.CopyTo(targetEvent);
+                // 1. Аллоцируем слот в RingBuffer силами консьюмера/таймера
+                var sequence = _ringBuffer.Next();
+                var targetEvent = _ringBuffer[sequence];
 
-                // Очищаем аккумулятор для следующего интервала времени
-                _accumulator.Clear();
+                // 2. Копируем накопленные за интервал стаканы под локом
+                lock (_lock)
+                {
+                    // Быстрое копирование всего массива структур (Блиц-перенос памяти)
+                    _accumulator.CopyTo(targetEvent);
+
+                    // Очищаем аккумулятор для следующего интервала времени
+                    _accumulator.Clear();
+                }
+
+                // 3. Публикуем событие в Disruptor для дальнейшей обработки
+                _ringBuffer.Publish(sequence);
             }
-
-            // 3. Публикуем событие в Disruptor для дальнейшей обработки
-            _ringBuffer.Publish(sequence);
+            catch (Exception) when (!ct.IsCancellationRequested)
+            {
+                // Disruptor может выбросить при переполнении RingBuffer или других ошибках.
+                // При отмене — не логируем, так как это ожидаемое поведение.
+                // TODO: добавить реальное логирование
+            }
         }
     }
 }
