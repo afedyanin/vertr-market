@@ -68,7 +68,7 @@ public static class Program
         var ringBuffer = disruptor.Start();
 
         // 4. Создаем Троттлер и передаем ему ссылку на RingBuffer
-        var throttler = new OrderBookThrottler(TimeSpan.FromSeconds(5), ringBuffer);
+        var throttler = new OrderBookPublisher(ringBuffer);
 
         // Запуск фонового таймера отправки срезов (раз в 5 секунд)
         using var cts = new CancellationTokenSource();
