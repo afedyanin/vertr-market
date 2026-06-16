@@ -74,6 +74,12 @@ public sealed class OrderBookThrottlerDoubleBuffer
 
     /// <summary>
     /// Шаг 3: Периодический сброс (раз в 5 секунд) накопленных срезов в Disruptor.
+    ///
+    /// Критически важно: flip происходит ДО копирования.
+    /// Если скопировать, а потом flip — writer продолжает писать в active-буфер во время всего цикла for,
+    /// и snapshot получается неконсистентным: часть данных "старая", часть "новая".
+    /// Flip ДО копирования гарантирует: writer переключается на другой буфер, active-буфер становится
+    /// "замороженным" для чтения.
     /// </summary>
     public async Task StartEmittingAsync(CancellationToken ct)
     {
@@ -86,14 +92,16 @@ public sealed class OrderBookThrottlerDoubleBuffer
 
             @event.Clear();
 
+            // 1) Flip index ДО копирования — writer переключится на другой буфер
             var active = Volatile.Read(ref _activeIndex);
+            Volatile.Write(ref _activeIndex, active ^ 1);
+
+            // 2) Копируем буфер, который был active ДО flip (теперь writer в него не пишет)
             var source = active == 0 ? _bufferA : _bufferB;
             for (var index = 0; index < OrderBookEvent.Capacity; index++)
             {
                 @event[index] = source[index];
             }
-
-            Volatile.Write(ref _activeIndex, active ^ 1);
 
             _ringBuffer.Publish(sequence);
         }
