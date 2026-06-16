@@ -10,7 +10,6 @@ public sealed class OrderBookPublisher
 {
     private static readonly int OrderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
-
     private int _parserStarted;
 
     public OrderBookPublisher(RingBuffer<OrderBookEvent> ringBuffer)
@@ -28,11 +27,10 @@ public sealed class OrderBookPublisher
             throw new InvalidOperationException("Parser already started.");
         }
 
-        // Оборачиваем поток в PipeReader с оптимальными настройками для парсинга структур
         var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(
-            bufferSize: OrderBookSize * 4, // Оптимальный размер буфера под несколько структур
+            bufferSize: OrderBookSize * 8, // Увеличили для стабильности window
             minimumReadSize: OrderBookSize,
-            leaveOpen: true));
+            leaveOpen: false)); // Измените на false, если управление жизненным циклом тут
 
         try
         {
@@ -56,57 +54,46 @@ public sealed class OrderBookPublisher
             var result = await reader.ReadAsync(ct).ConfigureAwait(false);
             var buffer = result.Buffer;
 
-            // Если чтение было отменено извне через CancelPendingRead
             if (result.IsCanceled)
             {
                 break;
             }
 
-            // Фиксируем начальную точку. Все, что мы успешно распарсим, 
-            // сдвинет эту точку вперед.
             var consumed = buffer.Start;
 
             while (buffer.Length >= OrderBookSize)
             {
                 var orderBookBuffer = buffer.Slice(0, OrderBookSize);
-                OrderBook incomingBook;
 
-                if (orderBookBuffer.IsSingleSegment)
-                {
-                    // Гарантируем, что Span имеет размер строго OrderBookSize
-                    incomingBook = MemoryMarshal.Read<OrderBook>(orderBookBuffer.First.Span[..OrderBookSize]);
-                }
-                else
-                {
-                    Unsafe.SkipInit(out incomingBook);
-                    var destination = MemoryMarshal.CreateSpan(ref Unsafe.As<OrderBook, byte>(ref incomingBook), OrderBookSize);
-                    orderBookBuffer.CopyTo(destination);
-                }
-
+                // Получаем sequence непосредственно перед работой, гарантируя атомарность для Disruptor
                 var sequence = _ringBuffer.Next();
                 try
                 {
-                    _ringBuffer[sequence].OrderBook = incomingBook;
+                    // Пишем НАПРЯМУЮ в RingBuffer без создания тяжелой структуры в стеке
+                    ref var targetBook = ref _ringBuffer[sequence].OrderBook;
+                    var destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref targetBook, 1));
+
+                    orderBookBuffer.CopyTo(destination);
+                }
+                catch
+                {
+                    // В случае падения парсинга — публикуем пустой/сломанный ивент, 
+                    // чтобы не повесить RingBuffer, либо обрабатываем иначе
+                    throw;
                 }
                 finally
                 {
                     _ringBuffer.Publish(sequence);
                 }
 
-                // Сдвигаем буфер для следующей итерации цикла
                 buffer = buffer.Slice(orderBookBuffer.End);
-
-                // Фиксируем, что эти данные мы ПОЛНОСТЬЮ потребили
                 consumed = orderBookBuffer.End;
             }
 
-            // Consumed: данные, которые ушли в Disruptor (их можно удалить из памяти)
-            // Examined: данные, которые мы просмотрели полностью (включая недоеденный хвост buffer.End)
             reader.AdvanceTo(consumed, buffer.End);
 
             if (result.IsCompleted)
             {
-                // buffer теперь содержит только недоеденный хвост
                 if (buffer.Length > 0)
                 {
                     throw new EndOfStreamException("Stream ended with incomplete OrderBook data.");
