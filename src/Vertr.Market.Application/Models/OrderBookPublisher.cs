@@ -8,6 +8,7 @@ namespace Vertr.Market.Application.Models;
 
 public sealed class OrderBookPublisher
 {
+    // ВНИМАНИЕ: Убедитесь, что бинарный размер структуры в потоке ТОЧНО равен Unsafe.SizeOf
     private static readonly int OrderBookSize = Unsafe.SizeOf<OrderBook>();
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private int _parserStarted;
@@ -22,15 +23,15 @@ public sealed class OrderBookPublisher
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        if (Interlocked.CompareExchange(ref _parserStarted, 1, 0) == 1)
+        if (Interlocked.CompareExchange(ref _parserStarted, 1, 0) != 0)
         {
             throw new InvalidOperationException("Parser already started.");
         }
 
         var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(
-            bufferSize: OrderBookSize * 8, // Увеличили для стабильности window
+            bufferSize: OrderBookSize * 8,
             minimumReadSize: OrderBookSize,
-            leaveOpen: false)); // Измените на false, если управление жизненным циклом тут
+            leaveOpen: false));
 
         try
         {
@@ -38,7 +39,6 @@ public sealed class OrderBookPublisher
         }
         catch (OperationCanceledException)
         {
-            // Ожидаемое завершение
         }
         finally
         {
@@ -49,7 +49,7 @@ public sealed class OrderBookPublisher
 
     private async Task ParsePipeAsync(PipeReader reader, CancellationToken ct)
     {
-        while (!ct.IsCancellationRequested)
+        while (true)
         {
             var result = await reader.ReadAsync(ct).ConfigureAwait(false);
             var buffer = result.Buffer;
@@ -60,43 +60,58 @@ public sealed class OrderBookPublisher
             }
 
             var consumed = buffer.Start;
+            var examined = buffer.Start;
 
-            while (buffer.Length >= OrderBookSize)
+            try
             {
-                var orderBookBuffer = buffer.Slice(0, OrderBookSize);
+                while (buffer.Length >= OrderBookSize)
+                {
+                    var orderBookBuffer = buffer.Slice(0, OrderBookSize);
 
-                // Получаем sequence непосредственно перед работой, гарантируя атомарность для Disruptor
-                var sequence = _ringBuffer.Next();
-                try
-                {
-                    // Пишем НАПРЯМУЮ в RingBuffer без создания тяжелой структуры в стеке
-                    ref var targetBook = ref _ringBuffer[sequence].OrderBook;
-                    var destination = MemoryMarshal.CreateSpan(ref Unsafe.As<OrderBook, byte>(ref targetBook), OrderBookSize);
+                    var sequence = _ringBuffer.Next();
+                    var eventSlot = _ringBuffer[sequence];
 
-                    orderBookBuffer.CopyTo(destination);
-                }
-                catch
-                {
-                    // В случае падения парсинга — публикуем пустой/сломанный ивент, 
-                    // чтобы не повесить RingBuffer, либо обрабатываем иначе
-                    throw;
-                }
-                finally
-                {
+                    try
+                    {
+                        ref var targetBook = ref eventSlot.OrderBook;
+                        var destination = MemoryMarshal.CreateSpan(ref Unsafe.As<OrderBook, byte>(ref targetBook), OrderBookSize);
+
+                        if (orderBookBuffer.FirstSpan.Length >= OrderBookSize)
+                        {
+                            orderBookBuffer.FirstSpan.Slice(0, OrderBookSize).CopyTo(destination);
+                        }
+                        else
+                        {
+                            orderBookBuffer.CopyTo(destination);
+                        }
+
+                        eventSlot.IsValid = true;
+                    }
+                    catch
+                    {
+                        eventSlot.IsValid = false;
+                        _ringBuffer.Publish(sequence);
+                        throw;
+                    }
+
                     _ringBuffer.Publish(sequence);
+
+                    buffer = buffer.Slice(orderBookBuffer.End);
+                    consumed = orderBookBuffer.End;
                 }
 
-                buffer = buffer.Slice(orderBookBuffer.End);
-                consumed = orderBookBuffer.End;
+                examined = buffer.Length > 0 ? buffer.End : consumed;
             }
-
-            reader.AdvanceTo(consumed, buffer.End);
+            finally
+            {
+                reader.AdvanceTo(consumed, examined);
+            }
 
             if (result.IsCompleted)
             {
                 if (buffer.Length > 0)
                 {
-                    throw new EndOfStreamException("Stream ended with incomplete OrderBook data.");
+                    throw new EndOfStreamException($"Stream ended with incomplete OrderBook data. Remainder: {buffer.Length} bytes.");
                 }
 
                 break;

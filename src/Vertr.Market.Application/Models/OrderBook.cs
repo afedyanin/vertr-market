@@ -1,10 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Vertr.Market.Application.Models;
 
-
-[StructLayout(LayoutKind.Sequential)]
 public struct OrderBook
 {
     public int AssetId;
@@ -18,9 +15,10 @@ public struct OrderBook
 public sealed class OrderBookEvent
 {
     public OrderBook OrderBook;
+    public bool IsValid;
 }
 
-public readonly record struct OrderBookLevel(decimal Price, decimal Volume);
+public readonly record struct OrderBookLevel(long Price, long Volume);
 
 [InlineArray(10)]
 public struct LevelBuffer
