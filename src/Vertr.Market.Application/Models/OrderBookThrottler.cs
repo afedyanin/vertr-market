@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Disruptor;
 
@@ -11,29 +10,25 @@ public sealed class OrderBookThrottler
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private readonly TimeSpan _interval;
     private readonly int _orderBookSize = Unsafe.SizeOf<OrderBook>();
-    private long _sequence;
+    private readonly OrderBookEvent _accumulator = new();
 
     public OrderBookThrottler(TimeSpan interval, RingBuffer<OrderBookEvent> ringBuffer)
     {
         _interval = interval;
         _ringBuffer = ringBuffer;
-
-        // Init first event
-        _sequence = _ringBuffer.Next();
-        _ringBuffer[_sequence].Clear();
     }
 
     public async ValueTask ParseStreamAsync(Stream stream, CancellationToken ct)
     {
-        var rentArray = ArrayPool<byte>.Shared.Rent(_orderBookSize);
-        var memoryBuffer = rentArray.AsMemory(0, _orderBookSize);
+        var buffer = new byte[_orderBookSize];
+        var memoryBuffer = buffer.AsMemory();
 
         try
         {
             while (!ct.IsCancellationRequested)
             {
                 await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
-                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(memoryBuffer.Span);
+                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(buffer);
 
                 if ((uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
                 {
@@ -41,22 +36,19 @@ public sealed class OrderBookThrottler
                     continue;
                 }
 
-                HandleIncomingOrderBook(in incomingBook);
+                // Атомарно обновляем срез данных для таймера
+                lock (_lock)
+                {
+                    _accumulator[incomingBook.AssetId] = incomingBook;
+                }
             }
         }
-        finally
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            ArrayPool<byte>.Shared.Return(rentArray);
+            // Нормальное завершение работы
         }
     }
 
-    private void HandleIncomingOrderBook(in OrderBook incomingBook)
-    {
-        lock (_lock)
-        {
-            _ringBuffer[_sequence][incomingBook.AssetId] = incomingBook;
-        }
-    }
 
     public async Task StartEmittingAsync(CancellationToken ct)
     {
@@ -64,14 +56,22 @@ public sealed class OrderBookThrottler
 
         while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
         {
+            // 1. Аллоцируем слот в RingBuffer силами консьюмера/таймера
+            var sequence = _ringBuffer.Next();
+            var targetEvent = _ringBuffer[sequence];
+
+            // 2. Копируем накопленные за интервал стаканы под локом
             lock (_lock)
             {
-                _ringBuffer.Publish(_sequence);
+                // Быстрое копирование всего массива структур (Блиц-перенос памяти)
+                _accumulator.CopyTo(targetEvent);
 
-                // Init next event
-                _sequence = _ringBuffer.Next();
-                _ringBuffer[_sequence].Clear();
+                // Очищаем аккумулятор для следующего интервала времени
+                _accumulator.Clear();
             }
+
+            // 3. Публикуем событие в Disruptor для дальнейшей обработки
+            _ringBuffer.Publish(sequence);
         }
     }
 }

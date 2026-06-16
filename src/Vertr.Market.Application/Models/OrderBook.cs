@@ -36,6 +36,11 @@ public sealed class OrderBookEvent
     }
 
     public ref OrderBook this[int index] => ref _books[index];
+
+    public void CopyTo(OrderBookEvent destination)
+    {
+        Array.Copy(_books, destination._books, Capacity);
+    }
 }
 
 // Элемент стакана (размер: 16 байт)
