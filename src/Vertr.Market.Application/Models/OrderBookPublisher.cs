@@ -62,32 +62,36 @@ public sealed class OrderBookPublisher
     {
         while (!ct.IsCancellationRequested)
         {
-            // Асинхронно ждем появления данных в пайплайне
             var result = await reader.ReadAsync(ct).ConfigureAwait(false);
             var buffer = result.Buffer;
 
-            // Обрабатываем все полные структуры OrderBook, которые сейчас есть в буфере
+            // Если чтение было отменено извне через CancelPendingRead
+            if (result.IsCanceled)
+            {
+                break;
+            }
+
+            // Фиксируем начальную точку. Все, что мы успешно распарсим, 
+            // сдвинет эту точку вперед.
+            var consumed = buffer.Start;
+
             while (buffer.Length >= OrderBookSize)
             {
-                // Выделяем ровно тот кусок памяти, который занимает одна структура
                 var orderBookBuffer = buffer.Slice(0, OrderBookSize);
-
                 OrderBook incomingBook;
 
-                // Если буфер непрерывен в памяти (fast path), читаем структуру напрямую
                 if (orderBookBuffer.IsSingleSegment)
                 {
-                    incomingBook = MemoryMarshal.Read<OrderBook>(orderBookBuffer.First.Span);
+                    // Гарантируем, что Span имеет размер строго OrderBookSize
+                    incomingBook = MemoryMarshal.Read<OrderBook>(orderBookBuffer.First.Span[..OrderBookSize]);
                 }
                 else
                 {
-                    // Если буфер разбит на сегменты (slow path, бывает редко), копируем на стек
                     Unsafe.SkipInit(out incomingBook);
                     var destination = MemoryMarshal.CreateSpan(ref Unsafe.As<OrderBook, byte>(ref incomingBook), OrderBookSize);
                     orderBookBuffer.CopyTo(destination);
                 }
 
-                // Публикуем в Disruptor RingBuffer
                 var sequence = _ringBuffer.Next();
                 try
                 {
@@ -98,17 +102,20 @@ public sealed class OrderBookPublisher
                     _ringBuffer.Publish(sequence);
                 }
 
-                // Сдвигаем курсор буфера вперед на размер прочитанной структуры
+                // Сдвигаем буфер для следующей итерации цикла
                 buffer = buffer.Slice(orderBookBuffer.End);
+
+                // Фиксируем, что эти данные мы ПОЛНОСТЬЮ потребили
+                consumed = orderBookBuffer.End;
             }
 
-            // Говорим PipeReader, сколько данных мы потребили (consumed), 
-            // и до какого момента исследовали буфер (examined)
-            reader.AdvanceTo(buffer.Start, buffer.End);
+            // Consumed: данные, которые ушли в Disruptor (их можно удалить из памяти)
+            // Examined: данные, которые мы просмотрели полностью (включая недоеденный хвост buffer.End)
+            reader.AdvanceTo(consumed, buffer.End);
 
-            // Если стрим завершился и данных больше не будет
             if (result.IsCompleted)
             {
+                // buffer теперь содержит только недоеденный хвост
                 if (buffer.Length > 0)
                 {
                     throw new EndOfStreamException("Stream ended with incomplete OrderBook data.");
