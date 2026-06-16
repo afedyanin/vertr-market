@@ -60,14 +60,16 @@ public sealed class OrderBookThrottlerDoubleBuffer
 
     /// <summary>
     /// Шаг 2: Обновление состояния по принципу "последний пришедший побеждает".
-    /// Writer пишет в active-буфер, reader читает active и swap-ит.
+    /// Writer пишет в active-буфер и НЕ переключает _activeIndex — flip-права reader'а.
+    /// В классическом double-buffer pattern writer пишет в active, reader копирует active
+    /// и переключает index. Если writer сам flip-ит index, writer и reader начинают
+    /// работать с одним и тем же буфером — теряется double-buffering.
     /// </summary>
     internal void HandleIncomingOrderBook(in OrderBook incomingBook)
     {
         var active = Volatile.Read(ref _activeIndex);
         var target = active == 0 ? _bufferA : _bufferB;
         target[incomingBook.AssetId] = incomingBook;
-        Thread.MemoryBarrier();
     }
 
     /// <summary>

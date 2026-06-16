@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Disruptor;
 using Vertr.Market.Application.Models;
@@ -457,6 +458,162 @@ public class OrderBookThrottlerDoubleBufferTests
         }
     }
 
+    [Test]
+    public async Task HandleIncomingOrderBook_VolatileWriteFlip_ReaderSeesWriterData()
+    {
+        var ringBuffer = CreateRingBuffer();
+        var throttler = new OrderBookThrottlerDoubleBuffer(TimeSpan.FromMilliseconds(10), ringBuffer);
+        using var cts = new CancellationTokenSource();
+
+        var emittingTask = throttler.StartEmittingAsync(cts.Token);
+
+        var lastWriteValues = new ConcurrentDictionary<int, (int bid, int ask)>();
+
+        var writerTasks = new Task[16];
+        for (var i = 0; i < writerTasks.Length; i++)
+        {
+            var writerId = i;
+            writerTasks[i] = Task.Run(() =>
+            {
+                for (var j = 0; j < 5000; j++)
+                {
+                    var bid = writerId * 1000 + j;
+                    var ask = writerId * 2000 + j;
+                    var book = new OrderBook { AssetId = writerId, BidCount = bid, AskCount = ask };
+                    throttler.HandleIncomingOrderBook(in book);
+                    lastWriteValues.AddOrUpdate(writerId, (bid, ask), (_, __) => (bid, ask));
+                }
+            }, cts.Token);
+        }
+
+        await Task.WhenAll(writerTasks);
+
+        await Task.Delay(200, cts.Token);
+
+        await cts.CancelAsync();
+
+        try
+        {
+            await emittingTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ожидаемо
+        }
+
+        await Task.Delay(100, CancellationToken.None);
+
+        foreach (var kvp in lastWriteValues)
+        {
+            var emitted = EmitSnapshotFromAnyBuffer(throttler);
+            Assert.That(emitted[kvp.Key].BidCount, Is.EqualTo(kvp.Value.bid), $"AssetId={kvp.Key} bid visibility");
+            Assert.That(emitted[kvp.Key].AskCount, Is.EqualTo(kvp.Value.ask), $"AssetId={kvp.Key} ask visibility");
+        }
+    }
+
+    [Test]
+    public async Task HandleIncomingOrderBook_RapidFlip_NoStaleDataCopied()
+    {
+        var ringBuffer = CreateRingBuffer();
+        var throttler = new OrderBookThrottlerDoubleBuffer(TimeSpan.FromMilliseconds(5), ringBuffer);
+        using var cts = new CancellationTokenSource();
+
+        var emittingTask = throttler.StartEmittingAsync(cts.Token);
+
+        var writerTasks = new Task[32];
+        for (var i = 0; i < writerTasks.Length; i++)
+        {
+            var assetId = i;
+            var book = new OrderBook { AssetId = assetId, BidCount = assetId, AskCount = assetId * 2 };
+            writerTasks[i] = Task.Run(() =>
+            {
+                for (var j = 0; j < 3000; j++)
+                {
+                    throttler.HandleIncomingOrderBook(in book);
+                }
+            }, cts.Token);
+        }
+
+        await Task.WhenAll(writerTasks);
+        await cts.CancelAsync();
+
+        try
+        {
+            await emittingTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ожидаемо
+        }
+
+        var emitted = EmitSnapshot(throttler);
+        for (var i = 0; i < 32; i++)
+        {
+            Assert.That(emitted[i].BidCount, Is.EqualTo(i), $"AssetId={i} bid after rapid flip");
+            Assert.That(emitted[i].AskCount, Is.EqualTo(i * 2), $"AssetId={i} ask after rapid flip");
+        }
+    }
+
+    [Test]
+    public async Task HandleIncomingOrderBook_ConcurrentWriterReader_WriterFlipVisibility()
+    {
+        var ringBuffer = CreateRingBuffer();
+        var throttler = new OrderBookThrottlerDoubleBuffer(TimeSpan.FromMilliseconds(2), ringBuffer);
+        using var cts = new CancellationTokenSource();
+
+        var emittingTask = throttler.StartEmittingAsync(cts.Token);
+
+        var targetAsset = 777;
+        var expectedBid = 0;
+        var expectedAsk = 0;
+        var expectedLock = new object();
+
+        var writerTask = Task.Run(() =>
+        {
+            for (var j = 0; j < 20000; j++)
+            {
+                var book = new OrderBook { AssetId = targetAsset, BidCount = j, AskCount = j * 2 };
+                throttler.HandleIncomingOrderBook(in book);
+                lock (expectedLock)
+                {
+                    expectedBid = j;
+                    expectedAsk = j * 2;
+                }
+            }
+        }, cts.Token);
+
+        await Task.Delay(50, cts.Token);
+        await cts.CancelAsync();
+
+        try
+        {
+            await writerTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ожидаемо
+        }
+
+        await Task.Delay(50, CancellationToken.None);
+
+        try
+        {
+            await emittingTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ожидаемо
+        }
+
+        var emitted = EmitSnapshot(throttler);
+
+        lock (expectedLock)
+        {
+            Assert.That(emitted[targetAsset].BidCount, Is.EqualTo(expectedBid), "Last writer visibility after flip");
+            Assert.That(emitted[targetAsset].AskCount, Is.EqualTo(expectedAsk), "Last writer visibility after flip");
+        }
+    }
+
     private static RingBuffer<OrderBookEvent> CreateRingBuffer()
     {
         return RingBuffer<OrderBookEvent>.CreateSingleProducer(
@@ -481,6 +638,32 @@ public class OrderBookThrottlerDoubleBufferTests
         for (var i = 0; i < OrderBookEvent.Capacity; i++)
         {
             result[i] = source[i];
+        }
+
+        return result;
+    }
+
+    private OrderBook[] EmitSnapshotFromAnyBuffer(OrderBookThrottlerDoubleBuffer throttler)
+    {
+        var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var bufferA = typeof(OrderBookThrottlerDoubleBuffer).GetField("_bufferA", flags)!;
+        var bufferB = typeof(OrderBookThrottlerDoubleBuffer).GetField("_bufferB", flags)!;
+
+        var bufferAObj = (OrderBook[])bufferA.GetValue(throttler)!;
+        var bufferBObj = (OrderBook[])bufferB.GetValue(throttler)!;
+
+        var result = new OrderBook[OrderBookEvent.Capacity];
+        for (var i = 0; i < OrderBookEvent.Capacity; i++)
+        {
+            result[i] = bufferAObj[i];
+        }
+
+        for (var i = 0; i < OrderBookEvent.Capacity; i++)
+        {
+            if (bufferBObj[i].BidCount != 0 || bufferBObj[i].AskCount != 0)
+            {
+                result[i] = bufferBObj[i];
+            }
         }
 
         return result;
