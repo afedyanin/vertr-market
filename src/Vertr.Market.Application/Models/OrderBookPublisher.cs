@@ -43,7 +43,6 @@ public sealed class OrderBookPublisher
         finally
         {
             await reader.CompleteAsync().ConfigureAwait(false);
-            Interlocked.Exchange(ref _parserStarted, 0);
         }
     }
 
@@ -95,6 +94,9 @@ public sealed class OrderBookPublisher
                     {
                         // Ошибка внутри конкретного слота — не публикуем инвалидный шаг в продакшн, 
                         // а даем упасть всему пайплайну маркет-даты (Fail-Fast).
+                        var eventSlot = _ringBuffer[sequence];
+                        eventSlot.IsValid = false;
+                        _ringBuffer.Publish(sequence);
                         throw;
                     }
 
