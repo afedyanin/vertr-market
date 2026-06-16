@@ -42,12 +42,7 @@ public sealed class OrderBookThrottlerDoubleBuffer
         {
             while (!ct.IsCancellationRequested)
             {
-                var bytesRead = await stream.ReadAsync(memoryBuffer, ct).ConfigureAwait(false);
-                if (bytesRead == 0)
-                {
-                    break;
-                }
-
+                await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
                 ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(memoryBuffer.Span);
                 HandleIncomingOrderBook(in incomingBook);
             }
