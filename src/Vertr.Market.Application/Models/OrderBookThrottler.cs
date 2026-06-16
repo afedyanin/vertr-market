@@ -40,16 +40,17 @@ public sealed class OrderBookThrottler
             throw new InvalidOperationException("Stream does not support reading.");
         }
 
-        // Арендуем массив из пуста .NET (Zero allocation в рантайме)
-        var rentBuffer = ArrayPool<byte>.Shared.Rent(OrderBookSize);
-        var memoryBuffer = rentBuffer.AsMemory(0, OrderBookSize);
+        var localBuffer = GC.AllocateArray<byte>(OrderBookSize, pinned: true);
+        var memoryBuffer = localBuffer.AsMemory(0, OrderBookSize);
 
         try
         {
             while (!ct.IsCancellationRequested)
             {
                 await stream.ReadExactlyAsync(memoryBuffer, ct).ConfigureAwait(false);
-                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(rentBuffer.AsSpan(0, OrderBookSize));
+
+                var validSpan = localBuffer.AsSpan(0, OrderBookSize);
+                ref readonly var incomingBook = ref MemoryMarshal.AsRef<OrderBook>(validSpan);
 
                 if (incomingBook.AssetId < 0 || (uint)incomingBook.AssetId >= OrderBookEvent.Capacity)
                 {
@@ -65,10 +66,6 @@ public sealed class OrderBookThrottler
         catch (OperationCanceledException) { }
         catch (IOException) when (ct.IsCancellationRequested) { }
         catch (ObjectDisposedException) when (ct.IsCancellationRequested) { }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(rentBuffer);
-        }
     }
 
     public async Task StartEmittingAsync(CancellationToken ct)
@@ -85,6 +82,8 @@ public sealed class OrderBookThrottler
             while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
             {
                 long sequence = -1;
+                var isCopySuccessful = false;
+
                 try
                 {
                     sequence = _ringBuffer.Next();
@@ -94,11 +93,25 @@ public sealed class OrderBookThrottler
                     {
                         _accumulator.CopyTo(targetEvent);
                     }
+
+                    isCopySuccessful = true; // Фиксируем, что данные скопированы без ошибок
                 }
                 finally
                 {
                     if (sequence != -1)
                     {
+                        // Если копия сорвалась, затираем событие перед публикацией,
+                        // чтобы консьюмеры Disruptor не обработали мусор.
+                        if (!isCopySuccessful)
+                        {
+                            try
+                            {
+                                _ringBuffer[sequence].Clear();
+                            }
+                            catch { /* Игнорируем сопутствующие сбои */ }
+                        }
+
+                        // Контракт Disruptor: вызванный Next обязан завершиться Publish
                         _ringBuffer.Publish(sequence);
                     }
                 }
