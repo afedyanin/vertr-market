@@ -53,7 +53,7 @@ public static class Program
         const int bufferSize = 1024;
         // 1. Инициализируем Disruptor. Передаем фабрику для пре-аллокации наших классов-событий.
         var disruptor = new Disruptor<OrderBookEvent>(
-            eventFactory: () => new OrderBookEvent(OrderBookEvent.Capacity),
+            eventFactory: () => new OrderBookEvent(),
             ringBufferSize: bufferSize,
             taskScheduler: TaskScheduler.Default,
             producerType: ProducerType.Single, // У нас ровно один поток-издатель (таймер троттлера)

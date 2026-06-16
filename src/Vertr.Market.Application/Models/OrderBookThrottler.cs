@@ -88,6 +88,8 @@ public sealed class OrderBookThrottler
                 {
                     @event[index] = _latestBooks[index];
                 }
+
+                Array.Clear(_latestBooks);
             }
 
             _ringBuffer.Publish(sequence);
