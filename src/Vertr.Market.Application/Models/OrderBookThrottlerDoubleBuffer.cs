@@ -6,37 +6,41 @@ using Disruptor;
 namespace Vertr.Market.Application.Models;
 
 /// <summary>
-/// Throttler для стаканов — читает бинарный поток и периодически публикует снимки в Disruptor.
+/// Throttler for order books — reads a binary stream and periodically publishes snapshots to the Disruptor.
 ///
-/// HandleIncomingOrderBook (writer) и StartEmittingAsync (reader) работают из разных потоков.
-/// Writer пишет в active-буфер, reader читает active и swap-ит через Volatile.Read/Write.
+/// HandleIncomingOrderBook (writer) and StartEmittingAsync (reader) run on different threads.
+/// Writer writes to the active buffer; reader copies and flips via Interlocked.Exchange.
 /// </summary>
 public sealed class OrderBookThrottlerDoubleBuffer
 {
     private readonly OrderBook[] _bufferA = new OrderBook[OrderBookEvent.Capacity];
     private readonly OrderBook[] _bufferB = new OrderBook[OrderBookEvent.Capacity];
 
-    // Активный буфер: 0 = A, 1 = B.
-    // Reader использует Volatile.Read для visibility writer-записей.
+    // Active buffer: 0 = A, 1 = B.
+    // Reader uses Interlocked.Exchange for atomic flip with full memory barrier.
     private int _activeIndex;
 
     private readonly RingBuffer<OrderBookEvent> _ringBuffer;
     private readonly TimeSpan _interval;
-    private readonly int _orderBookSize = Unsafe.SizeOf<OrderBook>();
+    private readonly int _orderBookStructSize = Unsafe.SizeOf<OrderBook>();
 
     public OrderBookThrottlerDoubleBuffer(TimeSpan interval, RingBuffer<OrderBookEvent> ringBuffer)
     {
+        ArgumentNullException.ThrowIfNull(ringBuffer);
         _interval = interval;
         _ringBuffer = ringBuffer;
     }
 
     /// <summary>
-    /// Шаг 1: Быстрое чтение стаканов из бинарного стрима без аллокаций.
+    /// Step 1: Fast reading of order books from the binary stream with zero allocations.
     /// </summary>
     public async ValueTask ParseStreamAsync(Stream stream, CancellationToken ct)
     {
-        var rentArray = ArrayPool<byte>.Shared.Rent(_orderBookSize);
-        var memoryBuffer = rentArray.AsMemory(0, _orderBookSize);
+        // Binary stream layout must match the in-memory layout of OrderBook.
+        // OrderBook is a struct with value-type fields (LevelBuffer uses inline arrays),
+        // so sizeof(OrderBook) reflects the raw binary size.
+        var rentArray = ArrayPool<byte>.Shared.Rent(_orderBookStructSize);
+        var memoryBuffer = rentArray.AsMemory(0, _orderBookStructSize);
 
         try
         {
@@ -54,11 +58,10 @@ public sealed class OrderBookThrottlerDoubleBuffer
     }
 
     /// <summary>
-    /// Шаг 2: Обновление состояния по принципу "последний пришедший побеждает".
-    /// Writer пишет в active-буфер и НЕ переключает _activeIndex — flip-права reader'а.
-    /// В классическом double-buffer pattern writer пишет в active, reader копирует active
-    /// и переключает index. Если writer сам flip-ит index, writer и reader начинают
-    /// работать с одним и тем же буфером — теряется double-buffering.
+    /// Step 2: Last-writer-wins state update.
+    /// Writer writes to the active buffer and does NOT flip _activeIndex — flip is the reader's responsibility.
+    /// In the classic double-buffer pattern, writer writes to active, reader copies active and flips the index.
+    /// If writer flips the index itself, writer and reader end up sharing one buffer — double-buffering is lost.
     /// </summary>
     internal void HandleIncomingOrderBook(in OrderBook incomingBook)
     {
@@ -68,13 +71,13 @@ public sealed class OrderBookThrottlerDoubleBuffer
     }
 
     /// <summary>
-    /// Шаг 3: Периодический сброс (раз в 5 секунд) накопленных срезов в Disruptor.
+    /// Step 3: Periodic flush of accumulated snapshots to the Disruptor.
     ///
-    /// Критически важно: flip происходит ДО копирования.
-    /// Если скопировать, а потом flip — writer продолжает писать в active-буфер во время всего цикла for,
-    /// и snapshot получается неконсистентным: часть данных "старая", часть "новая".
-    /// Flip ДО копирования гарантирует: writer переключается на другой буфер, active-буфер становится
-    /// "замороженным" для чтения.
+    /// Critical: flip happens BEFORE copying.
+    /// If we copy first then flip, writer continues writing to the active buffer during the entire for-loop,
+    /// resulting in an inconsistent snapshot: some data is "old", some is "new".
+    /// Flip before copy guarantees: writer switches to the other buffer, making the active buffer
+    /// "frozen" for safe reading.
     /// </summary>
     public async Task StartEmittingAsync(CancellationToken ct)
     {
@@ -87,11 +90,11 @@ public sealed class OrderBookThrottlerDoubleBuffer
 
             @event.Clear();
 
-            // 1) Flip index ДО копирования — writer переключится на другой буфер
+            // 1) Flip index before copying — writer cannot interleave (only reader writes _activeIndex).
             var active = Volatile.Read(ref _activeIndex);
             Volatile.Write(ref _activeIndex, active ^ 1);
 
-            // 2) Копируем буфер, который был active ДО flip (теперь writer в него не пишет)
+            // 2) Copy the buffer that was active before the flip (writer cannot touch it now).
             var source = active == 0 ? _bufferA : _bufferB;
             for (var index = 0; index < OrderBookEvent.Capacity; index++)
             {
