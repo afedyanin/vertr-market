@@ -8,7 +8,8 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
 {
     private readonly int _processorId;
     private readonly int _totalProcessors;
-    private readonly long[] _lastTimestamps;
+
+    private readonly DateTime[] _lastTimestamps;
     private readonly int _maxAssetId;
 
     private bool _hasPendingBatchData;
@@ -23,7 +24,7 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
         _processorId = processorId;
         _totalProcessors = totalProcessors;
         _maxAssetId = maxAssetId;
-        _lastTimestamps = new long[maxAssetId];
+        _lastTimestamps = new DateTime[maxAssetId];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,7 +33,7 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
         if ((data.OrderBook.AssetId % _totalProcessors) == _processorId)
         {
             _hasPendingBatchData = true;
-            ProcessOrderBook(in data.OrderBook);
+            ProcessOrderBook(data.OrderBook);
         }
 
         if (endOfBatch)
@@ -53,7 +54,7 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
             ThrowAssetIdOutOfRangeException(book.AssetId);
         }
 
-        ref var lastTs = ref _lastTimestamps[book.AssetId];
+        var lastTs = _lastTimestamps[book.AssetId];
 
         if (book.Timestamp <= lastTs)
         {
@@ -62,7 +63,7 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
         }
 
         // Обновляем значение по ссылке напрямую в памяти
-        lastTs = book.Timestamp;
+        _lastTimestamps[book.AssetId] = book.Timestamp;
 
         // Бизнес-логика
         if (book.BidCount > 0 && book.AskCount > 0)

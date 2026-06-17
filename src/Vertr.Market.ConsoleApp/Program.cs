@@ -78,12 +78,12 @@ public static class Program
         var ringBuffer = disruptor.Start();
 
         // 5. Создаем Channel и передаем reader в OrderBookPublisher
-        var publisher = new OrderBookPublisher(ringBuffer);
         var channel = Channel.CreateUnbounded<OrderBook>();
         using var cts = new CancellationTokenSource();
+        var publisher = new OrderBookChannelConsumer(ringBuffer, channel.Reader);
 
         var writeTask = WriteOrderBooksAsync(channel, cts.Token);
-        var parseTask = publisher.ParseChannelReaderAsync(channel.Reader, cts.Token);
+        var parseTask = publisher.ExecuteAsync(cts.Token);
 
         await Task.WhenAll(parseTask, writeTask);
 
