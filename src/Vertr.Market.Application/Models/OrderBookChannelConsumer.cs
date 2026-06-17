@@ -22,7 +22,10 @@ public sealed class OrderBookChannelConsumer
             {
                 var sequence = _ringBuffer.Next();
                 var eventSlot = _ringBuffer[sequence];
+
+                // Копируем структуру в пре-аллоцированный слот Disruptor один раз на входе
                 eventSlot.OrderBook = orderBook;
+
                 _ringBuffer.Publish(sequence);
             }
         }

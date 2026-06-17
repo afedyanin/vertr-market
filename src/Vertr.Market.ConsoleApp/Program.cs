@@ -23,7 +23,7 @@ public static class Program
             new YieldingWaitStrategy()
         );
 
-        var publisher = new ConsolePublisher();
+        var publisher = new DummyPublisher();
         var aggregator = new OrderBookAggregatorByLastItem(publisher, TimeSpan.FromSeconds(5));
         disruptor.HandleEventsWith(aggregator);
         var ringBuffer = disruptor.Start();
@@ -66,20 +66,19 @@ public static class Program
     }
 }
 
-public class ConsolePublisher : IOrderBookSnapshotPublisher
+public class DummyPublisher : IOrderBookSnapshotPublisher
 {
-    public async Task PublishAsync(IReadOnlyList<OrderBook> books, CancellationToken ct)
+    public Task PublishAsync(ReadOnlyMemory<OrderBook> books, CancellationToken ct)
     {
         Console.WriteLine("new batch of books: ");
 
-        foreach (var book in books)
+        foreach (var book in books.Span)
         {
             Console.WriteLine(DumpBook(in book));
         }
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
-
     private static string DumpBook(in OrderBook book)
         => $"AssetId={book.AssetId} Timestamp:{book.Timestamp:O}";
 }

@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 using Disruptor;
 using Vertr.Market.Application.Models;
 
@@ -7,7 +8,6 @@ namespace Vertr.Market.Application.EventHandlers;
 public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
 {
     private readonly TimeSpan _interval;
-
     private readonly IOrderBookSnapshotPublisher _publisher;
 
     private readonly Dictionary<int, OrderBook> _bufferA;
@@ -24,31 +24,42 @@ public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
         _publisher = publisher;
         _interval = interval;
 
-        _bufferA = new(capacity);
-        _bufferB = new(capacity);
+        _bufferA = new Dictionary<int, OrderBook>(capacity);
+        _bufferB = new Dictionary<int, OrderBook>(capacity);
 
         _current = _bufferA;
         _snapshot = _bufferB;
     }
 
-    public void OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void OnEvent(ref readonly OrderBookEvent data, long sequence, bool endOfBatch)
     {
-        var book = data.OrderBook;
+        // Извлекаем прямую ссылку на структуру внутри слота RingBuffer (0 копирований)
+        ref readonly var book = ref data.OrderBook;
 
-        if (_current.TryGetValue(book.AssetId, out var oldBook))
-        {
-            OrderBookPool.Return(oldBook);
-        }
-
+        // Копирование происходит один раз — непосредственно при записи в хэш-таблицу
         _current[book.AssetId] = book;
     }
 
+    /// <summary>
+    /// Стандартная реализация интерфейса Disruptor.
+    /// Перенаправляет вызов в оптимизированный метод. Полностью стирается JIT-компилятором при инлайнинге.
+    /// </summary>
+    void IEventHandler<OrderBookEvent>.OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
+    {
+        OnEvent(in data, sequence, endOfBatch);
+    }
+
+    /// <summary>
+    /// Асинхронный цикл публикации снимков стаканов. Вызывается в фоновом потоке.
+    /// </summary>
     public async Task StartEmittingAsync(CancellationToken ct)
     {
         using var timer = new PeriodicTimer(_interval);
 
         while (await timer.WaitForNextTickAsync(ct))
         {
+            // Атомарная и потокобезопасная подмена активного буфера (за счет volatile и Interlocked)
             var snapshot = Interlocked.Exchange(ref _current, _snapshot);
             _snapshot = snapshot;
 
@@ -58,37 +69,31 @@ public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
                 continue;
             }
 
+            // Арендуем массив структур из пула .NET во избежание аллокаций в куче (heap)
             var rentedArray = ArrayPool<OrderBook>.Shared.Rent(count);
-            _snapshot.Values.CopyTo(rentedArray, 0);
-            _snapshot.Clear();
-            _ = PublishSnapshotAsync(rentedArray, count, ct);
-        }
-    }
 
-    private async Task PublishSnapshotAsync(OrderBook[] rentedArray, int count, CancellationToken ct)
-    {
-        try
-        {
-            var segment = new ArraySegment<OrderBook>(rentedArray, 0, count);
-            await _publisher.PublishAsync(segment, ct);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error publishing snapshot: {ex.Message}");
-        }
-        finally
-        {
-            for (var i = 0; i < count; i++)
+            try
             {
-                OrderBookPool.Return(rentedArray[i]);
-            }
+                // Копируем значения из словаря в арендованный массив
+                _snapshot.Values.CopyTo(rentedArray, 0);
 
-            ArrayPool<OrderBook>.Shared.Return(rentedArray);
+                // Моментально очищаем буфер, подготавливая его к приему данных в следующем цикле
+                _snapshot.Clear();
+
+                // Публикуем срез памяти без аллокаций через ReadOnlyMemory
+                await _publisher.PublishAsync(new ReadOnlyMemory<OrderBook>(rentedArray, 0, count), ct);
+            }
+            finally
+            {
+                // Обязательный возврат массива в пул
+                ArrayPool<OrderBook>.Shared.Return(rentedArray);
+            }
         }
     }
 }
 
 public interface IOrderBookSnapshotPublisher
 {
-    Task PublishAsync(IReadOnlyList<OrderBook> books, CancellationToken ct);
+    // ReadOnlyMemory обеспечивает Zero-Allocation и совместим с async/await конструкциями
+    Task PublishAsync(ReadOnlyMemory<OrderBook> books, CancellationToken ct);
 }
