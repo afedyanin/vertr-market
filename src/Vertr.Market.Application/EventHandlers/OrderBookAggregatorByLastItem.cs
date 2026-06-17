@@ -1,42 +1,35 @@
-﻿using System.Runtime.CompilerServices;
-using Disruptor;
+﻿using Disruptor;
 using Vertr.Market.Application.Models;
 
 namespace Vertr.Market.Application.EventHandlers;
 
-internal class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
+public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
 {
     private readonly TimeSpan _interval;
 
-    private readonly OrderBook[] _lastBooks;
-    private readonly int _maxAssetId;
+    private readonly IOrderBookSnapshotPublisher _publisher;
 
-    public OrderBookAggregatorByLastItem(TimeSpan interval, int maxAssetId = 512)
+    private readonly Dictionary<int, OrderBook> _bufferA = new();
+    private readonly Dictionary<int, OrderBook> _bufferB = new();
+
+    private Dictionary<int, OrderBook> _current;
+    private Dictionary<int, OrderBook> _snapshot;
+
+    public OrderBookAggregatorByLastItem(
+        IOrderBookSnapshotPublisher publisher,
+        TimeSpan interval)
     {
+        _publisher = publisher;
         _interval = interval;
-        _maxAssetId = maxAssetId;
-        _lastBooks = new OrderBook[maxAssetId];
+
+        _current = _bufferA;
+        _snapshot = _bufferB;
     }
 
     public void OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
     {
         var book = data.OrderBook;
-
-        if ((uint)book.AssetId >= (uint)_maxAssetId)
-        {
-            ThrowAssetIdOutOfRangeException(book.AssetId);
-        }
-
-        ref var lastBook = ref _lastBooks[book.AssetId];
-
-        if (book.Timestamp <= lastBook.Timestamp)
-        {
-            // Пропускаем устаревший стакан
-            return;
-        }
-
-        // Обновляем значение по ссылке напрямую в памяти
-        lastBook = book;
+        _current[book.AssetId] = book;
     }
 
     public async Task StartEmittingAsync(CancellationToken ct)
@@ -45,14 +38,21 @@ internal class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
 
         try
         {
-            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            while (await timer.WaitForNextTickAsync(ct))
             {
+                var snapshot = Interlocked.Exchange(ref _current, _snapshot);
+                _snapshot = snapshot;
+                _publisher.Publish(_snapshot.Values);
+                _snapshot.Clear();
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+        }
     }
+}
 
-    [MethodImpl(MethodImplOptions.NoInlining)] // Выносим редкое исключение из горячего пути
-    private static void ThrowAssetIdOutOfRangeException(int assetId) =>
-        throw new ArgumentOutOfRangeException(nameof(assetId), $"AssetId {assetId} превышает максимальный размер массива.");
+public interface IOrderBookSnapshotPublisher
+{
+    public void Publish(IEnumerable<OrderBook> books);
 }
