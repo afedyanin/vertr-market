@@ -1,4 +1,5 @@
-﻿using Disruptor;
+﻿using System.Threading.Channels;
+using Disruptor;
 using Disruptor.Dsl;
 using Vertr.Market.Application.EventHandlers;
 using Vertr.Market.Application.Models;
@@ -76,15 +77,36 @@ public static class Program
         // 4. Запуск инфраструктуры потребителей
         var ringBuffer = disruptor.Start();
 
-        // 5. Передаем ringBuffer в наш OrderBookPublisher (код из прошлых шагов)
+        // 5. Создаем Channel и передаем reader в OrderBookPublisher
         var publisher = new OrderBookPublisher(ringBuffer);
-        // Симуляция: Передаем пустой стрим для демонстрации парсинга (в реальности здесь будет NetworkStream/PipeReader)
+        var channel = Channel.CreateUnbounded<OrderBook>();
         using var cts = new CancellationTokenSource();
-        using var mockStream = new MemoryStream();
-        await publisher.ParseStreamAsync(mockStream, cts.Token);
+
+        var writeTask = WriteOrderBooksAsync(channel, cts.Token);
+        var parseTask = publisher.ParseChannelReaderAsync(channel.Reader, cts.Token);
+
+        await Task.WhenAll(parseTask, writeTask);
 
         // Корректное завершение при остановке приложения
         await cts.CancelAsync();
         disruptor.Shutdown();
+    }
+
+    private static async Task WriteOrderBooksAsync(Channel<OrderBook> channel, CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await channel.Writer.WriteAsync(new OrderBook(), ct).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            channel.Writer.Complete();
+        }
     }
 }
