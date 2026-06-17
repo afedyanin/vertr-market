@@ -9,18 +9,22 @@ public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
 
     private readonly IOrderBookSnapshotPublisher _publisher;
 
-    private readonly Dictionary<int, OrderBook> _bufferA = new();
-    private readonly Dictionary<int, OrderBook> _bufferB = new();
+    private readonly Dictionary<int, OrderBook> _bufferA;
+    private readonly Dictionary<int, OrderBook> _bufferB;
 
     private Dictionary<int, OrderBook> _current;
     private Dictionary<int, OrderBook> _snapshot;
 
     public OrderBookAggregatorByLastItem(
         IOrderBookSnapshotPublisher publisher,
-        TimeSpan interval)
+        TimeSpan interval,
+        int capacity = 1024)
     {
         _publisher = publisher;
         _interval = interval;
+
+        _bufferA = new(capacity);
+        _bufferB = new(capacity);
 
         _current = _bufferA;
         _snapshot = _bufferB;
@@ -36,23 +40,22 @@ public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
     {
         using var timer = new PeriodicTimer(_interval);
 
-        try
+        while (await timer.WaitForNextTickAsync(ct))
         {
-            while (await timer.WaitForNextTickAsync(ct))
-            {
-                var snapshot = Interlocked.Exchange(ref _current, _snapshot);
-                _snapshot = snapshot;
-                _publisher.Publish(_snapshot.Values);
-                _snapshot.Clear();
-            }
-        }
-        catch (OperationCanceledException)
-        {
+            var snapshot = Interlocked.Exchange(ref _current, _snapshot);
+            _snapshot = snapshot;
+
+            var snapshotCopy = new OrderBook[_snapshot.Count];
+            _snapshot.Values.CopyTo(snapshotCopy, 0);
+
+            await _publisher.PublishAsync(snapshotCopy, ct);
+
+            _snapshot.Clear();
         }
     }
 }
 
 public interface IOrderBookSnapshotPublisher
 {
-    public void Publish(IEnumerable<OrderBook> books);
+    Task PublishAsync(IReadOnlyList<OrderBook> books, CancellationToken ct);
 }

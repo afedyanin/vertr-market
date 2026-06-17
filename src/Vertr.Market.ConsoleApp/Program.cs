@@ -62,7 +62,7 @@ public static class Program
 
 public class ConsolePublisher : IOrderBookSnapshotPublisher
 {
-    public void Publish(IEnumerable<OrderBook> books)
+    public async Task PublishAsync(IReadOnlyList<OrderBook> books, CancellationToken ct)
     {
         Console.WriteLine("new batch of books: ");
 
@@ -70,5 +70,7 @@ public class ConsolePublisher : IOrderBookSnapshotPublisher
         {
             Console.WriteLine(book);
         }
+
+        await Task.CompletedTask;
     }
 }
