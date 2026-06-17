@@ -8,12 +8,12 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
 {
     private readonly int _processorId;
     private readonly int _totalProcessors;
+    private readonly long[] _lastTimestamps;
+    private readonly int _maxAssetId;
 
-    // Внутреннее состояние (стейт) обработчика для конкретных активов.
-    // Так как поток у обработчика всегда один и тот же, этот словарь не требует локов!
-    private readonly Dictionary<int, long> _lastTimestamps = new();
+    private bool _hasPendingBatchData;
 
-    public OrderBookProcessor(int processorId, int totalProcessors)
+    public OrderBookProcessor(int processorId, int totalProcessors, int maxAssetId = 65536)
     {
         if (processorId < 0 || processorId >= totalProcessors)
         {
@@ -22,63 +22,67 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
 
         _processorId = processorId;
         _totalProcessors = totalProcessors;
+        _maxAssetId = maxAssetId;
+        _lastTimestamps = new long[maxAssetId];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
     {
-        // Шардирование по AssetId. 
-        // Гарантирует, что один и тот же актив ВСЕГДА обрабатывается только ОДНИМ конкретным потоком.
-        // При этом разные активы обрабатываются параллельно на разных ядрах CPU.
-        if ((data.OrderBook.AssetId % _totalProcessors) != _processorId)
+        if ((data.OrderBook.AssetId % _totalProcessors) == _processorId)
         {
-            return;
+            _hasPendingBatchData = true;
+            ProcessOrderBook(in data.OrderBook);
         }
 
-        // Передаем структуру по ссылке, чтобы избежать копирования тяжелого OrderBook на стек
-        ProcessOrderBook(in data.OrderBook, endOfBatch);
+        if (endOfBatch)
+        {
+            if (_hasPendingBatchData)
+            {
+                ExecuteBatchFlush();
+                _hasPendingBatchData = false;
+            }
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ProcessOrderBook(in OrderBook book, bool endOfBatch)
+    private void ProcessOrderBook(in OrderBook book)
     {
-        // 1. Быстрая валидация последовательности (Защита от старых данных/Race на источнике)
-        if (_lastTimestamps.TryGetValue(book.AssetId, out var lastTs) && book.Timestamp <= lastTs)
+        if ((uint)book.AssetId >= (uint)_maxAssetId)
         {
-            // Пропускаем устаревший стакан (Out-of-order пакет из сети)
+            ThrowAssetIdOutOfRangeException(book.AssetId);
+        }
+
+        ref var lastTs = ref _lastTimestamps[book.AssetId];
+
+        if (book.Timestamp <= lastTs)
+        {
+            // Пропускаем устаревший стакан
             return;
         }
 
-        _lastTimestamps[book.AssetId] = book.Timestamp;
+        // Обновляем значение по ссылке напрямую в памяти
+        lastTs = book.Timestamp;
 
-        // 2. Бизнес-логика (например, матчинг ордеров, арбитраж или сохранение)
-        // Для примера выведем спред лучшего бида/аска
+        // Бизнес-логика
         if (book.BidCount > 0 && book.AskCount > 0)
         {
-            // InlineArray позволяет работать с элементами через безопасный ref без аллокаций
             ref readonly var bestBid = ref book.Bids[0];
             ref readonly var bestAsk = ref book.Asks[0];
 
 #pragma warning disable IDE0059 // Unnecessary assignment of a value
             var spread = bestAsk.Price - bestBid.Price;
 #pragma warning restore IDE0059 // Unnecessary assignment of a value
-
-            // В реальной системе здесь будет вызов движка матчинга:
             // _matchingEngine.UpdateOrderBook(book.AssetId, in book);
-        }
-
-        // 3. Техника Batching (Пакетирование)
-        if (endOfBatch)
-        {
-            // Конец пачки! Издатель пока не записал новых данных, поток освободился.
-            // Идеальное место, чтобы сбросить накопленные метрики, сделать Flush в БД/лог 
-            // или отправить агрегированное уведомление, не тормозя обработку каждого стакана.
-            ExecuteBatchFlush();
         }
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)] // Выносим редкое исключение из горячего пути
+    private static void ThrowAssetIdOutOfRangeException(int assetId) =>
+        throw new ArgumentOutOfRangeException(nameof(assetId), $"AssetId {assetId} превышает максимальный размер массива.");
+
     private void ExecuteBatchFlush()
     {
-        // Логика тяжелого коммита/флаша, которая вызывается редко
+        // Логика тяжелого коммита
     }
 }
