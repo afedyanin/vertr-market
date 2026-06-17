@@ -46,7 +46,13 @@ public static class Program
         {
             while (!ct.IsCancellationRequested)
             {
-                await channel.Writer.WriteAsync(new OrderBook(), ct);
+                await channel.Writer.WriteAsync(
+                    new OrderBook()
+                    {
+                        AssetId = Random.Shared.Next(0, 100),
+                        Timestamp = DateTime.UtcNow
+                    }, ct);
+
                 await Task.Delay(100, ct);
             }
         }
@@ -68,9 +74,12 @@ public class ConsolePublisher : IOrderBookSnapshotPublisher
 
         foreach (var book in books)
         {
-            Console.WriteLine(book);
+            Console.WriteLine(DumpBook(in book));
         }
 
         await Task.CompletedTask;
     }
+
+    private static string DumpBook(in OrderBook book)
+        => $"AssetId={book.AssetId} Timestamp:{book.Timestamp:O}";
 }
