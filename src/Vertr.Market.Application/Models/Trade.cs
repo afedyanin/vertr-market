@@ -7,9 +7,17 @@ public readonly record struct Trade(
     DateTime Timestamp
 );
 
-public sealed class TradeEvent
+public enum MarketTradeEventType
 {
-    public Trade Trade;
+    Trade,
+    TimerTick
+}
+
+public sealed class MarketTradeEvent
+{
+    public MarketTradeEventType Type { get; set; }
+    public Trade Trade { get; set; }
+    public DateTime TimerTimestamp { get; set; } // Время тика таймера
 }
 
 public struct Candle

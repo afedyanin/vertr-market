@@ -1,101 +1,127 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Disruptor;
+using Vertr.Market.Application.Abstractions;
 using Vertr.Market.Application.Models;
 
 namespace Vertr.Market.Application.EventHandlers;
 
-
-public sealed class TradeAggregatorByCandle : IEventHandler<TradeEvent>
+public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
 {
     private readonly TimeSpan _candleInterval;
     private readonly ICandleSnapshotPublisher _publisher;
     private readonly Dictionary<int, Candle> _activeCandles;
+
+#pragma warning disable CA1805 // Do not initialize unnecessarily
+    // Используем Ticks для максимальной производительности сравнений
+    private long _maxSeenTradeTicks = 0;
+#pragma warning restore CA1805 // Do not initialize unnecessarily
 
     public TradeAggregatorByCandle(
         ICandleSnapshotPublisher publisher,
         TimeSpan candleInterval,
         int capacity = 1024)
     {
-        _publisher = publisher;
+        _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
         _candleInterval = candleInterval;
         _activeCandles = new(capacity);
     }
 
-    public void OnEvent(TradeEvent data, long sequence, bool endOfBatch)
+    public void OnEvent(MarketTradeEvent data, long sequence, bool endOfBatch)
     {
-        var trade = data.Trade;
+        switch (data.Type)
+        {
+            case MarketTradeEventType.Trade:
+                ProcessTrade(data.Trade);
+                break;
 
-        // 1. Вычисляем время начала текущего интервала свечи
-        var ticks = trade.Timestamp.Ticks;
-        var intervalTicks = _candleInterval.Ticks;
-        var candleOpenTime = new DateTime(ticks - (ticks % intervalTicks), trade.Timestamp.Kind);
+            case MarketTradeEventType.TimerTick:
+                var referenceTicks = data.TimerTimestamp.Ticks > _maxSeenTradeTicks ? data.TimerTimestamp.Ticks : _maxSeenTradeTicks;
+                var openCandleTicks = referenceTicks - (referenceTicks % _candleInterval.Ticks);
+                FlushExpiredCandles(openCandleTicks);
+                break;
+        }
+    }
 
-        // 2. Получаем ссылку на свечу в куче (внутри базового массива Dictionary)
+    private void ProcessTrade(in Trade trade)
+    {
+        var tradeTicks = trade.Timestamp.Ticks;
+        if (tradeTicks > _maxSeenTradeTicks)
+        {
+            _maxSeenTradeTicks = tradeTicks;
+        }
+
+        var tradeOpenTicks = tradeTicks - (tradeTicks % _candleInterval.Ticks);
+        var openTime = new DateTime(tradeOpenTicks, trade.Timestamp.Kind);
         ref var candle = ref CollectionsMarshal.GetValueRefOrAddDefault(_activeCandles, trade.AssetId, out var exists);
 
-        // 3. Если свеча уже была, но её время прошло — отправляем её в Publisher и сбрасываем стейт
-        if (exists && candle.OpenTime != candleOpenTime)
+        if (!exists || !candle.IsInitialized)
+        {
+            InitCandle(ref candle, in trade, openTime);
+            return;
+        }
+
+        if (candle.OpenTime.Ticks != tradeOpenTicks)
         {
             _publisher.Publish(in candle);
-            exists = false; // Помечаем, что текущую ячейку нужно инициализировать заново
+            InitCandle(ref candle, in trade, openTime);
+            return;
         }
 
-        // 4. Обновляем поля свечи по ссылке (in-place модификация)
-        if (!exists)
+        UpdateCandle(ref candle, in trade);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InitCandle(ref Candle candle, in Trade trade, DateTime openTime)
+    {
+        candle.AssetId = trade.AssetId;
+        candle.OpenTime = openTime;
+        candle.Open = trade.Price;
+        candle.High = trade.Price;
+        candle.Low = trade.Price;
+        candle.Close = trade.Price;
+        candle.Volume = trade.Volume;
+        candle.IsInitialized = true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void UpdateCandle(ref Candle candle, in Trade trade)
+    {
+        if (trade.Price > candle.High)
         {
-            candle.AssetId = trade.AssetId;
-            candle.OpenTime = candleOpenTime;
-            candle.Open = trade.Price;
             candle.High = trade.Price;
+        }
+
+        if (trade.Price < candle.Low)
+        {
             candle.Low = trade.Price;
-            candle.Close = trade.Price;
-            candle.Volume = trade.Volume;
-            candle.IsInitialized = true;
         }
-        else
-        {
-            if (trade.Price > candle.High)
-            {
-                candle.High = trade.Price;
-            }
 
-            if (trade.Price < candle.Low)
-            {
-                candle.Low = trade.Price;
-            }
-
-            candle.Close = trade.Price;
-            candle.Volume += trade.Volume;
-        }
+        candle.Close = trade.Price;
+        candle.Volume += trade.Volume;
     }
 
-    public async Task StartEmittingAsync(CancellationToken ct)
+    private void FlushExpiredCandles(long currentIntervalStartTicks)
     {
-        using var timer = new PeriodicTimer(_candleInterval);
-
-        while (await timer.WaitForNextTickAsync(ct))
+        if (_activeCandles.Count == 0)
         {
-            Flush();
+            return;
         }
-    }
 
-    public void Flush()
-    {
         foreach (var key in _activeCandles.Keys)
         {
-            ref var candleRef = ref CollectionsMarshal.GetValueRefOrNullRef(_activeCandles, key);
-            if (candleRef.IsInitialized)
+            ref var candle = ref CollectionsMarshal.GetValueRefOrNullRef(_activeCandles, key);
+
+            if (Unsafe.IsNullRef(ref candle))
             {
-                _publisher.Publish(in candleRef);
+                continue;
+            }
+
+            if (candle.IsInitialized && candle.OpenTime.Ticks < currentIntervalStartTicks)
+            {
+                _publisher.Publish(in candle);
+                candle.IsInitialized = false;
             }
         }
-
-        _activeCandles.Clear();
     }
 }
-
-public interface ICandleSnapshotPublisher
-{
-    void Publish(in Candle candle);
-}
-
