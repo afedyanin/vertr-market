@@ -1,5 +1,9 @@
+using System.Threading.Channels;
 using Serilog;
 using Vertr.Market.Application;
+using Vertr.Market.Application.Models;
+using Vertr.Market.Host.BackgroundServices;
+using Vertr.Market.Tinvest;
 
 namespace Vertr.Market.Host;
 
@@ -20,9 +24,12 @@ public static class Program
             .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
             .Enrich.WithThreadId());
 
-        // add Background services
 
+        builder.Services.AddSingleton(Channel.CreateUnbounded<OrderBook>());
+        builder.Services.AddSingleton(Channel.CreateUnbounded<Trade>());
         builder.Services.AddApplication();
+        builder.Services.AddTinvestMarketData(configuration);
+        builder.Services.AddHostedService<TinvestMarketDataConsumerService>();
 
         var app = builder.Build();
 

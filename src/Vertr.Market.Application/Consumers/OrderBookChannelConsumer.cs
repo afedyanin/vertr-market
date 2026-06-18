@@ -12,7 +12,7 @@ public sealed class OrderBookChannelConsumer
 
     public OrderBookChannelConsumer(
         RingBuffer<OrderBookEvent> ringBuffer,
-        ChannelReader<OrderBook> reader,
+        Channel<OrderBook> reader,
         TimeSpan interval)
     {
         _ringBuffer = ringBuffer;

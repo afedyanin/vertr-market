@@ -2,6 +2,7 @@
 using System.Threading.Channels;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
 using Vertr.Market.Tinvest.Converters;
@@ -16,35 +17,31 @@ public class MarketDataStreamClient
     private readonly ILogger<MarketDataStreamClient> _logger;
 
     private readonly TimeSpan _reconnectInterval = TimeSpan.FromSeconds(5);
-
-    private static readonly Dictionary<string, int> AssetMap = new()
-    {
-        { "e6123145-9665-43e0-8413-cd61b8aa9b13", 100  }, // SBER
-    };
-
-    private const bool IsEnabled = true; // TODO: Move to settings
+    private readonly Dictionary<string, int> _assetMap;
+    private readonly bool _isEnabled;
 
     public MarketDataStreamClient(
         InvestApiClient investApiClient,
-        ChannelWriter<Application.Models.OrderBook> orderBooksChannel,
-        ChannelWriter<Application.Models.Trade> tradesChannel,
+        Channel<Application.Models.OrderBook> orderBooksChannel,
+        Channel<Application.Models.Trade> tradesChannel,
+        IOptions<TinvestMarketDataSettings> options,
         ILogger<MarketDataStreamClient> logger)
     {
         _investApiClient = investApiClient;
         _orderBooksChannel = orderBooksChannel;
         _tradesChannel = tradesChannel;
         _logger = logger;
+        _assetMap = options.Value.Assets;
+        _isEnabled = options.Value.IsEnabled;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         try
         {
-            if (!IsEnabled)
+            if (!_isEnabled)
             {
-#pragma warning disable CS0162 // Unreachable code detected
                 _logger.LogWarning("{ServiceName} is disabled.", nameof(MarketDataStreamClient));
-#pragma warning restore CS0162 // Unreachable code detected
                 return;
             }
 
@@ -87,7 +84,7 @@ public class MarketDataStreamClient
         }
     }
 
-    public async Task Subscribe(
+    private async Task Subscribe(
         DateTime? deadline = null,
         CancellationToken cancellationToken = default)
     {
@@ -114,7 +111,7 @@ public class MarketDataStreamClient
             SubscriptionAction = SubscriptionAction.Subscribe,
         };
 
-        foreach (var instrumentId in AssetMap.Keys)
+        foreach (var instrumentId in _assetMap.Keys)
         {
             orderBookRequest.Instruments.Add(new OrderBookInstrument()
             {
@@ -172,7 +169,7 @@ public class MarketDataStreamClient
             _logger.LogDebug("OrderBook received: {OrderBook}", orderBook);
         }
 
-        if (!orderBook.IsConsistent || !AssetMap.TryGetValue(orderBook.InstrumentUid, out var assetId))
+        if (!orderBook.IsConsistent || !_assetMap.TryGetValue(orderBook.InstrumentUid, out var assetId))
         {
             return;
         }
@@ -194,7 +191,7 @@ public class MarketDataStreamClient
             _logger.LogDebug("Trade received: {Trade}", trade);
         }
 
-        if (!AssetMap.TryGetValue(trade.InstrumentUid, out var assetId))
+        if (!_assetMap.TryGetValue(trade.InstrumentUid, out var assetId))
         {
             return;
         }

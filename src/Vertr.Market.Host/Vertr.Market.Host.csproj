@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Vertr.Market.Application\Vertr.Market.Application.csproj" />
+    <ProjectReference Include="..\Vertr.Market.Tinvest\Vertr.Market.Tinvest.csproj" />
   </ItemGroup>
 
 </Project>

@@ -12,7 +12,7 @@ public sealed class TradeChannelConsumer
 
     public TradeChannelConsumer(
         RingBuffer<MarketTradeEvent> ringBuffer,
-        ChannelReader<Trade> reader,
+        Channel<Trade> reader,
         TimeSpan candleInterval)
     {
         _ringBuffer = ringBuffer;
