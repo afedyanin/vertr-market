@@ -1,4 +1,5 @@
-﻿using System.Threading.Channels;
+﻿using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using Tinkoff.InvestApi;
@@ -91,11 +92,13 @@ public class MarketDataStreamClient
         CancellationToken cancellationToken = default)
     {
         var request = CreateStreamRequest();
-        using var stream = _investApiClient.MarketDataStream.MarketDataServerSideStream(request, headers: null, deadline, cancellationToken);
 
-        await foreach (var response in stream.ResponseStream.ReadAllAsync(cancellationToken))
+        using (var stream = _investApiClient.MarketDataStream.MarketDataServerSideStream(request, headers: null, deadline, cancellationToken))
         {
-            await HandleResponse(response, cancellationToken);
+            await foreach (var response in stream.ResponseStream.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                await HandleResponseAsync(response, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 
@@ -135,122 +138,72 @@ public class MarketDataStreamClient
         return request;
     }
 
-    private async Task HandleResponse(MarketDataResponse? response, CancellationToken cancellationToken)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private ValueTask HandleResponseAsync(MarketDataResponse? response, CancellationToken cancellationToken)
     {
         if (response == null)
         {
+            return ValueTask.CompletedTask;
+        }
+
+        return response.PayloadCase switch
+        {
+            MarketDataResponse.PayloadOneofCase.Orderbook => HandleOrderBookAsync(response.Orderbook, cancellationToken),
+            MarketDataResponse.PayloadOneofCase.Trade => HandleTradeAsync(response.Trade, cancellationToken),
+            MarketDataResponse.PayloadOneofCase.Ping => HandlePing(response.Ping),
+            _ => ValueTask.CompletedTask
+        };
+    }
+
+    private ValueTask HandlePing(Ping ping)
+    {
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Ping received: {Ping}", ping);
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    private async ValueTask HandleOrderBookAsync(OrderBook orderBook, CancellationToken cancellationToken)
+    {
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("OrderBook received: {OrderBook}", orderBook);
+        }
+
+        if (!orderBook.IsConsistent || !AssetMap.TryGetValue(orderBook.InstrumentUid, out var assetId))
+        {
             return;
         }
 
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.Orderbook)
-        {
-            await HandleOrderBook(response.Orderbook, cancellationToken);
-            return;
-        }
+        var convertedBook = orderBook.Convert(assetId);
 
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.Candle)
+        // Попытка быстрой неблокирующей записи
+        if (!_orderBooksChannel.TryWrite(convertedBook))
         {
-            await HandleCandle(response.Candle, cancellationToken);
-            return;
-        }
-
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.SubscribeCandlesResponse)
-        {
-            await HandleSubscribeCandlesResponse(response.SubscribeCandlesResponse, cancellationToken);
-            return;
-        }
-
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.Ping)
-        {
-            await HandlePing(response.Ping, cancellationToken);
-            return;
-        }
-
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.SubscribeOrderBookResponse)
-        {
-            await HandleSubscribeOrderBookResponse(response.SubscribeOrderBookResponse, cancellationToken);
-            return;
-        }
-
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.Trade)
-        {
-            await HandleTrade(response.Trade, cancellationToken);
-            return;
-        }
-
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.SubscribeTradesResponse)
-        {
-            await HandleSubscribeTradesResponse(response.SubscribeTradesResponse, cancellationToken);
-            return;
-        }
-
-        if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.OpenInterest)
-        {
-            await HandleOpenInterest(response.OpenInterest, cancellationToken);
-            return;
+            // Честное асинхронное ожидание освобождения места в буфере без дедлока потока
+            await _orderBooksChannel.WriteAsync(convertedBook, cancellationToken).ConfigureAwait(false);
         }
     }
-    private async Task HandleOrderBook(OrderBook orderBook, CancellationToken cancellationToken)
+
+    private async ValueTask HandleTradeAsync(Trade trade, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("OrderBook received: {OrderBook}", orderBook);
-
-        if (!orderBook.IsConsistent)
+        if (_logger.IsEnabled(LogLevel.Debug))
         {
-            return;
+            _logger.LogDebug("Trade received: {Trade}", trade);
         }
-
-        if (!AssetMap.TryGetValue(orderBook.InstrumentUid, out var assetId))
-        {
-            return;
-        }
-
-        await _orderBooksChannel.WriteAsync(orderBook.Convert(assetId), cancellationToken);
-    }
-    private async Task HandleTrade(Trade trade, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("Trade received: {Trade}", trade);
 
         if (!AssetMap.TryGetValue(trade.InstrumentUid, out var assetId))
         {
             return;
         }
 
-        await _tradesChannel.WriteAsync(trade.Convert(assetId), cancellationToken);
-    }
+        var convertedTrade = trade.Convert(assetId);
 
-    private ValueTask HandleCandle(Candle candle, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("Candle received: {Candle}", candle);
-        return ValueTask.CompletedTask;
-    }
-
-    private ValueTask HandleSubscribeCandlesResponse(SubscribeCandlesResponse subscribeCandlesResponse, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("SubscribeCandlesResponse received: {SubscribeCandlesResponse}", subscribeCandlesResponse);
-        return ValueTask.CompletedTask;
-    }
-
-    private ValueTask HandlePing(Ping ping, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("Ping received: {Ping}", ping);
-        return ValueTask.CompletedTask;
-    }
-
-    private ValueTask HandleSubscribeOrderBookResponse(SubscribeOrderBookResponse subscribeOrderBookResponse, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("SubscribeOrderBookResponse received: {SubscribeOrderBookResponse}", subscribeOrderBookResponse);
-        return ValueTask.CompletedTask;
-    }
-
-    private ValueTask HandleSubscribeTradesResponse(SubscribeTradesResponse subscribeTradesResponse, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("SubscribeTradesResponse received: {SubscribeTradesResponse}", subscribeTradesResponse);
-        return ValueTask.CompletedTask;
-    }
-
-    private ValueTask HandleOpenInterest(OpenInterest openInterest, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("OpenInterest received: {OpenInterest}", openInterest);
-        return ValueTask.CompletedTask;
+        if (!_tradesChannel.TryWrite(convertedTrade))
+        {
+            await _tradesChannel.WriteAsync(convertedTrade, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

@@ -1,21 +1,27 @@
-﻿using Vertr.Market.Application.Models;
+﻿using System.Runtime.CompilerServices;
+using Vertr.Market.Application.Models;
 namespace Vertr.Market.Tinvest.Converters;
 
 internal static class OrderBookConverter
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static OrderBook Convert(this Tinkoff.InvestApi.V1.OrderBook orderBook, int assetId)
-        => new OrderBook
-        {
-            AssetId = assetId,
-            Timestamp = orderBook.Time.ToDateTime(),
-            Bids = orderBook.Bids.ToArray().Convert(),
-            Asks = orderBook.Asks.ToArray().Convert(),
-        };
+    {
+        return new OrderBook(
+            AssetId: assetId,
+            Timestamp: orderBook.Time.ToDateTime(),
+            Bids: orderBook.Bids.Convert(),
+            Asks: orderBook.Asks.Convert()
+        );
+    }
 
-    public static LevelBuffer Convert(this Tinkoff.InvestApi.V1.Order[] orders)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static LevelBuffer Convert(this Google.Protobuf.Collections.RepeatedField<Tinkoff.InvestApi.V1.Order> orders)
     {
         var lb = new LevelBuffer();
-        for (var i = 0; i <= Consts.OrderBookDepth; i++)
+        var limit = Math.Min(orders.Count, Consts.OrderBookDepth);
+
+        for (var i = 0; i < limit; i++)
         {
             lb[i] = orders[i].Convert();
         }
@@ -23,10 +29,7 @@ internal static class OrderBookConverter
         return lb;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static OrderBookLevel Convert(this Tinkoff.InvestApi.V1.Order order)
-        => new OrderBookLevel
-        {
-            Price = order.Price,
-            Volume = order.Quantity,
-        };
+        => new OrderBookLevel(order.Price, order.Quantity);
 }
