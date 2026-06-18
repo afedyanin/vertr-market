@@ -10,11 +10,6 @@ public readonly record struct OrderBook(
     int BidCount,
     int AskCount);
 
-public sealed class OrderBookEvent
-{
-    public OrderBook OrderBook;
-}
-
 [InlineArray(10)]
 public struct LevelBuffer
 {
@@ -22,3 +17,16 @@ public struct LevelBuffer
 }
 
 public readonly record struct OrderBookLevel(decimal Price, long Volume);
+
+public enum OrderBookEventType
+{
+    OrderBook,
+    TimerTick
+}
+
+public sealed class OrderBookEvent
+{
+    public OrderBookEventType Type { get; set; }
+    public OrderBook OrderBook { get; set; }
+    public DateTime TimerTimestamp { get; set; }
+}

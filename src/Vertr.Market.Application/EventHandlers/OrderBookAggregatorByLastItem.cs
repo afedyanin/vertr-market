@@ -1,75 +1,91 @@
-﻿using System.Buffers;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Disruptor;
 using Vertr.Market.Application.Abstractions;
 using Vertr.Market.Application.Models;
 
 namespace Vertr.Market.Application.EventHandlers;
 
-public class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
+public sealed class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
 {
+    private struct OrderBookState
+    {
+        public OrderBook Book;
+        public bool IsDirty;
+    }
+
     private readonly TimeSpan _interval;
     private readonly IOrderBookSnapshotPublisher _publisher;
 
-    private readonly Dictionary<int, OrderBook> _bufferA;
-    private readonly Dictionary<int, OrderBook> _bufferB;
-
-    private volatile Dictionary<int, OrderBook> _current;
-    private volatile Dictionary<int, OrderBook> _snapshot;
+    private readonly Dictionary<int, OrderBookState> _activeBooks;
+    private long _maxSeenBookTicks;
 
     public OrderBookAggregatorByLastItem(
         IOrderBookSnapshotPublisher publisher,
         TimeSpan interval,
         int capacity = 1024)
     {
-        _publisher = publisher;
+        _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
         _interval = interval;
-
-        _bufferA = new Dictionary<int, OrderBook>(capacity);
-        _bufferB = new Dictionary<int, OrderBook>(capacity);
-
-        _current = _bufferA;
-        _snapshot = _bufferB;
+        _activeBooks = new(capacity);
     }
-    void IEventHandler<OrderBookEvent>.OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
+
+    public void OnEvent(OrderBookEvent data, long sequence, bool endOfBatch)
     {
-        OnEvent(in data, sequence, endOfBatch);
+        switch (data.Type)
+        {
+            case OrderBookEventType.OrderBook:
+                ProcessOrderBook(data.OrderBook);
+                break;
+
+            case OrderBookEventType.TimerTick:
+                var referenceTicks = data.TimerTimestamp.Ticks > _maxSeenBookTicks
+                    ? data.TimerTimestamp.Ticks
+                    : _maxSeenBookTicks;
+
+                FlushExpiredBooks(referenceTicks);
+                break;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void OnEvent(ref readonly OrderBookEvent data, long sequence, bool endOfBatch)
+    private void ProcessOrderBook(in OrderBook book)
     {
-        ref readonly var book = ref data.OrderBook;
-        _current[book.AssetId] = book;
+        var bookTicks = book.Timestamp.Ticks;
+        if (bookTicks > _maxSeenBookTicks)
+        {
+            _maxSeenBookTicks = bookTicks;
+        }
+
+        ref var state = ref CollectionsMarshal.GetValueRefOrAddDefault(_activeBooks, book.AssetId, out _);
+        state.Book = book;
+        state.IsDirty = true;
     }
 
-    public async Task StartEmittingAsync(CancellationToken ct)
+    private void FlushExpiredBooks(long referenceTicks)
     {
-        using var timer = new PeriodicTimer(_interval);
-
-        while (await timer.WaitForNextTickAsync(ct))
+        if (_activeBooks.Count == 0)
         {
-            var snapshot = Interlocked.Exchange(ref _current, _snapshot);
-            _snapshot = snapshot;
+            return;
+        }
 
-            var count = _snapshot.Count;
+        // Рассчитываем верхнюю границу временного интервала, который подлежит отправке
+        var currentIntervalStartTicks = referenceTicks - (referenceTicks % _interval.Ticks);
 
-            if (count == 0)
+        foreach (var key in _activeBooks.Keys)
+        {
+            ref var state = ref CollectionsMarshal.GetValueRefOrNullRef(_activeBooks, key);
+
+            if (Unsafe.IsNullRef(ref state))
             {
                 continue;
             }
 
-            var rentedArray = ArrayPool<OrderBook>.Shared.Rent(count);
-
-            try
+            // Отправляем стакан, если он обновился И время его формирования строго меньше текущей границы таймера
+            if (state.IsDirty && state.Book.Timestamp.Ticks < currentIntervalStartTicks)
             {
-                _snapshot.Values.CopyTo(rentedArray, 0);
-                _snapshot.Clear();
-                await _publisher.PublishAsync(new ReadOnlyMemory<OrderBook>(rentedArray, 0, count), ct);
-            }
-            finally
-            {
-                ArrayPool<OrderBook>.Shared.Return(rentedArray);
+                _publisher.Publish(in state.Book);
+                state.IsDirty = false; // Сбрасываем флаг изменений, стакан отправлен
             }
         }
     }

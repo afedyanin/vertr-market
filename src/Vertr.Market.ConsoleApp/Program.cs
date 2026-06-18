@@ -25,20 +25,20 @@ public static class Program
             new YieldingWaitStrategy()
         );
 
+        var interval = TimeSpan.FromSeconds(5);
         var publisher = new DummyPublisher();
-        var aggregator = new OrderBookAggregatorByLastItem(publisher, TimeSpan.FromSeconds(5));
+        var aggregator = new OrderBookAggregatorByLastItem(publisher, interval);
         disruptor.HandleEventsWith(aggregator);
         var ringBuffer = disruptor.Start();
 
         var channel = Channel.CreateUnbounded<OrderBook>();
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
-        var consumer = new OrderBookChannelConsumer(ringBuffer, channel.Reader);
+        var consumer = new OrderBookChannelConsumer(ringBuffer, channel.Reader, interval);
 
         var writeTask = WriteOrderBooksAsync(channel, cts.Token);
         var parseTask = consumer.ExecuteAsync(cts.Token);
-        var snapshotTask = aggregator.StartEmittingAsync(cts.Token);
 
-        await Task.WhenAll(parseTask, writeTask, snapshotTask);
+        await Task.WhenAll(parseTask, writeTask);
         disruptor.Shutdown();
     }
 
@@ -70,17 +70,8 @@ public static class Program
 
 public class DummyPublisher : IOrderBookSnapshotPublisher
 {
-    public Task PublishAsync(ReadOnlyMemory<OrderBook> books, CancellationToken ct)
+    public void Publish(in OrderBook orderBook)
     {
-        Console.WriteLine("new batch of books: ");
-
-        foreach (var book in books.Span)
-        {
-            Console.WriteLine(DumpBook(in book));
-        }
-
-        return Task.CompletedTask;
+        Console.WriteLine($"AssetId={orderBook.AssetId} Timestamp:{orderBook.Timestamp:O}");
     }
-    private static string DumpBook(in OrderBook book)
-        => $"AssetId={book.AssetId} Timestamp:{book.Timestamp:O}";
 }
