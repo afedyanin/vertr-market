@@ -1,6 +1,8 @@
 ﻿using System.Threading.Channels;
 using Disruptor;
 using Disruptor.Dsl;
+using Vertr.Market.Application.Abstractions;
+using Vertr.Market.Application.Consumers;
 using Vertr.Market.Application.EventHandlers;
 using Vertr.Market.Application.Models;
 
