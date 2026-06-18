@@ -13,6 +13,7 @@
     <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
     <Project Path="src/Vertr.Market.ConsoleApp/Vertr.Market.ConsoleApp.csproj" Id="b25b1cd7-23c4-415e-a029-cb725e82bea9" />
     <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
+    <Project Path="src/Vertr.Market.Tinvest/Vertr.Market.Tinvest.csproj" Id="cf11d088-da33-4f39-adff-17e43da02cbe" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="f6500e7a-c76e-4e9b-b7ea-8fa9f35ce58d" />

@@ -3,7 +3,7 @@
 public readonly record struct Trade(
     int AssetId,
     decimal Price,
-    decimal Volume,
+    long Volume,
     DateTime Timestamp
 );
 
@@ -28,7 +28,8 @@ public struct Candle
     public decimal High;
     public decimal Low;
     public decimal Close;
-    public decimal Volume;
+    public long Volume;
+    public decimal Value;
     public bool IsInitialized;
 }
 

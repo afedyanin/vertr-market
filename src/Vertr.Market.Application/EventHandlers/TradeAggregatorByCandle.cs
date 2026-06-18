@@ -81,6 +81,7 @@ public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
         candle.Low = trade.Price;
         candle.Close = trade.Price;
         candle.Volume = trade.Volume;
+        candle.Value = trade.Price * trade.Volume;
         candle.IsInitialized = true;
     }
 
@@ -99,6 +100,7 @@ public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
 
         candle.Close = trade.Price;
         candle.Volume += trade.Volume;
+        candle.Value += (trade.Price * trade.Volume);
     }
 
     private void FlushExpiredCandles(long currentIntervalStartTicks)

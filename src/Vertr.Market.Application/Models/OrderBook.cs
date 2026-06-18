@@ -2,15 +2,14 @@
 
 namespace Vertr.Market.Application.Models;
 
+
 public readonly record struct OrderBook(
     int AssetId,
     DateTime Timestamp,
     LevelBuffer Bids,
-    LevelBuffer Asks,
-    int BidCount,
-    int AskCount);
+    LevelBuffer Asks);
 
-[InlineArray(10)]
+[InlineArray(Consts.OrderBookDepth)]
 public struct LevelBuffer
 {
     private OrderBookLevel _element0;
