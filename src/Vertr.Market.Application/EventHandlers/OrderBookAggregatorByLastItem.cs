@@ -16,9 +16,12 @@ public sealed class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent
 
     private readonly TimeSpan _interval;
     private readonly IOrderBookSnapshotPublisher _publisher;
-
     private readonly Dictionary<int, OrderBookState> _activeBooks;
-    private long _maxSeenBookTicks;
+
+#pragma warning disable CA1805 // Do not initialize unnecessarily
+    // Используем Ticks для максимальной производительности сравнений
+    private long _maxSeenBookTicks = 0;
+#pragma warning restore CA1805 // Do not initialize unnecessarily
 
     public OrderBookAggregatorByLastItem(
         IOrderBookSnapshotPublisher publisher,
