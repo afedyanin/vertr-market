@@ -2,15 +2,13 @@
 
 namespace Vertr.Market.Application.Models;
 
-public struct OrderBook
-{
-    public int AssetId;
-    public DateTime Timestamp;
-    public LevelBuffer Bids;
-    public LevelBuffer Asks;
-    public int BidCount;
-    public int AskCount;
-}
+public readonly record struct OrderBook(
+    int AssetId,
+    DateTime Timestamp,
+    LevelBuffer Bids,
+    LevelBuffer Asks,
+    int BidCount,
+    int AskCount);
 
 public sealed class OrderBookEvent
 {

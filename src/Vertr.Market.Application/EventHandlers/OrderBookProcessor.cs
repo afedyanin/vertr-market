@@ -68,8 +68,8 @@ public sealed class OrderBookProcessor : IEventHandler<OrderBookEvent>
         // Бизнес-логика
         if (book.BidCount > 0 && book.AskCount > 0)
         {
-            ref readonly var bestBid = ref book.Bids[0];
-            ref readonly var bestAsk = ref book.Asks[0];
+            var bestBid = book.Bids[0];
+            var bestAsk = book.Asks[0];
 
 #pragma warning disable IDE0059 // Unnecessary assignment of a value
             var spread = bestAsk.Price - bestBid.Price;

@@ -1,14 +1,15 @@
 ﻿using System.Threading.Channels;
 using Disruptor;
+using Vertr.Market.Application.Models;
 
-namespace Vertr.Market.Application.Models;
+namespace Vertr.Market.Application.Consumers;
 
-public sealed class OrderBookChannelConsumer
+public sealed class TradeChannelConsumer
 {
-    private readonly RingBuffer<OrderBookEvent> _ringBuffer;
-    private readonly ChannelReader<OrderBook> _reader;
+    private readonly RingBuffer<TradeEvent> _ringBuffer;
+    private readonly ChannelReader<Trade> _reader;
 
-    public OrderBookChannelConsumer(RingBuffer<OrderBookEvent> ringBuffer, ChannelReader<OrderBook> reader)
+    public TradeChannelConsumer(RingBuffer<TradeEvent> ringBuffer, ChannelReader<Trade> reader)
     {
         _ringBuffer = ringBuffer;
         _reader = reader;
@@ -22,7 +23,7 @@ public sealed class OrderBookChannelConsumer
             {
                 var sequence = _ringBuffer.Next();
                 var eventSlot = _ringBuffer[sequence];
-                eventSlot.OrderBook = orderBook;
+                eventSlot.Trade = orderBook;
                 _ringBuffer.Publish(sequence);
             }
         }
