@@ -17,10 +17,10 @@ public sealed class OrderBookEvent
     public OrderBook OrderBook;
 }
 
-public readonly record struct OrderBookLevel(decimal Price, long Volume);
-
 [InlineArray(10)]
 public struct LevelBuffer
 {
     private OrderBookLevel _element0;
 }
+
+public readonly record struct OrderBookLevel(decimal Price, long Volume);
