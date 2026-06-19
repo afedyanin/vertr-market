@@ -1,16 +1,13 @@
 ﻿using System.Threading.Channels;
 using Disruptor;
 using Disruptor.Dsl;
-using Vertr.Market.Application.Abstractions;
 using Vertr.Market.Application.Consumers;
-using Vertr.Market.Application.EventHandlers;
 using Vertr.Market.Application.Models;
 
 namespace Vertr.Market.Host.BackgroundServices;
 
 public class TradeProcessingService : BackgroundService
 {
-    private static readonly TimeSpan PublishInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan RestartInterval = TimeSpan.FromSeconds(15);
 
 #pragma warning disable CA1805 // Do not initialize unnecessarily
@@ -26,6 +23,7 @@ public class TradeProcessingService : BackgroundService
 
     public TradeProcessingService(
         Channel<Trade> channel,
+        IEnumerable<IEventHandler<MarketTradeEvent>> handlers,
         ILogger<TradeProcessingService> logger)
     {
         _channel = channel;
@@ -38,10 +36,18 @@ public class TradeProcessingService : BackgroundService
               ProducerType.Single,
               new BlockingWaitStrategy());
 
-        var publisher = new DummyCandlePublisher();
-        var aggregator = new TradeAggregatorByCandle(publisher, PublishInterval);
+        var handlersArray = handlers.ToArray();
 
-        _disruptor.HandleEventsWith(aggregator);
+        if (handlersArray.Length == 0)
+        {
+            _logger.LogWarning("No registered EventHandlers found for {Event}", nameof(MarketTradeEvent));
+        }
+        else
+        {
+            _logger.LogInformation("Registering {Count} EventHandlers to Disruptor.", handlersArray.Length);
+            _disruptor.HandleEventsWith(handlersArray);
+        }
+
         _ringBuffer = _disruptor.Start();
     }
 
@@ -80,7 +86,7 @@ public class TradeProcessingService : BackgroundService
             try
             {
                 _logger.LogInformation("{ServiceName} started at {StartTime:O}", ServiceName, DateTime.UtcNow);
-                var consumer = new TradeChannelConsumer(_ringBuffer, _channel, PublishInterval);
+                var consumer = new TradeChannelConsumer(_ringBuffer, _channel);
                 await consumer.ExecuteAsync(stoppingToken);
             }
             catch (Exception ex)
@@ -89,14 +95,6 @@ public class TradeProcessingService : BackgroundService
                 await Task.Delay(RestartInterval, stoppingToken);
             }
         }
-    }
-}
-
-public class DummyCandlePublisher : ICandleSnapshotPublisher
-{
-    public void Publish(in Candle candle)
-    {
-        Console.WriteLine($"Id={candle.AssetId} OpenTime={candle.OpenTime:O} O={candle.Open:F4} H={candle.High:F4} L={candle.Low:F4} C={candle.Close:F4} V={candle.Value} VL={candle.Value:F4}");
     }
 }
 

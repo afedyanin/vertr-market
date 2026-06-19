@@ -8,22 +8,20 @@ public sealed class TradeChannelConsumer
 {
     private readonly RingBuffer<MarketTradeEvent> _ringBuffer;
     private readonly ChannelReader<Trade> _reader;
-    private readonly TimeSpan _candleInterval;
+    private static readonly TimeSpan CandleInterval = Consts.CandlePublishInterval;
 
     public TradeChannelConsumer(
         RingBuffer<MarketTradeEvent> ringBuffer,
-        Channel<Trade> reader,
-        TimeSpan candleInterval)
+        Channel<Trade> reader)
     {
         _ringBuffer = ringBuffer;
         _reader = reader;
-        _candleInterval = candleInterval;
     }
 
     public async Task ExecuteAsync(CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var timerTask = StartTimerLoopAsync(_candleInterval, cts.Token);
+        var timerTask = StartTimerLoopAsync(CandleInterval, cts.Token);
 
         try
         {

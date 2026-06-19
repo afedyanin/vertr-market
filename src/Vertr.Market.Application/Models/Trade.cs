@@ -33,3 +33,7 @@ public struct Candle
     public bool IsInitialized;
 }
 
+public sealed class CandleEvent
+{
+    public Candle Candle;
+}

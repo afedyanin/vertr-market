@@ -2,7 +2,7 @@
 
 namespace Vertr.Market.Application.Abstractions;
 
-public interface ICandleSnapshotPublisher
+public interface ICandlePublisher
 {
     void Publish(in Candle candle);
 }

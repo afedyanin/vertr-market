@@ -51,6 +51,8 @@ public sealed class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent
         }
     }
 
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ProcessOrderBook(in OrderBook book)
     {

@@ -8,8 +8,8 @@ namespace Vertr.Market.Application.EventHandlers;
 
 public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
 {
-    private readonly TimeSpan _candleInterval;
-    private readonly ICandleSnapshotPublisher _publisher;
+    private static readonly TimeSpan CandleInterval = Consts.CandlePublishInterval;
+    private readonly ICandlePublisher _publisher;
     private readonly Dictionary<int, Candle> _activeCandles;
 
 #pragma warning disable CA1805 // Do not initialize unnecessarily
@@ -17,13 +17,9 @@ public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
     private long _maxSeenTradeTicks = 0;
 #pragma warning restore CA1805 // Do not initialize unnecessarily
 
-    public TradeAggregatorByCandle(
-        ICandleSnapshotPublisher publisher,
-        TimeSpan candleInterval,
-        int capacity = 1024)
+    public TradeAggregatorByCandle(ICandlePublisher publisher, int capacity = 1024)
     {
         _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
-        _candleInterval = candleInterval;
         _activeCandles = new(capacity);
     }
 
@@ -37,7 +33,7 @@ public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
 
             case MarketTradeEventType.TimerTick:
                 var referenceTicks = data.TimerTimestamp.Ticks > _maxSeenTradeTicks ? data.TimerTimestamp.Ticks : _maxSeenTradeTicks;
-                var openCandleTicks = referenceTicks - (referenceTicks % _candleInterval.Ticks);
+                var openCandleTicks = referenceTicks - (referenceTicks % CandleInterval.Ticks);
                 FlushExpiredCandles(openCandleTicks);
                 break;
         }
@@ -51,7 +47,7 @@ public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
             _maxSeenTradeTicks = tradeTicks;
         }
 
-        var tradeOpenTicks = tradeTicks - (tradeTicks % _candleInterval.Ticks);
+        var tradeOpenTicks = tradeTicks - (tradeTicks % CandleInterval.Ticks);
         var openTime = new DateTime(tradeOpenTicks, trade.Timestamp.Kind);
         ref var candle = ref CollectionsMarshal.GetValueRefOrAddDefault(_activeCandles, trade.AssetId, out var exists);
 
