@@ -94,7 +94,7 @@ public class DummyBookPublisher : IOrderBookSnapshotPublisher
 {
     public void Publish(in OrderBook orderBook)
     {
-        Console.WriteLine($"AssetId={orderBook.AssetId} Timestamp:{orderBook.Timestamp:O}");
+        Console.WriteLine($"OB Id={orderBook.AssetId} Time={orderBook.Timestamp:O}");
     }
 }
 

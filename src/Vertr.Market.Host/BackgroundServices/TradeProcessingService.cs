@@ -13,7 +13,9 @@ public class TradeProcessingService : BackgroundService
     private static readonly TimeSpan PublishInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan RestartInterval = TimeSpan.FromSeconds(15);
 
-    private readonly bool _isEnabled = true;
+#pragma warning disable CA1805 // Do not initialize unnecessarily
+    private readonly bool _isEnabled = false;
+#pragma warning restore CA1805 // Do not initialize unnecessarily
     private const string ServiceName = nameof(TradeProcessingService);
 
     private readonly Channel<Trade> _channel;
@@ -94,7 +96,7 @@ public class DummyCandlePublisher : ICandleSnapshotPublisher
 {
     public void Publish(in Candle candle)
     {
-        Console.WriteLine($"AssetId={candle.AssetId} OpenTime:{candle.OpenTime:O}");
+        Console.WriteLine($"Id={candle.AssetId} OpenTime={candle.OpenTime:O} O={candle.Open:F4} H={candle.High:F4} L={candle.Low:F4} C={candle.Close:F4} V={candle.Value} VL={candle.Value:F4}");
     }
 }
 
