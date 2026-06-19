@@ -29,7 +29,10 @@ public static class Program
         builder.Services.AddSingleton(Channel.CreateUnbounded<Trade>());
         builder.Services.AddApplication();
         builder.Services.AddTinvestMarketData(configuration);
+
         builder.Services.AddHostedService<TinvestMarketDataConsumerService>();
+        builder.Services.AddHostedService<OrderBookProcessingService>();
+        builder.Services.AddHostedService<TradeProcessingService>();
 
         var app = builder.Build();
 

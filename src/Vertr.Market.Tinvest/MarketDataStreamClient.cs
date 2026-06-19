@@ -19,6 +19,7 @@ public class MarketDataStreamClient
     private readonly TimeSpan _reconnectInterval = TimeSpan.FromSeconds(5);
     private readonly Dictionary<string, int> _assetMap;
     private readonly bool _isEnabled;
+    private const string ServiceName = nameof(MarketDataStreamClient);
 
     public MarketDataStreamClient(
         InvestApiClient investApiClient,
@@ -41,7 +42,7 @@ public class MarketDataStreamClient
         {
             if (!_isEnabled)
             {
-                _logger.LogWarning("{ServiceName} is disabled.", nameof(MarketDataStreamClient));
+                _logger.LogWarning("{ServiceName} is disabled.", ServiceName);
                 return;
             }
 
@@ -55,7 +56,7 @@ public class MarketDataStreamClient
             _logger.LogCritical(ex, ex.Message);
         }
 
-        _logger.LogInformation("{ServiceName} execution completed at {EndTime:O}", nameof(MarketDataStreamClient), DateTime.UtcNow);
+        _logger.LogInformation("{ServiceName} execution completed at {EndTime:O}", ServiceName, DateTime.UtcNow);
     }
 
     private async Task StartConsumingLoop(CancellationToken cancellationToken)
@@ -64,21 +65,21 @@ public class MarketDataStreamClient
         {
             try
             {
-                _logger.LogInformation("{ServiceName} started at {StartTime:O}", nameof(MarketDataStreamClient), DateTime.UtcNow);
+                _logger.LogInformation("{ServiceName} started at {StartTime:O}", ServiceName, DateTime.UtcNow);
                 await Subscribe(deadline: null, cancellationToken);
             }
             catch (RpcException rpcEx)
             {
                 if (rpcEx.StatusCode != StatusCode.DeadlineExceeded)
                 {
-                    _logger.LogError(rpcEx, "{ServiceName} consuming exception. Message={Message}", nameof(MarketDataStreamClient), rpcEx.Message);
+                    _logger.LogError(rpcEx, "{ServiceName} consuming exception. Message={Message}", ServiceName, rpcEx.Message);
                 }
 
                 await Task.Delay(_reconnectInterval, cancellationToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{ServiceName} consuming exception. Message={Message}", nameof(MarketDataStreamClient), ex.Message);
+                _logger.LogError(ex, "{ServiceName} consuming exception. Message={Message}", ServiceName, ex.Message);
                 await Task.Delay(_reconnectInterval, cancellationToken);
             }
         }

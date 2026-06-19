@@ -8,36 +8,36 @@ using Vertr.Market.Application.Models;
 
 namespace Vertr.Market.Host.BackgroundServices;
 
-public class OrderBookProcessingService : BackgroundService
+public class TradeProcessingService : BackgroundService
 {
     private static readonly TimeSpan PublishInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan RestartInterval = TimeSpan.FromSeconds(15);
 
     private readonly bool _isEnabled = true;
-    private const string ServiceName = nameof(OrderBookProcessingService);
+    private const string ServiceName = nameof(TradeProcessingService);
 
-    private readonly Channel<OrderBook> _channel;
-    private readonly ILogger<OrderBookProcessingService> _logger;
+    private readonly Channel<Trade> _channel;
+    private readonly ILogger<TradeProcessingService> _logger;
 
-    private readonly Disruptor<OrderBookEvent> _disruptor;
-    private readonly RingBuffer<OrderBookEvent> _ringBuffer;
+    private readonly Disruptor<MarketTradeEvent> _disruptor;
+    private readonly RingBuffer<MarketTradeEvent> _ringBuffer;
 
-    public OrderBookProcessingService(
-        Channel<OrderBook> channel,
-        ILogger<OrderBookProcessingService> logger)
+    public TradeProcessingService(
+        Channel<Trade> channel,
+        ILogger<TradeProcessingService> logger)
     {
         _channel = channel;
         _logger = logger;
 
-        _disruptor = new Disruptor<OrderBookEvent>(
-              () => new OrderBookEvent(),
+        _disruptor = new Disruptor<MarketTradeEvent>(
+              () => new MarketTradeEvent(),
               ringBufferSize: 4096,
               TaskScheduler.Default,
               ProducerType.Single,
               new BlockingWaitStrategy());
 
-        var publisher = new DummyBookPublisher();
-        var aggregator = new OrderBookAggregatorByLastItem(publisher, PublishInterval);
+        var publisher = new DummyCandlePublisher();
+        var aggregator = new TradeAggregatorByCandle(publisher, PublishInterval);
 
         _disruptor.HandleEventsWith(aggregator);
         _ringBuffer = _disruptor.Start();
@@ -78,7 +78,7 @@ public class OrderBookProcessingService : BackgroundService
             try
             {
                 _logger.LogInformation("{ServiceName} started at {StartTime:O}", ServiceName, DateTime.UtcNow);
-                var consumer = new OrderBookChannelConsumer(_ringBuffer, _channel, PublishInterval);
+                var consumer = new TradeChannelConsumer(_ringBuffer, _channel, PublishInterval);
                 await consumer.ExecuteAsync(stoppingToken);
             }
             catch (Exception ex)
@@ -90,11 +90,11 @@ public class OrderBookProcessingService : BackgroundService
     }
 }
 
-public class DummyBookPublisher : IOrderBookSnapshotPublisher
+public class DummyCandlePublisher : ICandleSnapshotPublisher
 {
-    public void Publish(in OrderBook orderBook)
+    public void Publish(in Candle candle)
     {
-        Console.WriteLine($"AssetId={orderBook.AssetId} Timestamp:{orderBook.Timestamp:O}");
+        Console.WriteLine($"AssetId={candle.AssetId} OpenTime:{candle.OpenTime:O}");
     }
 }
 
