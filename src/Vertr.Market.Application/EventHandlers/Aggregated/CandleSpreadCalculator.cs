@@ -80,3 +80,18 @@ public interface ISpreadPublisher
 {
     public void Publish(int assetId, decimal value);
 }
+
+internal class SpreadDebugLogger : ISpreadPublisher
+{
+    private readonly ILogger<SpreadDebugLogger> _logger;
+
+    public SpreadDebugLogger(Logger<SpreadDebugLogger> logger)
+    {
+        _logger = logger;
+    }
+
+    public void Publish(int assetId, decimal value)
+    {
+        _logger.LogDebug($"Spread: AssetId={assetId} Value={value:F4}");
+    }
+}

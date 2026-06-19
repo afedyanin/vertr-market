@@ -27,6 +27,8 @@ public static class ApplicationRegistrar
                 sp.GetRequiredService<ICandlePublisher>(),
                 capacity: 128));
 
+        services.AddTransient<ISpreadPublisher, SpreadDebugLogger>();
+
         return services;
     }
 }
