@@ -4,7 +4,7 @@ using Disruptor.Dsl;
 using Vertr.Market.Application.Abstractions;
 using Vertr.Market.Application.Consumers;
 using Vertr.Market.Application.EventHandlers;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application.OrderBooks;
 
 namespace Vertr.Market.Host.BackgroundServices;
 

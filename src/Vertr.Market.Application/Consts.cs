@@ -1,4 +1,4 @@
-﻿namespace Vertr.Market.Application.Models;
+﻿namespace Vertr.Market.Application;
 
 public static class Consts
 {

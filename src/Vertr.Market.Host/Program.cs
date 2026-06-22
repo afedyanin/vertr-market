@@ -1,7 +1,8 @@
 using System.Threading.Channels;
 using Serilog;
 using Vertr.Market.Application;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application.OrderBooks;
+using Vertr.Market.Application.Trades;
 using Vertr.Market.Host.BackgroundServices;
 using Vertr.Market.Tinvest;
 

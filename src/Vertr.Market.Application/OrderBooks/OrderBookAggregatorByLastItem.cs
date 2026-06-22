@@ -2,9 +2,8 @@
 using System.Runtime.InteropServices;
 using Disruptor;
 using Vertr.Market.Application.Abstractions;
-using Vertr.Market.Application.Models;
 
-namespace Vertr.Market.Application.EventHandlers;
+namespace Vertr.Market.Application.OrderBooks;
 
 public sealed class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent>
 {

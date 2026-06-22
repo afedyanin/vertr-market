@@ -23,5 +23,7 @@ public sealed class QuoteEvent
 public sealed class QuoteAggregatedEvent
 {
     public Quote Quote { get; set; }
+
+    public long BatchCount { get; set; }
 }
 

@@ -2,9 +2,9 @@
 using Disruptor.Dsl;
 using Microsoft.Extensions.Logging;
 using Vertr.Market.Application.Abstractions;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application.Trades;
 
-namespace Vertr.Market.Application.Publishers;
+namespace Vertr.Market.Application.Trades.Publishers;
 
 internal class CandlePublisher : ICandlePublisher
 {

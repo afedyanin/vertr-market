@@ -5,6 +5,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
+using Vertr.Market.Application;
+using Vertr.Market.Application.OrderBooks;
+using Vertr.Market.Application.Trades;
 using Vertr.Market.Tinvest.Converters;
 
 namespace Vertr.Market.Tinvest;
@@ -12,8 +15,8 @@ namespace Vertr.Market.Tinvest;
 public class MarketDataStreamClient
 {
     private readonly InvestApiClient _investApiClient;
-    private readonly ChannelWriter<Application.Models.OrderBook> _orderBooksChannel;
-    private readonly ChannelWriter<Application.Models.Trade> _tradesChannel;
+    private readonly ChannelWriter<Application.OrderBooks.OrderBook> _orderBooksChannel;
+    private readonly ChannelWriter<Application.Trades.Trade> _tradesChannel;
     private readonly ILogger<MarketDataStreamClient> _logger;
 
     private readonly TimeSpan _reconnectInterval = TimeSpan.FromSeconds(5);
@@ -23,8 +26,8 @@ public class MarketDataStreamClient
 
     public MarketDataStreamClient(
         InvestApiClient investApiClient,
-        Channel<Application.Models.OrderBook> orderBooksChannel,
-        Channel<Application.Models.Trade> tradesChannel,
+        Channel<Application.OrderBooks.OrderBook> orderBooksChannel,
+        Channel<Application.Trades.Trade> tradesChannel,
         IOptions<TinvestMarketDataSettings> options,
         ILogger<MarketDataStreamClient> logger)
     {
@@ -117,7 +120,7 @@ public class MarketDataStreamClient
             orderBookRequest.Instruments.Add(new OrderBookInstrument()
             {
                 InstrumentId = instrumentId,
-                Depth = Application.Models.Consts.OrderBookDepth,
+                Depth = Consts.OrderBookDepth,
                 OrderBookType = OrderBookType.All,
             });
 

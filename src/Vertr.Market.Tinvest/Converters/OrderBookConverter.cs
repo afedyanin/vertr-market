@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application;
+using Vertr.Market.Application.OrderBooks;
 namespace Vertr.Market.Tinvest.Converters;
 
 internal static class OrderBookConverter

@@ -2,7 +2,7 @@
 using Disruptor;
 using Disruptor.Dsl;
 using Vertr.Market.Application.Consumers;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application.Trades;
 
 namespace Vertr.Market.Host.BackgroundServices;
 

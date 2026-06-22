@@ -24,6 +24,8 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
     private readonly RingBuffer<QuoteAggregatedEvent> _ringBuffer;
     private readonly ILogger<QuoteAggregatorByLastItem> _logger;
 
+    private long _batchCount;
+
     public QuoteAggregatorByLastItem(
         IEnumerable<IEventHandler<QuoteAggregatedEvent>> handlers,
         ILogger<QuoteAggregatorByLastItem> logger,
@@ -67,7 +69,7 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
             case QuoteEventType.TimerTick:
                 var timerTicks = data.TimerTimestamp.Ticks;
                 var referenceTicks = timerTicks > _maxSeenQoutesTicks ? timerTicks : _maxSeenQoutesTicks;
-                FlushExpiredQuotes(referenceTicks);
+                FlushExpiredQuotes(referenceTicks, _batchCount++);
                 break;
         }
     }
@@ -80,7 +82,7 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
         state.IsDirty = true;
     }
 
-    private void FlushExpiredQuotes(long referenceTicks)
+    private void FlushExpiredQuotes(long referenceTicks, long batchCount)
     {
         if (_activeQuotes.Count == 0)
         {
@@ -98,19 +100,20 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
 
             if (state.IsDirty && state.Quote.Timestamp.Ticks <= referenceTicks)
             {
-                Publish(in state.Quote);
+                Publish(in state.Quote, batchCount);
                 state.IsDirty = false;
             }
         }
     }
 
-    private void Publish(in Quote quote)
+    private void Publish(in Quote quote, long batchCount)
     {
         var sequence = _ringBuffer.Next();
         try
         {
             var eventSlot = _ringBuffer[sequence];
             eventSlot.Quote = quote;
+            eventSlot.BatchCount = batchCount;
         }
         finally
         {

@@ -1,17 +1,17 @@
 ﻿using System.Threading.Channels;
 using Disruptor;
 
-namespace Vertr.Market.Application.Quotes;
+namespace Vertr.Market.Application.OrderBooks;
 
-public sealed class QuotesConsumer
+public sealed class OrderBookChannelConsumer
 {
-    private readonly RingBuffer<QuoteEvent> _ringBuffer;
-    private readonly ChannelReader<Quote> _reader;
+    private readonly RingBuffer<OrderBookEvent> _ringBuffer;
+    private readonly ChannelReader<OrderBook> _reader;
     private readonly TimeSpan _interval;
 
-    public QuotesConsumer(
-        RingBuffer<QuoteEvent> ringBuffer,
-        Channel<Quote> reader,
+    public OrderBookChannelConsumer(
+        RingBuffer<OrderBookEvent> ringBuffer,
+        Channel<OrderBook> reader,
         TimeSpan interval)
     {
         _ringBuffer = ringBuffer;
@@ -26,14 +26,14 @@ public sealed class QuotesConsumer
 
         try
         {
-            await foreach (var quote in _reader.ReadAllAsync(ct).ConfigureAwait(false))
+            await foreach (var orderBook in _reader.ReadAllAsync(ct).ConfigureAwait(false))
             {
                 var sequence = _ringBuffer.Next();
                 try
                 {
                     var eventSlot = _ringBuffer[sequence];
-                    eventSlot.Type = QuoteEventType.Quote;
-                    eventSlot.Quote = quote;
+                    eventSlot.Type = OrderBookEventType.OrderBook;
+                    eventSlot.OrderBook = orderBook;
                 }
                 finally
                 {
@@ -64,7 +64,7 @@ public sealed class QuotesConsumer
                 try
                 {
                     var eventSlot = _ringBuffer[sequence];
-                    eventSlot.Type = QuoteEventType.TimerTick;
+                    eventSlot.Type = OrderBookEventType.TimerTick;
                     eventSlot.TimerTimestamp = DateTime.UtcNow;
                 }
                 finally

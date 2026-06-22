@@ -1,8 +1,8 @@
 ﻿using Disruptor;
 using Microsoft.Extensions.Logging;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application.Trades;
 
-namespace Vertr.Market.Application.EventHandlers.Aggregated;
+namespace Vertr.Market.Application.Trades.Aggregated;
 
 internal class CandleDebugLogger : IEventHandler<CandleEvent>
 {

@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using Vertr.Market.Application.Models;
+using Vertr.Market.Application.Trades;
 
 namespace Vertr.Market.Tinvest.Converters;
 

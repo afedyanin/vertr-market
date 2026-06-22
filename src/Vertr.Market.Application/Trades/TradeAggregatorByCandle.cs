@@ -1,15 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Disruptor;
-using Vertr.Market.Application.Abstractions;
-using Vertr.Market.Application.Models;
 
-namespace Vertr.Market.Application.EventHandlers;
+namespace Vertr.Market.Application.Trades;
 
 public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
 {
     private static readonly TimeSpan CandleInterval = Consts.CandlePublishInterval;
-    private readonly ICandlePublisher _publisher;
     private readonly Dictionary<int, Candle> _activeCandles;
 
 #pragma warning disable CA1805 // Do not initialize unnecessarily
@@ -17,9 +14,8 @@ public sealed class TradeAggregatorByCandle : IEventHandler<MarketTradeEvent>
     private long _maxSeenTradeTicks = 0;
 #pragma warning restore CA1805 // Do not initialize unnecessarily
 
-    public TradeAggregatorByCandle(ICandlePublisher publisher, int capacity = 1024)
+    public TradeAggregatorByCandle(int capacity = 1024)
     {
-        _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
         _activeCandles = new(capacity);
     }
 

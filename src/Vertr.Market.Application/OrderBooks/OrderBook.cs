@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Vertr.Market.Application.Models;
+namespace Vertr.Market.Application.OrderBooks;
 
 
 public readonly record struct OrderBook(

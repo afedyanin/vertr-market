@@ -2,10 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Vertr.Market.Application.Abstractions;
-using Vertr.Market.Application.EventHandlers;
-using Vertr.Market.Application.EventHandlers.Aggregated;
-using Vertr.Market.Application.Models;
-using Vertr.Market.Application.Publishers;
+using Vertr.Market.Application.Trades;
+using Vertr.Market.Application.Trades.Aggregated;
+using Vertr.Market.Application.Trades.Publishers;
 
 namespace Vertr.Market.Application;
 

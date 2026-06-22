@@ -1,4 +1,4 @@
-﻿namespace Vertr.Market.Application.Models;
+﻿namespace Vertr.Market.Application.Trades;
 
 public readonly record struct Trade(
     int AssetId,

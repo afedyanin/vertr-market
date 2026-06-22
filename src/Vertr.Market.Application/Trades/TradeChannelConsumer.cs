@@ -1,8 +1,7 @@
 ﻿using System.Threading.Channels;
 using Disruptor;
-using Vertr.Market.Application.Models;
 
-namespace Vertr.Market.Application.Consumers;
+namespace Vertr.Market.Application.Trades;
 
 public sealed class TradeChannelConsumer
 {
