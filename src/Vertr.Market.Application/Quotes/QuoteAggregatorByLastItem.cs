@@ -1,8 +1,10 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Disruptor;
 using Disruptor.Dsl;
 using Microsoft.Extensions.Logging;
+using Vertr.Market.Application.Quotes.EventHandlers;
 
 namespace Vertr.Market.Application.Quotes;
 
@@ -24,8 +26,6 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
     private readonly RingBuffer<QuoteAggregatedEvent> _ringBuffer;
     private readonly ILogger<QuoteAggregatorByLastItem> _logger;
 
-    private long _batchCount;
-
     public QuoteAggregatorByLastItem(
         IEnumerable<IEventHandler<QuoteAggregatedEvent>> handlers,
         ILogger<QuoteAggregatorByLastItem> logger,
@@ -46,11 +46,13 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
         if (handlersArray.Length == 0)
         {
             _logger.LogWarning("No registered EventHandlers found for {Event}", nameof(QuoteAggregatedEvent));
+            _disruptor.HandleEventsWith(new MemoryReleaseHandler());
         }
         else
         {
             _logger.LogInformation("Registering {Count} EventHandlers to Disruptor.", handlersArray.Length);
-            _disruptor.HandleEventsWith(handlersArray);
+            _disruptor.HandleEventsWith(handlersArray)
+                .Then(new MemoryReleaseHandler());
         }
 
         _ringBuffer = _disruptor.Start();
@@ -69,7 +71,7 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
             case QuoteEventType.TimerTick:
                 var timerTicks = data.TimerTimestamp.Ticks;
                 var referenceTicks = timerTicks > _maxSeenQoutesTicks ? timerTicks : _maxSeenQoutesTicks;
-                FlushExpiredQuotes(referenceTicks, _batchCount++);
+                FlushExpiredQuotes(referenceTicks);
                 break;
         }
     }
@@ -82,38 +84,55 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
         state.IsDirty = true;
     }
 
-    private void FlushExpiredQuotes(long referenceTicks, long batchCount)
+    private void FlushExpiredQuotes(long referenceTicks)
     {
         if (_activeQuotes.Count == 0)
         {
             return;
         }
 
+        var expiredCount = 0;
+        foreach (var key in _activeQuotes.Keys)
+        {
+            ref var state = ref CollectionsMarshal.GetValueRefOrNullRef(_activeQuotes, key);
+            if (!Unsafe.IsNullRef(ref state) && state.IsDirty && state.Quote.Timestamp.Ticks <= referenceTicks)
+            {
+                expiredCount++;
+            }
+        }
+
+        if (expiredCount == 0)
+        {
+            return;
+        }
+
+        var buffer = ArrayPool<Quote>.Shared.Rent(expiredCount);
+        var bufferIndex = 0;
+
         foreach (var key in _activeQuotes.Keys)
         {
             ref var state = ref CollectionsMarshal.GetValueRefOrNullRef(_activeQuotes, key);
 
-            if (Unsafe.IsNullRef(ref state))
+            if (Unsafe.IsNullRef(ref state) || !state.IsDirty || state.Quote.Timestamp.Ticks > referenceTicks)
             {
                 continue;
             }
 
-            if (state.IsDirty && state.Quote.Timestamp.Ticks <= referenceTicks)
-            {
-                Publish(in state.Quote, batchCount);
-                state.IsDirty = false;
-            }
+            buffer[bufferIndex++] = state.Quote;
+            state.IsDirty = false;
         }
+
+        Publish(buffer, expiredCount);
     }
 
-    private void Publish(in Quote quote, long batchCount)
+    private void Publish(Quote[] quotes, int count)
     {
         var sequence = _ringBuffer.Next();
         try
         {
             var eventSlot = _ringBuffer[sequence];
-            eventSlot.Quote = quote;
-            eventSlot.BatchCount = batchCount;
+            eventSlot.Quotes = quotes;
+            eventSlot.Count = count;
         }
         finally
         {
