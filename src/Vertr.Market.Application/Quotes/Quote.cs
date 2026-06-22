@@ -22,7 +22,6 @@ public sealed class QuoteEvent
 
 public sealed class QuoteAggregatedEvent
 {
-    public Quote[]? Quotes { get; set; }
-    public int Count { get; set; }
+    public Dictionary<int, Quote>? Quotes { get; set; }
 }
 

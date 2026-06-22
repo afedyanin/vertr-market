@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Disruptor;
 using Disruptor.Dsl;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 using Vertr.Market.Application.Quotes.EventHandlers;
 
 namespace Vertr.Market.Application.Quotes;
@@ -26,6 +27,8 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
     private readonly RingBuffer<QuoteAggregatedEvent> _ringBuffer;
     private readonly ILogger<QuoteAggregatorByLastItem> _logger;
 
+    private readonly ObjectPool<Dictionary<int, Quote>> _dictionaryPool;
+
     public QuoteAggregatorByLastItem(
         IEnumerable<IEventHandler<QuoteAggregatedEvent>> handlers,
         ILogger<QuoteAggregatorByLastItem> logger,
@@ -33,6 +36,9 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
     {
         _activeQuotes = new(capacity);
         _logger = logger;
+
+        var provider = new DefaultObjectPoolProvider();
+        _dictionaryPool = provider.Create(new DictionaryPoolPolicy(capacity));
 
         _disruptor = new Disruptor<QuoteAggregatedEvent>(
             () => new QuoteAggregatedEvent(),
@@ -46,13 +52,12 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
         if (handlersArray.Length == 0)
         {
             _logger.LogWarning("No registered EventHandlers found for {Event}", nameof(QuoteAggregatedEvent));
-            _disruptor.HandleEventsWith(new MemoryReleaseHandler());
+            _disruptor.HandleEventsWith(new MemoryReleaseHandler(_dictionaryPool));
         }
         else
         {
             _logger.LogInformation("Registering {Count} EventHandlers to Disruptor.", handlersArray.Length);
-            _disruptor.HandleEventsWith(handlersArray)
-                .Then(new MemoryReleaseHandler());
+            _disruptor.HandleEventsWith(handlersArray).Then(new MemoryReleaseHandler(_dictionaryPool));
         }
 
         _ringBuffer = _disruptor.Start();
@@ -91,48 +96,35 @@ public sealed class QuoteAggregatorByLastItem : IEventHandler<QuoteEvent>
             return;
         }
 
-        var expiredCount = 0;
-        foreach (var key in _activeQuotes.Keys)
-        {
-            ref var state = ref CollectionsMarshal.GetValueRefOrNullRef(_activeQuotes, key);
-            if (!Unsafe.IsNullRef(ref state) && state.IsDirty && state.Quote.Timestamp.Ticks <= referenceTicks)
-            {
-                expiredCount++;
-            }
-        }
+        Dictionary<int, Quote>? batchDictionary = null;
 
-        if (expiredCount == 0)
+        foreach (var pair in _activeQuotes)
         {
-            return;
-        }
-
-        var buffer = ArrayPool<Quote>.Shared.Rent(expiredCount);
-        var bufferIndex = 0;
-
-        foreach (var key in _activeQuotes.Keys)
-        {
-            ref var state = ref CollectionsMarshal.GetValueRefOrNullRef(_activeQuotes, key);
+            ref var state = ref CollectionsMarshal.GetValueRefOrNullRef(_activeQuotes, pair.Key);
 
             if (Unsafe.IsNullRef(ref state) || !state.IsDirty || state.Quote.Timestamp.Ticks > referenceTicks)
             {
                 continue;
             }
 
-            buffer[bufferIndex++] = state.Quote;
+            batchDictionary ??= _dictionaryPool.Get();
+            batchDictionary[pair.Key] = state.Quote;
             state.IsDirty = false;
         }
 
-        Publish(buffer, expiredCount);
+        if (batchDictionary != null)
+        {
+            Publish(batchDictionary);
+        }
     }
 
-    private void Publish(Quote[] quotes, int count)
+    private void Publish(Dictionary<int, Quote> quotes)
     {
         var sequence = _ringBuffer.Next();
         try
         {
             var eventSlot = _ringBuffer[sequence];
-            eventSlot.Quotes = quotes;
-            eventSlot.Count = count;
+            eventSlot.Quotes = quotes; // Передаем ссылку на арендованный словарь
         }
         finally
         {

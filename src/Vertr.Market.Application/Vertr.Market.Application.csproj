@@ -4,6 +4,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.8" />
     <PackageReference Include="Disruptor" Version="6.0.1" />
 	<PackageReference Include="StackExchange.Redis" Version="2.11.8" />
@@ -11,10 +12,6 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="Vertr.Market.Application.Tests" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Quotes\EventHandlers\" />
 	</ItemGroup>
 	
 </Project>
