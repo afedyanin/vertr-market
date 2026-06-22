@@ -37,7 +37,7 @@ public class OrderBookProcessingService : BackgroundService
               new BlockingWaitStrategy());
 
         var publisher = new DummyBookPublisher();
-        var aggregator = new OrderBookAggregatorByLastItem(publisher, PublishInterval);
+        var aggregator = new OrderBookAggregatorByLastItem(publisher);
 
         _disruptor.HandleEventsWith(aggregator);
         _ringBuffer = _disruptor.Start();

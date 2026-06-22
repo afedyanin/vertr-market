@@ -14,7 +14,6 @@ public sealed class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent
         public bool IsDirty;
     }
 
-    private readonly TimeSpan _interval;
     private readonly IOrderBookSnapshotPublisher _publisher;
     private readonly Dictionary<int, OrderBookState> _activeBooks;
 
@@ -25,11 +24,9 @@ public sealed class OrderBookAggregatorByLastItem : IEventHandler<OrderBookEvent
 
     public OrderBookAggregatorByLastItem(
         IOrderBookSnapshotPublisher publisher,
-        TimeSpan interval,
         int capacity = 1024)
     {
         _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
-        _interval = interval;
         _activeBooks = new(capacity);
     }
 

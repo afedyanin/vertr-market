@@ -12,5 +12,9 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="Vertr.Market.Application.Tests" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Quotes\EventHandlers\" />
+	</ItemGroup>
 	
 </Project>
