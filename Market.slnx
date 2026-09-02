@@ -1,4 +1,11 @@
 <Solution>
+  <Folder Name="/agents/" />
+  <Folder Name="/agents/skills/">
+    <File Path="agents/skills/clean-architecture.md" />
+    <File Path="agents/skills/configuration.md" />
+    <File Path="agents/skills/convention-learner.md" />
+    <File Path="agents/skills/modern-csharp.md" />
+  </Folder>
   <Folder Name="/common/">
     <File Path=".editorconfig" />
     <File Path="AGENTS.md" />
@@ -6,16 +13,10 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/gc_setup.md" />
-    <File Path="hedge_ratio.md" />
-    <File Path="todos.md" />
+    <File Path="task01.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/Vertr.Market.Application/Vertr.Market.Application.csproj" Id="92884657-a2a4-427d-8a10-41d79f766e33" />
     <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
-    <Project Path="src/Vertr.Market.Tinvest/Vertr.Market.Tinvest.csproj" Id="cf11d088-da33-4f39-adff-17e43da02cbe" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Vertr.Market.Application.Tests/Vertr.Market.Application.Tests.csproj" Id="f6500e7a-c76e-4e9b-b7ea-8fa9f35ce58d" />
-  </Folder>
+  <Folder Name="/tests/" />
 </Solution>

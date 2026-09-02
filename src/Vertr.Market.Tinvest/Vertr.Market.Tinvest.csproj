@@ -1,8 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-	<ItemGroup>
-		<PackageReference Include="Tinkoff.InvestApi" Version="0.6.21" />
-	</ItemGroup>
-	<ItemGroup>
-	  <ProjectReference Include="..\Vertr.Market.Application\Vertr.Market.Application.csproj" />
-	</ItemGroup>
-</Project>
