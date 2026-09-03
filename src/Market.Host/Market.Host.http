@@ -1,6 +1,24 @@
 @HostAddress = http://localhost:5001
+@AssetId = 34
 
-GET {{HostAddress}}/trades/stats
+
+GET {{HostAddress}}/api/trades/stats
 Accept: application/json
 
 ###
+
+POST {{HostAddress}}/api/trades
+Content-Type: application/json
+[
+  {
+    "microsecondTimestamp": 1234567,
+    "price": 0.156,
+    "volume": 110,
+    "assetId": {{AssetId}},
+    "side": 1
+  }
+]
+### 
+
+GET {{HostAddress}}/api/trades/{{AssetId}}?count=10
+

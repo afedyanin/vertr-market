@@ -1,4 +1,5 @@
 ﻿using Market.ApiClient;
+using Market.ConsoleClient.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,7 +35,9 @@ internal static class Program
             {
                 // Add REST API
                 services.AddRefitClient<IMarketRestApiClient>()
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri("http://localhost:5001"));
+                    .ConfigureHttpClient(c => c.BaseAddress = new Uri("http://localhost:5001"));
+
+                services.AddHostedService<MarketInfoUpdaterService>();
             });
 
             builder.UseEnvironment(environment);
