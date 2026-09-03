@@ -33,9 +33,14 @@ internal static class Program
 
             builder.ConfigureServices((context, services) =>
             {
-                // Add REST API
                 services.AddRefitClient<IMarketRestApiClient>()
-                    .ConfigureHttpClient(c => c.BaseAddress = new Uri("http://localhost:5001"));
+                    .ConfigureHttpClient((serviceProvider, client) =>
+                    {
+                        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                        var baseAddress = configuration["MarketApiSettings:BaseUrl"];
+
+                        client.BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
+                    });
 
                 services.AddHostedService<MarketInfoUpdaterService>();
             });

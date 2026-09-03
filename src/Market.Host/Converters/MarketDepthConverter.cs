@@ -32,15 +32,10 @@ internal static class MarketDepthConverter
 
     private static void FromDto(this PriceLevelDto[] dtos, ref DepthBuffer10 buffer)
     {
-        var idx = 0;
-        foreach (var pl in dtos)
+        var count = Math.Min(dtos.Length, 10);
+        for (var i = 0; i < count; i++)
         {
-            buffer[idx++] = pl.FromDto();
-
-            if (idx >= 10)
-            {
-                break;
-            }
+            buffer[i] = dtos[i].FromDto();
         }
     }
 

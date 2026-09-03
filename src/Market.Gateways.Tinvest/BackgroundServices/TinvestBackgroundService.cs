@@ -1,46 +1,27 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
-using Market.Core.FileStore;
-using Market.Core.Models;
-using Microsoft.Extensions.ObjectPool;
+using Market.ApiClient;
+using Market.ApiClient.Dtos;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
 
 namespace Market.Gateways.Tinvest.BackgroundServices;
 
-internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDisposable
+internal sealed class TinvestBackgroundService : BackgroundService
 {
-    private sealed class MarketDepthHolder
-    {
-        public MarketDepth Data;
-    }
-
-    private sealed class MarketUpdateHolder
-    {
-        public TradeTick Data;
-    }
-
     private readonly ILogger<TinvestBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
+
+    private readonly IMarketRestApiClient _restApiClient;
+
     private readonly TinvestSettings _tinvestSettings;
     private readonly string _serviceName;
 
     private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
 
-    private readonly TimeSpan _flushInterval = TimeSpan.FromMilliseconds(1500);
-
-    private readonly MarketDepthFileWriter _marketDepthFileWriter;
-    private readonly TradeTickFileWriter _marketUpdateFileWriter;
-
-    private readonly Channel<MarketDepthHolder> _marketDepthChannel;
-    private readonly Channel<MarketUpdateHolder> _marketUpdateChannel;
-
-    private readonly ObjectPool<MarketDepthHolder> _marketDepthPool =
-        new DefaultObjectPoolProvider().Create(new DefaultPooledObjectPolicy<MarketDepthHolder>());
-
-    private readonly ObjectPool<MarketUpdateHolder> _marketUpdatePool =
-        new DefaultObjectPoolProvider().Create(new DefaultPooledObjectPolicy<MarketUpdateHolder>());
+    private readonly Channel<MarketDepthDto> _marketDepthChannel;
+    private readonly Channel<TradeTickDto> _tradesChannel;
 
     public TinvestBackgroundService(
         IServiceProvider serviceProvider,
@@ -52,22 +33,21 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
         _logger = logger;
         _serviceName = GetType().Name;
 
-        _marketDepthFileWriter = new MarketDepthFileWriter(_tinvestSettings.OutputDirectory, _flushInterval);
-        _marketUpdateFileWriter = new TradeTickFileWriter(_tinvestSettings.OutputDirectory, _flushInterval);
-
-        _marketDepthChannel = Channel.CreateBounded<MarketDepthHolder>(new BoundedChannelOptions(10000)
+        _marketDepthChannel = Channel.CreateBounded<MarketDepthDto>(new BoundedChannelOptions(10000)
         {
             SingleWriter = true, // Писать в канал будет только gRPC поток
             SingleReader = true, // Читать будет один фоновый воркер записи
             FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый стакан
         });
 
-        _marketUpdateChannel = Channel.CreateBounded<MarketUpdateHolder>(new BoundedChannelOptions(10000)
+        _tradesChannel = Channel.CreateBounded<TradeTickDto>(new BoundedChannelOptions(10000)
         {
             SingleWriter = true, // Писать в канал будет только gRPC поток
             SingleReader = true, // Читать будет один фоновый воркер записи
             FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый трейд
         });
+
+        _restApiClient = _serviceProvider.GetRequiredService<IMarketRestApiClient>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -94,7 +74,7 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
             _logger.LogInformation($"Stopping token signaled. Initiating graceful shutdown for channels...");
 
             _marketDepthChannel.Writer.TryComplete();
-            _marketUpdateChannel.Writer.TryComplete();
+            _tradesChannel.Writer.TryComplete();
 
             await Task.WhenAll(orderBooksWritingTask, tradesWritingTask);
 
@@ -149,15 +129,15 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
 
         try
         {
-            await foreach (var holder in _marketDepthChannel.Reader.ReadAllAsync())
+            await foreach (var book in _marketDepthChannel.Reader.ReadAllAsync())
             {
                 try
                 {
-                    _marketDepthFileWriter.Write(in holder.Data);
+                    await _restApiClient.PostBooks([book]);
                 }
-                finally
+                catch (Exception ex)
                 {
-                    _marketDepthPool.Return(holder);
+                    _logger.LogError(ex, "Market depth writing error.");
                 }
             }
         }
@@ -173,15 +153,15 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
 
         try
         {
-            await foreach (var holder in _marketUpdateChannel.Reader.ReadAllAsync())
+            await foreach (var trade in _tradesChannel.Reader.ReadAllAsync())
             {
                 try
                 {
-                    _marketUpdateFileWriter.Write(in holder.Data);
+                    await _restApiClient.PostTrades([trade]);
                 }
-                finally
+                catch (Exception ex)
                 {
-                    _marketUpdatePool.Return(holder);
+                    _logger.LogError(ex, "Trades writing error.");
                 }
             }
         }
@@ -296,10 +276,9 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
                 if (response.Orderbook != null)
                 {
                     var assetId = GetAssetId(response.Orderbook.InstrumentUid);
-                    var holder = _marketDepthPool.Get();
-                    holder.Data = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
+                    var dto = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
 
-                    _marketDepthChannel.Writer.TryWrite(holder);
+                    _marketDepthChannel.Writer.TryWrite(dto);
 
                     if (_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -325,10 +304,9 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
                 if (response.Trade != null)
                 {
                     var assetId = GetAssetId(response.Trade.InstrumentUid);
-                    var holder = _marketUpdatePool.Get();
-                    holder.Data = TinvestMapper.ToMarketUpdate(response.Trade, assetId);
+                    var dto = TinvestMapper.ToTradeTick(response.Trade, assetId);
 
-                    _marketUpdateChannel.Writer.TryWrite(holder);
+                    _tradesChannel.Writer.TryWrite(dto);
 
                     if (_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -361,21 +339,5 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
     {
         _instruments.TryGetValue(instrumentId, out var assetId);
         return assetId;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_marketDepthFileWriter != null)
-        {
-            await _marketDepthFileWriter.DisposeAsync();
-        }
-
-        if (_marketUpdateFileWriter != null)
-        {
-            await _marketUpdateFileWriter.DisposeAsync();
-        }
-
-        Dispose();
-        GC.SuppressFinalize(this);
     }
 }

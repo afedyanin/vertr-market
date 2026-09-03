@@ -2,7 +2,7 @@
 
 namespace Market.Gateways.Tinvest;
 
-internal sealed class TinvestSettings
+public class TinvestSettings
 {
     public InvestApiSettings? InvestApiSettings { get; set; }
 
@@ -15,7 +15,7 @@ internal sealed class TinvestSettings
     public string OutputDirectory { get; set; } = "tinvest";
 }
 
-internal sealed record class SubscriptionRequest
+public record class SubscriptionRequest
 {
     public ushort AssetId { get; set; }
 

@@ -16,6 +16,8 @@
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
 		<PackageReference Include="Tinkoff.InvestApi" Version="0.6.23" />
+		<PackageReference Include="Refit.HttpClientFactory" Version="15.2.0" />
+		<PackageReference Include="Refit.Reflection" Version="15.2.0" />
 	</ItemGroup>
 
 	<ItemGroup>

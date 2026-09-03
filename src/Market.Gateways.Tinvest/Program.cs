@@ -1,7 +1,9 @@
 
+using Market.ApiClient;
 using Market.Gateways.Tinvest.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Refit;
 using Serilog;
 using Tinkoff.InvestApi;
 
@@ -32,6 +34,15 @@ public static class Program
         builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));
         builder.Services.AddInvestApiClient((_, settings) => configuration.Bind($"{nameof(TinvestSettings)}:{nameof(InvestApiSettings)}", settings));
         builder.Services.AddHostedService<TinvestBackgroundService>();
+
+        builder.Services.AddRefitClient<IMarketRestApiClient>()
+            .ConfigureHttpClient((serviceProvider, client) =>
+            {
+                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                var baseAddress = configuration["MarketApiSettings:BaseUrl"];
+
+                client.BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
+            });
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
