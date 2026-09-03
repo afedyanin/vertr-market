@@ -1,6 +1,8 @@
-﻿namespace Market.Core.ObjectStore;
+﻿using Market.Core.Abstractions;
 
-internal abstract class ObjectStore<T> : IDisposable where T : struct
+namespace Market.Core.ObjectStore;
+
+internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where T : struct
 {
     private readonly Dictionary<ushort, LinkedList<T>> _store = [];
 
@@ -12,11 +14,11 @@ internal abstract class ObjectStore<T> : IDisposable where T : struct
     private long _getCount;
     private long _deleteCount;
 
-    protected abstract ushort GetAssetId(T item);
+    protected abstract ushort GetKey(T item);
 
-    protected abstract long GetTime(T item);
+    protected abstract long GetTimestamp(T item);
 
-    protected ObjectStore(int assetItemsMaxLimit = 1000)
+    protected ObjectStoreBase(int assetItemsMaxLimit = 1000)
     {
         _assetItemsMaxLimit = assetItemsMaxLimit;
     }
@@ -47,7 +49,7 @@ internal abstract class ObjectStore<T> : IDisposable where T : struct
 
             foreach (T item in items)
             {
-                var assetId = GetAssetId(item);
+                var assetId = GetKey(item);
                 _store.TryGetValue(assetId, out var list);
 
                 if (list == null)
@@ -56,7 +58,7 @@ internal abstract class ObjectStore<T> : IDisposable where T : struct
                     _store.Add(assetId, list);
                 }
 
-                // TODO: Implement replace by time discrete value
+                // TODO: Implement replace by Timestamp discrete value
                 list.AddLast(item);
 
                 if (list.Count > _assetItemsMaxLimit)
@@ -71,7 +73,7 @@ internal abstract class ObjectStore<T> : IDisposable where T : struct
         }
     }
 
-    public bool DeleteAsset(ushort assetId)
+    public bool Delete(ushort assetId)
     {
         _lock.EnterWriteLock();
         try

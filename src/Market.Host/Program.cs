@@ -2,6 +2,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Market.Core;
 
 namespace Market.Host;
 
@@ -25,6 +26,8 @@ public static class Program
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
+
+        builder.Services.AddObjectStores();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

@@ -17,4 +17,9 @@
 	<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Market.ApiClient\Market.ApiClient.csproj" />
+    <ProjectReference Include="..\Market.Core\Market.Core.csproj" />
+  </ItemGroup>
+
 </Project>

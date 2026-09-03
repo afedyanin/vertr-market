@@ -1,10 +1,9 @@
-﻿using Market.Core.Abstractions;
-using Market.Core.Models;
+﻿using Market.Core.Models;
 
 namespace Market.Core.ObjectStore;
 
-internal sealed class TradeTickObjectStore : ObjectStore<TradeTick>, ITradeTickStore
+internal sealed class TradeTickObjectStore : ObjectStoreBase<TradeTick>
 {
-    protected override ushort GetAssetId(TradeTick item) => item.AssetId;
-    protected override long GetTime(TradeTick item) => item.MicrosecondTimestamp;
+    protected override ushort GetKey(TradeTick item) => item.AssetId;
+    protected override long GetTimestamp(TradeTick item) => item.MicrosecondTimestamp;
 }
