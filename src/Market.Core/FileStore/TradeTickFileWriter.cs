@@ -1,10 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Market.Core.Abstractions;
 using Market.Core.Models;
 
 namespace Market.Core.FileStore;
 
-public class TradeTickFileWriter : FileWriterBase
+public class TradeTickFileWriter : FileWriterBase, ITradeTickWriter
 {
     public TradeTickFileWriter(string outputDirectory, TimeSpan flushInterval) : base(outputDirectory, flushInterval, "_trades.bin.gz")
     {

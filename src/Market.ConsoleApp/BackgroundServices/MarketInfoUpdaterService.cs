@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Market.ConsoleClient.BackgroundServices;
+namespace Market.ConsoleApp.BackgroundServices;
 
 internal sealed class MarketInfoUpdaterService : BackgroundService
 {

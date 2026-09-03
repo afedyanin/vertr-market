@@ -19,6 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Market.ApiClient\Market.ApiClient.csproj" />
 	  <ProjectReference Include="..\Market.Core\Market.Core.csproj" />
 	</ItemGroup>
 

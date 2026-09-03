@@ -1,10 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Market.Core.Abstractions;
 using Market.Core.Models;
 
 namespace Market.Core.FileStore;
 
-public class MarketDepthFileWriter : FileWriterBase
+public class MarketDepthFileWriter : FileWriterBase, IMarketDepthWriter
 {
     public MarketDepthFileWriter(string outputDirectory, TimeSpan flushInterval) : base(outputDirectory, flushInterval, "_books.bin.gz")
     {

@@ -19,7 +19,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Market.ApiClient/Market.ApiClient.csproj" Id="f45932ee-8317-45fb-912a-1896f914bfb3" />
-    <Project Path="src/Market.ConsoleClient/Market.ConsoleClient.csproj" Id="293b23c2-6e3f-4244-91e3-d4b6f5bb36e1" />
+    <Project Path="src/Market.ConsoleApp/Market.ConsoleApp.csproj" />
     <Project Path="src/Market.Core/Market.Core.csproj" Id="f0162eba-8f10-4e8f-884c-baad07945a5f" />
     <Project Path="src/Market.Gateways.Tinvest/Market.Gateways.Tinvest.csproj" Id="cfb503f7-4d8a-4a0a-9e06-9dffc24fad02" />
     <Project Path="src/Market.Host/Market.Host.csproj" />

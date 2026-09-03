@@ -1,12 +1,12 @@
 ﻿using Market.ApiClient;
-using Market.ConsoleClient.BackgroundServices;
+using Market.ConsoleApp.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Refit;
 using Serilog;
 
-namespace Market.ConsoleClient;
+namespace Market.ConsoleApp;
 
 internal static class Program
 {
