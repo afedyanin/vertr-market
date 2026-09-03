@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
 
-  market-host:
+  host:
     image: vertr_market_host_image
     build:
       context: .
@@ -14,7 +14,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker 
 
-  market-tinvest:
+  tinvest:
     image: vertr_market_gateways_tinvest_image
     build:
       context: .

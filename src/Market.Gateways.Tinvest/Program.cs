@@ -21,12 +21,7 @@ public static class Program
             .AddPrometheusExporter()
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddRuntimeInstrumentation()
-            //.AddMeter("Microsoft.AspNetCore.Hosting")
-            //.AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-            //.AddMeter("System.Net.Http")
-            //.AddMeter("System.Net.NameResolution")
-            );
+            .AddRuntimeInstrumentation());
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
