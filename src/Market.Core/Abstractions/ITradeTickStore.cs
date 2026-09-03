@@ -6,7 +6,9 @@ public interface ITradeTickStore
 {
     public void Set(TradeTick[] items);
 
-    public TradeTick[] Get(int count = 1);
+    public TradeTick[] Get(ushort assetId, int count = 1);
 
-    public int Delete(ushort assetId);
+    public bool DeleteAsset(ushort assetId);
+
+    public void Clear();
 }

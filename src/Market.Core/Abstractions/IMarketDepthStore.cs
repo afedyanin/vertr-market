@@ -6,7 +6,11 @@ public interface IMarketDepthStore
 {
     public void Set(MarketDepth[] items);
 
-    public MarketDepth[] Get(int count = 1);
+    public MarketDepth[] Get(ushort assetId, int count = 1);
 
-    public int Delete(ushort assetId);
+    public bool DeleteAsset(ushort assetId);
+
+    public void Clear();
+
 }
+

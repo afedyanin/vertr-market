@@ -15,6 +15,7 @@
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/task01.md" />
+    <File Path="docs/task02.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Market.Core/Market.Core.csproj" Id="f0162eba-8f10-4e8f-884c-baad07945a5f" />

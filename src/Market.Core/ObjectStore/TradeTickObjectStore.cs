@@ -3,20 +3,8 @@ using Market.Core.Models;
 
 namespace Market.Core.ObjectStore;
 
-internal sealed class TradeTickObjectStore : ITradeTickStore
+internal sealed class TradeTickObjectStore : ObjectStore<TradeTick>, ITradeTickStore
 {
-    public TradeTick[] Get(int count = 1)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Set(TradeTick[] items)
-    {
-        throw new NotImplementedException();
-    }
-
-    public int Delete(ushort assetId)
-    {
-        throw new NotImplementedException();
-    }
+    protected override ushort GetAssetId(TradeTick item) => item.AssetId;
+    protected override long GetTime(TradeTick item) => item.MicrosecondTimestamp;
 }

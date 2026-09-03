@@ -3,19 +3,8 @@ using Market.Core.Models;
 
 namespace Market.Core.ObjectStore;
 
-internal sealed class MarketDepthStore : IMarketDepthStore
+internal sealed class MarketDepthStore : ObjectStore<MarketDepth>, IMarketDepthStore
 {
-    public MarketDepth[] Get(int count = 1)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Set(MarketDepth[] items)
-    {
-        throw new NotImplementedException();
-    }
-    public int Delete(ushort assetId)
-    {
-        throw new NotImplementedException();
-    }
+    protected override ushort GetAssetId(MarketDepth item) => item.AssetId;
+    protected override long GetTime(MarketDepth item) => item.MicrosecondTimestamp;
 }
