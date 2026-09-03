@@ -9,3 +9,5 @@ dotnet_diagnostic.CA1873.severity = none # Evaluation of this argument may be ex
 dotnet_diagnostic.MA0176.severity = none # Optimize guid creation
 dotnet_diagnostic.CA1051.severity = none # Do not declare visible instance fields
 dotnet_diagnostic.CA1815.severity = none # Override equals and operator equals on value types
+dotnet_diagnostic.CA1028.severity = none # Enum storage should be Int32
+dotnet_diagnostic.IDE0007.severity = none # Use implicit type

@@ -1,7 +1,9 @@
 
+using Market.Gateways.Tinvest.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Serilog;
+using Tinkoff.InvestApi;
 
 namespace Market.Gateways.Tinvest;
 
@@ -25,6 +27,11 @@ public static class Program
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
+
+        // Add Tinvest API
+        builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));
+        builder.Services.AddInvestApiClient((_, settings) => configuration.Bind($"{nameof(TinvestSettings)}:{nameof(InvestApiSettings)}", settings));
+        builder.Services.AddHostedService<TinvestBackgroundService>();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

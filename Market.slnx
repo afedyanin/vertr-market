@@ -17,6 +17,7 @@
     <File Path="docs/task01.md" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Market.Core/Market.Core.csproj" Id="f0162eba-8f10-4e8f-884c-baad07945a5f" />
     <Project Path="src/Market.Gateways.Tinvest/Market.Gateways.Tinvest.csproj" Id="cfb503f7-4d8a-4a0a-9e06-9dffc24fad02" />
     <Project Path="src/Market.Host/Market.Host.csproj" />
   </Folder>
