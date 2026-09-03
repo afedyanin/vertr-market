@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Vertr.Market.Host.Controllers;
+namespace Market.Host.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

@@ -11,14 +11,14 @@
     <File Path="AGENTS.md" />
     <File Path="compose.yaml" />
     <File Path="Directory.Build.props" />
-    <File Path="Dockerfile" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/task01.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/Vertr.Market.Host/Vertr.Market.Host.csproj" Id="c8ca6f9b-6d52-49de-9783-0e052f4edee7" />
+    <Project Path="src/Market.Gateways.Tinvest/Market.Gateways.Tinvest.csproj" Id="cfb503f7-4d8a-4a0a-9e06-9dffc24fad02" />
+    <Project Path="src/Market.Host/Market.Host.csproj" />
   </Folder>
   <Folder Name="/tests/" />
 </Solution>

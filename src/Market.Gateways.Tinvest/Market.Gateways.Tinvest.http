@@ -1,0 +1,6 @@
+@Market.Gateways.Tinvest_HostAddress = http://localhost:5172
+
+GET {{Market.Gateways.Tinvest_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

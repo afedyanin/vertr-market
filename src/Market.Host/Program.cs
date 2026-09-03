@@ -3,7 +3,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 
-namespace Vertr.Market.Host;
+namespace Market.Host;
 
 public static class Program
 {
@@ -18,14 +18,15 @@ public static class Program
             .AddService(serviceName: builder.Environment.ApplicationName));
 
         otel.WithMetrics(metrics => metrics
+            .AddPrometheusExporter()
             .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation() // Метрики исходящих HTTP-запросов
-            .AddRuntimeInstrumentation()    // Метрики .NET Runtime (GC, CPU, ThreadPool)
-            .AddMeter("Microsoft.AspNetCore.Hosting")
-            .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-            .AddMeter("System.Net.Http")
-            .AddMeter("System.Net.NameResolution")
-            .AddPrometheusExporter());
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            //.AddMeter("Microsoft.AspNetCore.Hosting")
+            //.AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+            //.AddMeter("System.Net.Http")
+            //.AddMeter("System.Net.NameResolution")
+            );
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
