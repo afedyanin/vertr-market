@@ -5,7 +5,6 @@ namespace Market.Core.Models;
 
 /// <summary>
 /// Срез стакана на ТОП-10 уровней ликвидности.
-/// Полностью располагается на стеке (размер ~420 байт). Исключает аллокации в куче.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct MarketDepth

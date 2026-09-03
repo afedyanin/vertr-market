@@ -18,7 +18,7 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
 
     private sealed class MarketUpdateHolder
     {
-        public MarketUpdate Data;
+        public TradeTick Data;
     }
 
     private readonly ILogger<TinvestBackgroundService> _logger;
@@ -31,7 +31,7 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
     private readonly TimeSpan _flushInterval = TimeSpan.FromMilliseconds(1500);
 
     private readonly MarketDepthFileWriter _marketDepthFileWriter;
-    private readonly MarketUpdateFileWriter _marketUpdateFileWriter;
+    private readonly TradeTickFileWriter _marketUpdateFileWriter;
 
     private readonly Channel<MarketDepthHolder> _marketDepthChannel;
     private readonly Channel<MarketUpdateHolder> _marketUpdateChannel;
@@ -53,7 +53,7 @@ internal sealed class TinvestBackgroundService : BackgroundService, IAsyncDispos
         _serviceName = GetType().Name;
 
         _marketDepthFileWriter = new MarketDepthFileWriter(_tinvestSettings.OutputDirectory, _flushInterval);
-        _marketUpdateFileWriter = new MarketUpdateFileWriter(_tinvestSettings.OutputDirectory, _flushInterval);
+        _marketUpdateFileWriter = new TradeTickFileWriter(_tinvestSettings.OutputDirectory, _flushInterval);
 
         _marketDepthChannel = Channel.CreateBounded<MarketDepthHolder>(new BoundedChannelOptions(10000)
         {

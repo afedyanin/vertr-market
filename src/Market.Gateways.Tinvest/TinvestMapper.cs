@@ -63,7 +63,7 @@ internal static class TinvestMapper
     /// <param name="protoTrade">Входящий объект сделки из gRPC стрима</param>
     /// <param name="assetId">Внутренний числовой идентификатор инструмента</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static MarketUpdate ToMarketUpdate(Trade protoTrade, ushort assetId)
+    public static TradeTick ToMarketUpdate(Trade protoTrade, ushort assetId)
     {
         // 1. Извлекаем Unix Microseconds из Google Protobuf Timestamp
         long microsecondTimestamp = 0;
@@ -76,13 +76,12 @@ internal static class TinvestMapper
         var side = (byte)(protoTrade.Direction == TradeDirection.Sell ? 1 : 0);
 
         // 3. Собираем структуру на стеке
-        return new MarketUpdate(
+        return new TradeTick(
             timestamp: microsecondTimestamp,
             price: protoTrade.Price,
             volume: (uint)protoTrade.Quantity,
             assetId: assetId,
-            side: side,
-            updateType: MarketUpdateType.TradeTick
+            side: side
         );
     }
 }
