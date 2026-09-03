@@ -1,0 +1,6 @@
+@HostAddress = http://localhost:5001
+
+GET {{HostAddress}}/trades/stats
+Accept: application/json
+
+###

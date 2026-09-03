@@ -6,47 +6,47 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Market.Host.Controllers;
 
-[Route("api/trades")]
+[Route("api/order-books")]
 [ApiController]
-public class TradesController : ControllerBase
+public class MarketDepthController : ControllerBase
 {
-    private readonly IObjectStore<TradeTick> _store;
+    private readonly IObjectStore<MarketDepth> _store;
 
-    public TradesController(IObjectStore<TradeTick> store)
+    public MarketDepthController(IObjectStore<MarketDepth> store)
     {
         _store = store;
     }
 
     [HttpPost]
-    public Task PostTrades([FromBody] TradeTickDto[] trades)
+    public Task PostBooks([FromBody] MarketDepthDto[] books)
     {
-        _store.Set([.. trades.FromDto()]);
+        _store.Set([.. books.FromDto()]);
         return Task.FromResult(Ok());
     }
 
     [HttpGet("{assetId:int}")]
-    public Task<TradeTickDto[]> GetTrades(int assetId, int count = 1)
+    public Task<MarketDepthDto[]> GetBooks(int assetId, int count = 1)
     {
         var items = _store.Get((ushort)assetId, count).ToDto().ToArray();
         return Task.FromResult(items);
     }
 
     [HttpDelete("{assetId:int}")]
-    public Task DeleteTradesByAsset(int assetId)
+    public Task DeleteBooksByAsset(int assetId)
     {
         _store.Delete((ushort)assetId);
         return Task.FromResult(Ok());
     }
 
     [HttpDelete()]
-    public Task ClearTrades()
+    public Task ClearBooks()
     {
         _store.Clear();
         return Task.FromResult(Ok());
     }
 
     [HttpGet("stats")]
-    public Task<StoreStatsDto> GetTradesStats()
+    public Task<StoreStatsDto> GetBooksStats()
     {
         (var setCount, var getCount, var deleteCount) = _store.GetStatistics();
         var res = new StoreStatsDto(setCount, getCount, deleteCount);
