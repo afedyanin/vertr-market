@@ -33,6 +33,8 @@ internal static class Program
 
             builder.ConfigureServices((context, services) =>
             {
+                services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
+
                 services.AddRefitClient<IMarketRestApiClient>()
                     .ConfigureHttpClient((serviceProvider, client) =>
                     {
