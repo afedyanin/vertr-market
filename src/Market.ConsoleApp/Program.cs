@@ -19,6 +19,7 @@ internal static class Program
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables()
+            .AddCommandLine(args) // MarketApiSettings:AssetId
             .Build();
 
         Log.Logger = new LoggerConfiguration()

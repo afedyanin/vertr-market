@@ -1,48 +1,48 @@
 ﻿using Market.ApiClient;
+using Market.ConsoleApp.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Market.ConsoleApp.BackgroundServices;
 
 internal sealed class MarketInfoUpdaterService : BackgroundService
 {
-    private const int AssetId = 34;
-
-    private readonly IServiceProvider _serviceProvider;
     private readonly IMarketRestApiClient _restApiClient;
     private readonly ILogger<MarketInfoUpdaterService> _logger;
 
+    private readonly MarketApiSettings _settings;
+
     public MarketInfoUpdaterService(
-        IServiceProvider serviceProvider,
         IMarketRestApiClient restApiClient,
+        IOptions<MarketApiSettings> options,
         ILogger<MarketInfoUpdaterService> logger)
     {
-        _serviceProvider = serviceProvider;
         _restApiClient = restApiClient;
+        _settings = options.Value;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        //await using var scope = _serviceProvider.CreateAsyncScope();
-        //var restApiClient = scope.ServiceProvider.GetRequiredService<IMarketRestApiClient>();
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                var trades = await _restApiClient.GetTrades(AssetId, 5);
-                _logger.LogInformation("Trades: {Trades}", string.Join(",", trades));
+                var book = await _restApiClient.GetBooks(_settings.AssetId, 1) ?? [];
 
-                var stats = await _restApiClient.GetTradesStats();
-                _logger.LogInformation("Trades stats: {Stats}", stats);
+                if (book.Any())
+                {
+                    Console.Clear();
+                    Console.Write(book[0].Dump());
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occured: {Message}", ex.Message);
             }
 
-            await Task.Delay(5000, stoppingToken);
+            await Task.Delay(2000, stoppingToken);
         }
     }
 }
