@@ -1,9 +1,8 @@
 ﻿# Market.ConsoleApp
 
-Запуск с кастомным AssetId:
+Run with custom AssetId:
 
 ```
-
 dotnet run --MarketApiSettings:AssetId=5
 
 ```
