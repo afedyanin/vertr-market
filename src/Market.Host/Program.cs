@@ -1,8 +1,9 @@
+using Market.Core;
+using Market.Host.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
-using Market.Core;
 
 namespace Market.Host;
 
@@ -28,6 +29,13 @@ public static class Program
         builder.Services.AddOpenApi();
 
         builder.Services.AddObjectStores();
+
+        // Регистрируем наш TCP-сервер как Hosted/Background Service
+        builder.Services.AddHostedService(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<TcpCommandServer>>();
+            return new TcpCommandServer(port: 5000, logger);
+        });
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

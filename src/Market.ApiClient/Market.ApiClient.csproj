@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <PackageReference Include="Refit" Version="15.2.0" />
+    <PackageReference Include="MemoryPack" Version="1.21.4" />
   </ItemGroup>
 
 </Project>
