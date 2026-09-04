@@ -10,7 +10,7 @@ internal sealed class BomberRun
     private readonly ushort _minKey;
     private readonly ushort _maxKey;
 
-    public BomberRun(IMarketRestApiClient restApiClient, int assetCount = 15)
+    public BomberRun(IMarketRestApiClient restApiClient, int assetCount = 150)
     {
         _restApiClient = restApiClient;
         _generators = InitGenerators(assetCount);
