@@ -1,4 +1,5 @@
 ﻿using System.IO.Pipelines;
+using Market.ApiClient.Tcp;
 
 namespace Market.Core.Tcp;
 

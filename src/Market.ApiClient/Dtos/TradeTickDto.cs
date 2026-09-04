@@ -1,6 +1,9 @@
-﻿namespace Market.ApiClient.Dtos;
+﻿using MemoryPack;
 
-public record class TradeTickDto(
+namespace Market.ApiClient.Dtos;
+
+[MemoryPackable]
+public partial record TradeTickDto(
     long MicrosecondTimestamp,
     decimal Price,
     uint Volume,

@@ -1,10 +1,10 @@
-﻿namespace Market.Core.Tcp;
+﻿namespace Market.ApiClient.Tcp;
 
 internal static class TcpClientSample
 {
     static async Task Start(string[] args)
     {
-        using var client = new MarketTcpApiClient("127.0.0.1", 5000);
+        using var client = new TcpClient("127.0.0.1", 5000);
 
         // Подписываемся на события для логирования
         client.OnConnected += () => Console.WriteLine("[INFO] Сессия TCP успешно установлена.");

@@ -1,31 +1,43 @@
-﻿using Market.ApiClient.Dtos;
+﻿using Market.ApiClient.Tcp;
+using Market.ApiClient.Tcp.Dtos;
+using Market.Core.Abstractions;
+using Market.Core.Converters;
+using Market.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Market.Core.Tcp.Commands;
 
 internal sealed class GetBooksResponseCommand : CommandResponseBase
 {
+    private readonly IObjectStore<MarketDepth> _objectStore;
+
+    private readonly ILogger<GetBooksResponseCommand> _logger;
+
     public GetBooksResponseCommand(
         IServiceScope serviceScope,
         TcpResponseWriter responseWriter) : base(serviceScope, responseWriter)
     {
+        _objectStore = serviceScope.ServiceProvider.GetRequiredService<IObjectStore<MarketDepth>>();
+        _logger = serviceScope.ServiceProvider.GetRequiredService<ILogger<GetBooksResponseCommand>>();
     }
 
     public override CommandType CommandType => CommandType.GetBooksResponse;
 
     public override async Task ExecuteAsync(int correlationId, byte[] payload, CancellationToken ct = default)
     {
-        //var request = MemoryPack.MemoryPackSerializer.Deserialize<GetBooksRequestDto>(payload);
+        var request = MemoryPack.MemoryPackSerializer.Deserialize<GetBooksRequestDto>(payload);
 
-        // 2. Имитация долгого запроса (например, тяжелый I/O к БД на 500мс)
-        // В этот момент поток чтения сокета РАБОТАЕТ и принимает другие команды!
-        await Task.Delay(500, ct);
+        if (request == null)
+        {
+            _logger.LogWarning("Cannot Deserialize GetBooksRequestDto. CorrelationId={CorrelationId}", correlationId);
+            return;
+        }
 
-        //var mockResult = new MarketDepthDto[] { new MarketDepthDto { AssetId = request.AssetId, Price = 100.5m, Volume = 10 } };
-        var mockResult = Array.Empty<MarketDepthDto>();
+        var books = _objectStore.Get(request.AssetId, request.Count);
+        var result = books.ToDto().ToArray();
 
-        // 3. Сериализация ответа
-        byte[] responsePayload = MemoryPack.MemoryPackSerializer.Serialize(mockResult);
+        var responsePayload = MemoryPack.MemoryPackSerializer.Serialize(result);
         int totalLength = TcpConsts.MessageHeaderSize + responsePayload.Length;
 
         await ResponseWriter.WriteAsync(CommandType, totalLength, correlationId, responsePayload, ct);

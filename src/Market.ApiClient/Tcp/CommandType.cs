@@ -1,4 +1,4 @@
-﻿namespace Market.Core.Tcp;
+﻿namespace Market.ApiClient.Tcp;
 
 public enum CommandType : short
 {

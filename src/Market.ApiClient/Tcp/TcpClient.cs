@@ -3,19 +3,19 @@ using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using Market.ApiClient.Dtos;
-using Market.ApiClient.TcpDtos;
+using Market.ApiClient.Tcp.Dtos;
 using MemoryPack;
 
-namespace Market.Core.Tcp;
+namespace Market.ApiClient.Tcp;
 
-public sealed class MarketTcpApiClient : IDisposable
+public sealed class TcpClient : IDisposable
 {
     private readonly string _host;
     private readonly int _port;
     private readonly TimeSpan _requestTimeout = TimeSpan.FromSeconds(5);
     private readonly TimeSpan _reconnectDelay = TimeSpan.FromSeconds(2);
 
-    private TcpClient? _tcpClient;
+    private System.Net.Sockets.TcpClient? _tcpClient;
     private NetworkStream? _stream;
     private PipeReader? _pipeReader;
 
@@ -36,7 +36,7 @@ public sealed class MarketTcpApiClient : IDisposable
     public event Action? OnDisconnected;
 #pragma warning restore CA1003 // Use generic event handler instances
 
-    public MarketTcpApiClient(string host, int port)
+    public TcpClient(string host, int port)
     {
         _host = host;
         _port = port;
@@ -62,7 +62,7 @@ public sealed class MarketTcpApiClient : IDisposable
 
             CleanUpCurrentConnection();
 
-            _tcpClient = new TcpClient();
+            this._tcpClient = new System.Net.Sockets.TcpClient();
             await _tcpClient.ConnectAsync(_host, _port, _clientCts.Token);
             _stream = _tcpClient.GetStream();
             _pipeReader = PipeReader.Create(_stream);
@@ -105,7 +105,7 @@ public sealed class MarketTcpApiClient : IDisposable
     /// </summary>
     private async Task<byte[]> SendRequestAsync<TRequest>(CommandType command, TRequest dto)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(MarketTcpApiClient));
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(TcpClient));
 
         // Если связи нет, пробуем инициировать подключение (или падаем, зависит от бизнес-логики)
         if (_stream == null || !_tcpClient!.Connected)
@@ -264,7 +264,7 @@ public sealed class MarketTcpApiClient : IDisposable
 
     public async Task<MarketDepthDto[]> GetBooks(int assetId, int count = 1)
     {
-        var requestDto = new GetBooksRequestDto { AssetId = assetId, Count = count };
+        var requestDto = new GetBooksRequestDto { AssetId = (ushort)assetId, Count = count };
         byte[] responseBytes = await SendRequestAsync(CommandType.GetBooksRequest, requestDto);
         return MemoryPackSerializer.Deserialize<MarketDepthDto[]>(responseBytes) ?? [];
     }

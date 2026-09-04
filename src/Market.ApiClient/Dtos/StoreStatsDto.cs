@@ -1,3 +1,6 @@
-﻿namespace Market.ApiClient.Dtos;
+﻿using MemoryPack;
 
-public record class StoreStatsDto(long SetCount, long GetCount, long DeleteCount);
+namespace Market.ApiClient.Dtos;
+
+[MemoryPackable]
+public partial record StoreStatsDto(long SetCount, long GetCount, long DeleteCount);

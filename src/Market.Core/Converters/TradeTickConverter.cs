@@ -1,9 +1,9 @@
 ﻿using Market.ApiClient.Dtos;
 using Market.Core.Models;
 
-namespace Market.Host.Converters;
+namespace Market.Core.Converters;
 
-internal static class TradeTickConverter
+public static class TradeTickConverter
 {
     public static IEnumerable<TradeTickDto> ToDto(this IEnumerable<TradeTick> tradeTicks)
         => tradeTicks.Select(ToDto);

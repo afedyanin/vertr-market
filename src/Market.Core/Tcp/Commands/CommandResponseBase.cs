@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Market.ApiClient.Tcp;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Market.Core.Tcp.Commands;
 

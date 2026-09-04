@@ -1,3 +1,6 @@
-﻿namespace Market.ApiClient.Dtos;
+﻿using MemoryPack;
 
-public record class PriceLevelDto(decimal Price, uint Volume);
+namespace Market.ApiClient.Dtos;
+
+[MemoryPackable]
+public partial record PriceLevelDto(decimal Price, uint Volume);

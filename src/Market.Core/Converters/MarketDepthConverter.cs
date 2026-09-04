@@ -1,9 +1,9 @@
 ﻿using Market.ApiClient.Dtos;
 using Market.Core.Models;
 
-namespace Market.Host.Converters;
+namespace Market.Core.Converters;
 
-internal static class MarketDepthConverter
+public static class MarketDepthConverter
 {
     public static IEnumerable<MarketDepthDto> ToDto(this IEnumerable<MarketDepth> books)
         => books.Select(ToDto);

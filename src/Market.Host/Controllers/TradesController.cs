@@ -1,7 +1,7 @@
 ﻿using Market.ApiClient.Dtos;
 using Market.Core.Abstractions;
 using Market.Core.Models;
-using Market.Host.Converters;
+using Market.Core.Converters;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Market.Host.Controllers;
