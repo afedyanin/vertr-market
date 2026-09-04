@@ -18,7 +18,7 @@ internal sealed class BomberRun
         _maxKey = _generators.Keys.Max();
     }
 
-    public void ExecuteRestBenchmarkForBooks(int rate)
+    public void ExecuteRestBenchmarkForBooks(int copies)
     {
         var scenario = Scenario.Create(
                 "rest_benchmark_books",
@@ -47,10 +47,9 @@ internal sealed class BomberRun
                 })
             .WithWarmUpDuration(TimeSpan.FromSeconds(1))
             .WithLoadSimulations(
-                Simulation.Inject(
-                    rate: rate,
-                    interval: TimeSpan.FromSeconds(3),
-                    during: TimeSpan.FromSeconds(30)));
+                Simulation.KeepConstant(
+                    copies: copies,
+                    during: TimeSpan.FromSeconds(60)));
 
         _ = NBomberRunner.RegisterScenarios(scenario).Run();
     }
