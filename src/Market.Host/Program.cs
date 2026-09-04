@@ -29,12 +29,10 @@ public static class Program
         builder.Services.AddOpenApi();
 
         builder.Services.AddObjectStores();
-
-        // Регистрируем наш TCP-сервер как Hosted/Background Service
         builder.Services.AddHostedService(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<TcpCommandServer>>();
-            return new TcpCommandServer(port: 5000, logger);
+            var logger = sp.GetRequiredService<ILogger<TcpServer>>();
+            return new TcpServer(port: 5000, sp, logger);
         });
 
         Log.Logger = new LoggerConfiguration()
