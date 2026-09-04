@@ -1,47 +1,87 @@
-﻿namespace Market.ApiClient.Tcp;
+﻿using Market.ApiClient.Dtos;
+using Market.ApiClient.Tcp.Internals;
+
+namespace Market.ApiClient.Tcp;
 
 internal static class TcpClientSample
 {
-    static async Task Start(string[] args)
-    {
-        using var client = new TcpClient("127.0.0.1", 5000);
+    private static ITcpApiClient? _tcpClient;
+    private static IMarketTcpApiClient? _сlient;
 
-        // Подписываемся на события для логирования
-        client.OnConnected += () => Console.WriteLine("[INFO] Сессия TCP успешно установлена.");
-        client.OnDisconnected += () => Console.WriteLine("[WARN] Соединение потеряно! Переход в режим ожидания сервера...");
+    static async Task Main(string[] args)
+    {
+        Console.WriteLine("[Клиент] Инициализация компонентов...");
+
+        _tcpClient = new TcpApiClient("127.0.0.1", 8080);
+        _сlient = new MarketTcpApiClient(_tcpClient);
+
+        // 2. Подписываемся на события изменения статуса соединения
+        _tcpClient.OnConnected += OnClientConnected;
+        _tcpClient.OnDisconnected += OnClientDisconnected;
 
         try
         {
-            await client.ConnectAsync();
+            Console.WriteLine("[Клиент] Попытка установить соединение...");
+
+            // 3. Асинхронно подключаемся к серверу
+            await _tcpClient.ConnectAsync();
+
+            // Небольшая пауза, чтобы симулировать работу и дождаться события OnConnected
+            await Task.Delay(1000);
+
+            // 4. Используем бизнес-сервис для получения данных
+            Console.WriteLine("\n[Бизнес-логика] Запрос книги заявок для Asset ID: 100...");
+            MarketDepthDto[] books = await _сlient.GetBooksAsync(assetId: 100, count: 5);
+
+            Console.WriteLine($"[Бизнес-логика] Получено стаканов: {books.Length}");
+            // Здесь может быть обработка полученных данных (например, вывод в консоль)
         }
-        catch
+        catch (TimeoutException ex)
         {
-            Console.WriteLine("[ERR] Сервер недоступен при старте, но клиент попробует подключиться позже сам.");
-            // Инициируем фоновый реконнект, если сервер лежал при первом запуске
-            _ = Task.Run(() => client.ConnectAsync());
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"[Ошибка] Время ожидания ответа истекло: {ex.Message}");
+            Console.ResetColor();
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[Критическая ошибка] {ex.Message}");
+            Console.ResetColor();
+        }
+        finally
+        {
+            // 5. Обязательно освобождаем ресурсы перед выходом
+            Console.WriteLine("\n[Клиент] Завершение работы приложения...");
+
+            if (_tcpClient != null)
+            {
+                // Отписываемся от событий, чтобы избежать утечек памяти
+                _tcpClient.OnConnected -= OnClientConnected;
+                _tcpClient.OnDisconnected -= OnClientDisconnected;
+
+                // Закрываем соединение и очищаем ресурсы
+                _tcpClient.Dispose();
+                Console.WriteLine("[Клиент] Ресурсы успешно освобождены.");
+            }
         }
 
-        // Эмуляция работы
-        while (true)
-        {
-            try
-            {
-                Console.WriteLine("Запрос данных...");
-                var books = await client.GetBooks(assetId: 1, count: 2);
-                Console.WriteLine($"Получено стаканов: {books.Length}");
-            }
-            catch (TimeoutException tex)
-            {
-                // Сервер завис или не ответил вовремя
-                Console.WriteLine($"[TIMEOUT] {tex.Message}");
-            }
-            catch (Exception ex)
-            {
-                // Сетевая ошибка (клиент переподключается в этот момент)
-                Console.WriteLine($"[ОШИБКА СЕТИ] {ex.Message}");
-            }
+        Console.WriteLine("Нажмите любую клавишу для выхода...");
+        Console.ReadKey();
+    }
 
-            await Task.Delay(3000); // Повторяем каждые 3 секунды
-        }
+    // Обработчик события успешного подключения
+    private static void OnClientConnected(object? sender, EventArgs e)
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("[Событие] Успешно подключено к TCP-серверу!");
+        Console.ResetColor();
+    }
+
+    // Обработчик события разрыва соединения
+    private static void OnClientDisconnected(object? sender, EventArgs e)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("[Событие] Соединение с TCP-сервером разорвано.");
+        Console.ResetColor();
     }
 }
