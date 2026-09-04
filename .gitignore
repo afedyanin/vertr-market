@@ -434,3 +434,5 @@ Desktop.ini
 .DS_Store
 src/Vertr.Market.Host/appsettings.Development.json
 src/Market.Gateways.Tinvest/tinvest/
+/src/Market.Gateways.Tinvest/appsettings.Development.json
+/src/Market.Gateways.Tinvest/appsettings.Docker.json
