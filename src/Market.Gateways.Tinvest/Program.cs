@@ -35,6 +35,11 @@ public static class Program
         builder.Services.AddInvestApiClient((_, settings) => configuration.Bind($"{nameof(TinvestSettings)}:{nameof(InvestApiSettings)}", settings));
         builder.Services.AddHostedService<TinvestBackgroundService>();
 
+        var settings = new MarketApiSettings();
+        configuration.GetSection("MarketApiSettings").Bind(settings);
+        builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
+        builder.Services.AddMarketTcpClient(settings.TcpHost, settings.TcpPort);
+
         builder.Services.AddRefitClient<IMarketRestApiClient>()
             .ConfigureHttpClient((serviceProvider, client) =>
             {

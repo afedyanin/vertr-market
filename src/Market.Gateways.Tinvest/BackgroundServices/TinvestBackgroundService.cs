@@ -12,10 +12,14 @@ internal sealed class TinvestBackgroundService : BackgroundService
 {
     private readonly ILogger<TinvestBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
-
     private readonly IMarketRestApiClient _restApiClient;
+    private readonly IMarketTcpApiClient _tcpClient;
+    private readonly ITcpClientConnection _tcpConnection;
 
     private readonly TinvestSettings _tinvestSettings;
+
+    private readonly MarketApiSettings _apiSettings;
+
     private readonly string _serviceName;
 
     private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
@@ -23,13 +27,17 @@ internal sealed class TinvestBackgroundService : BackgroundService
     private readonly Channel<MarketDepthDto> _marketDepthChannel;
     private readonly Channel<TradeTickDto> _tradesChannel;
 
+    private bool _disposed;
+
     public TinvestBackgroundService(
         IServiceProvider serviceProvider,
         IOptions<TinvestSettings> tinvestOptions,
+        IOptions<MarketApiSettings> apiOptions,
         ILogger<TinvestBackgroundService> logger)
     {
         _serviceProvider = serviceProvider;
         _tinvestSettings = tinvestOptions.Value;
+        _apiSettings = apiOptions.Value;
         _logger = logger;
         _serviceName = GetType().Name;
 
@@ -48,6 +56,12 @@ internal sealed class TinvestBackgroundService : BackgroundService
         });
 
         _restApiClient = _serviceProvider.GetRequiredService<IMarketRestApiClient>();
+
+        _tcpConnection = _serviceProvider.GetRequiredService<ITcpClientConnection>();
+        _tcpClient = _serviceProvider.GetRequiredService<IMarketTcpApiClient>();
+
+        _tcpConnection.OnConnected += OnClientConnected;
+        _tcpConnection.OnDisconnected += OnClientDisconnected;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -94,6 +108,8 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
             try
             {
+                await _tcpConnection.ConnectAsync(stoppingToken);
+
                 await Subscribe(onDataReceived: () =>
                 {
                     if (currentDelay != baseDelay)
@@ -133,7 +149,14 @@ internal sealed class TinvestBackgroundService : BackgroundService
             {
                 try
                 {
-                    await _restApiClient.PostBooks([book]);
+                    if (_apiSettings.UseTcp)
+                    {
+                        await _tcpClient.PostBooks([book]);
+                    }
+                    else
+                    {
+                        await _restApiClient.PostBooks([book]);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -339,5 +362,28 @@ internal sealed class TinvestBackgroundService : BackgroundService
     {
         _instruments.TryGetValue(instrumentId, out var assetId);
         return assetId;
+    }
+
+    private void OnClientConnected(object? sender, EventArgs e)
+    {
+        _logger.LogInformation("TCP client connected.");
+    }
+
+    private void OnClientDisconnected(object? sender, EventArgs e)
+    {
+        _logger.LogInformation("TCP client disconnected.");
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+
+        if (_disposed)
+        {
+            return;
+        }
+
+        _tcpConnection.Dispose();
+        _disposed = true;
     }
 }
