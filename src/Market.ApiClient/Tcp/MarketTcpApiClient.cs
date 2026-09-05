@@ -1,17 +1,16 @@
 ﻿using Market.ApiClient.Dtos;
 using Market.ApiClient.Tcp.Dtos;
-using Market.ApiClient.Tcp.Internals;
 using MemoryPack;
 
 namespace Market.ApiClient.Tcp;
 
 internal sealed class MarketTcpApiClient : IMarketTcpApiClient
 {
-    private readonly ITcpApiClient _tcpApiClient;
+    private readonly ITcpClientConnection _tcpClientConnection;
 
-    public MarketTcpApiClient(ITcpApiClient tcpApiClient)
+    public MarketTcpApiClient(ITcpClientConnection tcpClientConnection)
     {
-        _tcpApiClient = tcpApiClient;
+        _tcpClientConnection = tcpClientConnection;
     }
 
     public async Task<MarketDepthDto[]> GetBooks(int assetId, int count = 1)
@@ -22,13 +21,13 @@ internal sealed class MarketTcpApiClient : IMarketTcpApiClient
             Count = count
         };
 
-        byte[] responseBytes = await _tcpApiClient.SendRequestAsync(CommandType.GetBooksRequest, requestDto);
+        byte[] responseBytes = await _tcpClientConnection.SendRequestAsync(CommandType.GetBooksRequest, requestDto);
         return MemoryPackSerializer.Deserialize<MarketDepthDto[]>(responseBytes) ?? [];
     }
 
     public async Task PostBooks(MarketDepthDto[] books)
     {
-        await _tcpApiClient.SendRequestAsync(CommandType.PostBooks, books);
+        await _tcpClientConnection.SendRequestAsync(CommandType.PostBooks, books);
     }
 
     public async Task DeleteBooksByAsset(int assetId)
@@ -38,11 +37,11 @@ internal sealed class MarketTcpApiClient : IMarketTcpApiClient
             AssetId = (ushort)assetId,
         };
 
-        await _tcpApiClient.SendRequestAsync(CommandType.DeleteBooksByAsset, requestDto);
+        await _tcpClientConnection.SendRequestAsync(CommandType.DeleteBooksByAsset, requestDto);
     }
 
     public async Task ClearBooks()
     {
-        await _tcpApiClient.SendRequestAsync(CommandType.ClearBooks, new EmptyDto());
+        await _tcpClientConnection.SendRequestAsync(CommandType.ClearBooks, new EmptyDto());
     }
 }

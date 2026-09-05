@@ -36,16 +36,24 @@ internal static class Program
             {
                 services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
 
-                services.AddRefitClient<IMarketRestApiClient>()
-                    .ConfigureHttpClient((serviceProvider, client) =>
-                    {
-                        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-                        var baseAddress = configuration["MarketApiSettings:BaseUrl"];
+                var settings = new MarketApiSettings();
+                context.Configuration.GetSection("MarketApiSettings").Bind(settings);
 
-                        client.BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
-                    });
+                if (settings.UseTcp)
+                {
+                    services.AddMarketTcpClient(settings.TcpHost, settings.TcpPort);
+                    services.AddHostedService<MarketInfoTcpClientService>();
+                }
+                else
+                {
+                    services.AddRefitClient<IMarketRestApiClient>()
+                        .ConfigureHttpClient((serviceProvider, client) =>
+                        {
+                            client.BaseAddress = new Uri(settings.BaseUrl ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
+                        });
 
-                services.AddHostedService<MarketInfoUpdaterService>();
+                    services.AddHostedService<MarketInfoRestClientService>();
+                }
             });
 
             builder.UseEnvironment(environment);

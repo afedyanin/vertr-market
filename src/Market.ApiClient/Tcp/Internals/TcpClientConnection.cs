@@ -7,16 +7,7 @@ using MemoryPack;
 
 namespace Market.ApiClient.Tcp.Internals;
 
-internal interface ITcpApiClient : IDisposable
-{
-    event EventHandler? OnConnected;
-    event EventHandler? OnDisconnected;
-
-    Task ConnectAsync();
-    Task<byte[]> SendRequestAsync<TRequest>(CommandType command, TRequest dto);
-}
-
-internal sealed class TcpApiClient : ITcpApiClient
+internal sealed class TcpClientConnection : ITcpClientConnection
 {
     private readonly ITcpConnectionManager _connectionManager;
     private readonly IMessageProtocol _protocol;
@@ -43,12 +34,12 @@ internal sealed class TcpApiClient : ITcpApiClient
     }
 #pragma warning restore CA1030 // Use events where appropriate
 
-    public TcpApiClient(string host, int port)
+    public TcpClientConnection(string host, int port)
         : this(new TcpConnectionManager(host, port), new MessageProtocol())
     {
     }
 
-    public TcpApiClient(ITcpConnectionManager connectionManager, IMessageProtocol protocol)
+    public TcpClientConnection(ITcpConnectionManager connectionManager, IMessageProtocol protocol)
     {
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
         _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
@@ -56,7 +47,7 @@ internal sealed class TcpApiClient : ITcpApiClient
 
     public async Task ConnectAsync()
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(ITcpApiClient));
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(TcpClientConnection));
 
         await _connectionManager.ConnectAsync(_clientCts.Token);
         _connectionManager.StartReading(ReadResponsesLoopAsync, _clientCts.Token);
@@ -64,7 +55,7 @@ internal sealed class TcpApiClient : ITcpApiClient
 
     public async Task<byte[]> SendRequestAsync<TRequest>(CommandType command, TRequest dto)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(ITcpApiClient));
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(TcpClientConnection));
 
         if (!_connectionManager.IsConnected)
         {

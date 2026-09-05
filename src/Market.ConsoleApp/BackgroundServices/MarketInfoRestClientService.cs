@@ -6,17 +6,17 @@ using Microsoft.Extensions.Options;
 
 namespace Market.ConsoleApp.BackgroundServices;
 
-internal sealed class MarketInfoUpdaterService : BackgroundService
+internal sealed class MarketInfoRestClientService : BackgroundService
 {
     private readonly IMarketRestApiClient _restApiClient;
-    private readonly ILogger<MarketInfoUpdaterService> _logger;
+    private readonly ILogger<MarketInfoRestClientService> _logger;
 
     private readonly MarketApiSettings _settings;
 
-    public MarketInfoUpdaterService(
+    public MarketInfoRestClientService(
         IMarketRestApiClient restApiClient,
         IOptions<MarketApiSettings> options,
-        ILogger<MarketInfoUpdaterService> logger)
+        ILogger<MarketInfoRestClientService> logger)
     {
         _restApiClient = restApiClient;
         _settings = options.Value;
