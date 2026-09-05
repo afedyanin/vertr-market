@@ -7,5 +7,5 @@ public enum CommandType : short
     GetBooksRequest = 2,
     GetBooksResponse = 3,
     DeleteBooksByAsset = 4,
-    // ... и так далее
+    ClearBooks = 5,
 }

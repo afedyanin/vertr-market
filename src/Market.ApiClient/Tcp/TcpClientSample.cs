@@ -31,7 +31,7 @@ internal static class TcpClientSample
 
             // 4. Используем бизнес-сервис для получения данных
             Console.WriteLine("\n[Бизнес-логика] Запрос книги заявок для Asset ID: 100...");
-            MarketDepthDto[] books = await _сlient.GetBooksAsync(assetId: 100, count: 5);
+            MarketDepthDto[] books = await _сlient.GetBooks(assetId: 100, count: 5);
 
             Console.WriteLine($"[Бизнес-логика] Получено стаканов: {books.Length}");
             // Здесь может быть обработка полученных данных (например, вывод в консоль)

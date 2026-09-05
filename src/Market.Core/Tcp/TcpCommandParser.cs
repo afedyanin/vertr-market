@@ -92,7 +92,7 @@ public class TcpCommandParser : IDisposable
     {
         try
         {
-            var command = CommandResponseFactory.CreateCommand(commandType, _serviceScope, _responseWriter);
+            var command = CommandFactory.CreateCommand(commandType, _serviceScope, _responseWriter);
 
             if (command == null)
             {
