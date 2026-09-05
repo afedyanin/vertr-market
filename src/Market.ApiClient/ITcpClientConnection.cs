@@ -8,7 +8,7 @@ public interface ITcpClientConnection : IDisposable
 
     event EventHandler? OnDisconnected;
 
-    Task ConnectAsync();
+    Task ConnectAsync(CancellationToken cancellationToken = default);
 
     Task<byte[]> SendRequestAsync<TRequest>(CommandType command, TRequest dto);
 }

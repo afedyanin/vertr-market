@@ -1,4 +1,4 @@
-﻿namespace Market.ConsoleApp;
+﻿namespace Market.ApiClient;
 
 public class MarketApiSettings
 {

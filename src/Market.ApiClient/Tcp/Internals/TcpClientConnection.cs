@@ -1,9 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
-using Market.ApiClient.Dtos;
-using Market.ApiClient.Tcp.Dtos;
-using MemoryPack;
 
 namespace Market.ApiClient.Tcp.Internals;
 
@@ -15,7 +12,6 @@ internal sealed class TcpClientConnection : ITcpClientConnection
 
     private readonly ConcurrentDictionary<int, TaskCompletionSource<byte[]>> _pendingRequests = new();
     private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
-    private readonly CancellationTokenSource _clientCts = new();
 
     private int _correlationIdCounter;
     private bool _isDisposed;
@@ -41,16 +37,16 @@ internal sealed class TcpClientConnection : ITcpClientConnection
 
     public TcpClientConnection(ITcpConnectionManager connectionManager, IMessageProtocol protocol)
     {
-        _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-        _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
+        _connectionManager = connectionManager;
+        _protocol = protocol;
     }
 
-    public async Task ConnectAsync()
+    public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, nameof(TcpClientConnection));
 
-        await _connectionManager.ConnectAsync(_clientCts.Token);
-        _connectionManager.StartReading(ReadResponsesLoopAsync, _clientCts.Token);
+        await _connectionManager.ConnectAsync(cancellationToken);
+        _connectionManager.StartReading(ReadResponsesLoopAsync, cancellationToken);
     }
 
     public async Task<byte[]> SendRequestAsync<TRequest>(CommandType command, TRequest dto)
@@ -77,11 +73,11 @@ internal sealed class TcpClientConnection : ITcpClientConnection
 
         try
         {
-            byte[] packet = _protocol.Serialize(command, correlationId, dto);
-
             await _writeSemaphore.WaitAsync(timeoutCts.Token);
             try
             {
+                byte[] packet = _protocol.Serialize(command, correlationId, dto);
+
                 Stream? stream = _connectionManager.Stream;
 
                 if (stream == null)
@@ -137,13 +133,6 @@ internal sealed class TcpClientConnection : ITcpClientConnection
         await reader.CompleteAsync();
     }
 
-    public async Task<MarketDepthDto[]> GetBooks(int assetId, int count = 1)
-    {
-        var requestDto = new GetBooksRequestDto { AssetId = (ushort)assetId, Count = count };
-        byte[] responseBytes = await SendRequestAsync(CommandType.GetBooksRequest, requestDto);
-        return MemoryPackSerializer.Deserialize<MarketDepthDto[]>(responseBytes) ?? [];
-    }
-
     public void Dispose()
     {
         if (_isDisposed)
@@ -152,8 +141,6 @@ internal sealed class TcpClientConnection : ITcpClientConnection
         }
 
         _isDisposed = true;
-        _clientCts.Cancel();
-        _clientCts.Dispose();
         _writeSemaphore.Dispose();
         _connectionManager.Dispose();
 

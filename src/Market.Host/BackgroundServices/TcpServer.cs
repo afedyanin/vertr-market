@@ -1,31 +1,40 @@
 ﻿using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
+using Market.ApiClient;
 using Market.Core.Tcp;
+using Microsoft.Extensions.Options;
 
 namespace Market.Host.BackgroundServices;
 
 public class TcpServer : BackgroundService
 {
-    private readonly int _port;
     private readonly ILogger<TcpServer> _logger;
-
     private readonly IServiceProvider _serviceProvider;
-    private Socket? _listenSocket;
+    private readonly MarketApiSettings _settings;
 
+    private readonly int _port;
+    private Socket? _listenSocket;
     private bool _disposed;
 
-    public TcpServer(int port,
+    public TcpServer(
         IServiceProvider serviceProvider,
-        ILogger<TcpServer> logger)
+        IOptions<MarketApiSettings> options)
     {
-        _port = port;
+        _settings = options.Value;
+        _port = _settings.TcpPort;
         _serviceProvider = serviceProvider;
-        _logger = logger;
+        _logger = _serviceProvider.GetRequiredService<ILogger<TcpServer>>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_settings.UseTcp)
+        {
+            _logger.LogInformation("TCP server is disabled.");
+            return;
+        }
+
         _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _listenSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
         _listenSocket.Listen(100);

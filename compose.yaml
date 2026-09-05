@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   host:
@@ -9,6 +7,7 @@ services:
       dockerfile: src/Market.Host/Dockerfile
     ports:
       - "7001:8080"
+      - "7005:5005"
     networks:
       - vertr-infrastructure_infra
     environment:

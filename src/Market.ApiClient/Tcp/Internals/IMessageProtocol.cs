@@ -3,19 +3,26 @@ using MemoryPack;
 
 namespace Market.ApiClient.Tcp.Internals;
 
-internal interface IMessageProtocol
+public interface IMessageProtocol
 {
     byte[] Serialize<TRequest>(CommandType command, int correlationId, TRequest dto);
+    byte[] Serialize(CommandType command, int correlationId, byte[] payload);
+
     bool TryParsePacket(ref ReadOnlySequence<byte> buffer, out RawPacket packet);
 }
 
-internal readonly record struct RawPacket(short CommandId, int CorrelationId, byte[] Payload);
+public readonly record struct RawPacket(short CommandId, int CorrelationId, byte[] Payload);
 
-internal sealed class MessageProtocol : IMessageProtocol
+public sealed class MessageProtocol : IMessageProtocol
 {
     public byte[] Serialize<TRequest>(CommandType command, int correlationId, TRequest dto)
     {
         byte[] payload = MemoryPackSerializer.Serialize(dto);
+        return Serialize(command, correlationId, payload);
+    }
+
+    public byte[] Serialize(CommandType command, int correlationId, byte[] payload)
+    {
         int totalLength = TcpConsts.MessageHeaderSize + payload.Length;
 
         byte[] packet = new byte[totalLength];
@@ -40,6 +47,11 @@ internal sealed class MessageProtocol : IMessageProtocol
 
         var seqReader = new SequenceReader<byte>(buffer);
         seqReader.TryReadBigEndian(out int packetLength);
+
+        if (packetLength <= 0)
+        {
+            return false;
+        }
 
         if (buffer.Length < packetLength)
         {

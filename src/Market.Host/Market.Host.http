@@ -1,5 +1,5 @@
 @HostAddress = http://localhost:5001
-@AssetId = 34
+@AssetId = 1
 
 
 GET {{HostAddress}}/api/trades/stats

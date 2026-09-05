@@ -100,8 +100,9 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
                 await _readLoopFactory(reader, token);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"Error: {ex.Message}");
             isFaulted = true;
         }
         finally

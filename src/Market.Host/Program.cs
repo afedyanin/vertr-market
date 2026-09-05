@@ -1,3 +1,4 @@
+using Market.ApiClient;
 using Market.Core;
 using Market.Host.BackgroundServices;
 using OpenTelemetry.Metrics;
@@ -28,12 +29,12 @@ public static class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
+        var settings = new MarketApiSettings();
+        configuration.GetSection("MarketApiSettings").Bind(settings);
+
+        builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
         builder.Services.AddObjectStores();
-        builder.Services.AddHostedService(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<TcpServer>>();
-            return new TcpServer(port: 5000, sp, logger);
-        });
+        builder.Services.AddHostedService<TcpServer>();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

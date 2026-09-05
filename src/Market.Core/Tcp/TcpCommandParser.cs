@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.IO.Pipelines;
 using Market.ApiClient.Tcp;
+using Market.ApiClient.Tcp.Internals;
 using Market.Core.Tcp.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,12 +19,18 @@ public class TcpCommandParser : IDisposable
     public TcpCommandParser(IServiceScope serviceScope, PipeWriter writer)
     {
         _serviceScope = serviceScope;
-        _responseWriter = new TcpResponseWriter(writer);
         _logger = _serviceScope.ServiceProvider.GetRequiredService<ILogger<TcpCommandParser>>();
+
+        _responseWriter = new TcpResponseWriter(
+            writer,
+            new MessageProtocol(),
+            _serviceScope.ServiceProvider.GetRequiredService<ILogger<TcpResponseWriter>>());
     }
 
     public async Task ReadPipeAsync(PipeReader reader, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Start reading pipe.");
+
         while (!cancellationToken.IsCancellationRequested)
         {
             ReadResult result = await reader.ReadAsync(cancellationToken);
@@ -31,12 +38,13 @@ public class TcpCommandParser : IDisposable
 
             while (TryReadPacket(ref buffer, out short commandId, out int correlationId, out byte[] payload))
             {
-                _ = Task.Run(() =>
-                    ExecuteCommandParallelAsync(
-                        (CommandType)commandId,
-                        correlationId,
-                        payload,
-                        cancellationToken), cancellationToken);
+                _logger.LogInformation("Command received. CommandId={CommandId} CorrelationId={CorrelationId}.", commandId, correlationId);
+
+                await ExecuteCommandAsync(
+                    (CommandType)commandId,
+                    correlationId,
+                    payload,
+                    cancellationToken);
             }
 
             reader.AdvanceTo(buffer.Start, buffer.End);
@@ -46,6 +54,8 @@ public class TcpCommandParser : IDisposable
                 break;
             }
         }
+
+        _logger.LogInformation("End reading pipe.");
     }
 
     private static bool TryReadPacket(
@@ -84,7 +94,7 @@ public class TcpCommandParser : IDisposable
         return true;
     }
 
-    private async Task ExecuteCommandParallelAsync(
+    private async Task ExecuteCommandAsync(
         CommandType commandType,
         int correlationId,
         byte[] payload,
@@ -100,6 +110,7 @@ public class TcpCommandParser : IDisposable
                 return;
             }
 
+            _logger.LogInformation("Executing command CommandType={Command} CorrelationId={CorrelationId}.", command.CommandType, correlationId);
             await command.ExecuteAsync(correlationId, payload, cancellationToken);
         }
         catch (Exception ex)

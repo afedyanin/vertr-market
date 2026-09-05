@@ -33,7 +33,7 @@ internal sealed class MarketInfoTcpClientService : BackgroundService
         tcpConnection.OnConnected += OnClientConnected;
         tcpConnection.OnDisconnected += OnClientDisconnected;
 
-        await tcpConnection.ConnectAsync();
+        await tcpConnection.ConnectAsync(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {

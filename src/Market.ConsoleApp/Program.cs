@@ -34,10 +34,10 @@ internal static class Program
 
             builder.ConfigureServices((context, services) =>
             {
-                services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
-
                 var settings = new MarketApiSettings();
                 context.Configuration.GetSection("MarketApiSettings").Bind(settings);
+
+                services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
 
                 if (settings.UseTcp)
                 {
