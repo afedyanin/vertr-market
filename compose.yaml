@@ -12,6 +12,7 @@ services:
       - vertr-infrastructure_infra
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker 
+      - ASPNETCORE_URLS=http://0.0.0
 
   tinvest:
     image: vertr_market_gateways_tinvest_image

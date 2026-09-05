@@ -41,8 +41,6 @@ public class TcpServer : BackgroundService
 
         _logger.LogInformation("TCP server started on {Port}", _port);
 
-        using var registration = stoppingToken.Register(() => _listenSocket?.Close());
-
         try
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -80,7 +78,7 @@ public class TcpServer : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Data processing failure: {RemoteEndPoint}", socket.RemoteEndPoint);
+            _logger.LogError(ex, "Data processing failure: {RemoteEndPoint}. Message={Message}", socket.RemoteEndPoint, ex.Message);
         }
         finally
         {

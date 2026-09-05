@@ -9,6 +9,6 @@ internal static class Program
     {
         var restApi = RestService.For<IMarketRestApiClient>("http://localhost:7001");
         var bomber = new BomberRun(restApi);
-        bomber.ExecuteRestBenchmarkForBooks(100_000);
+        bomber.ExecuteRestBenchmarkForBooks(50_000);
     }
 }
