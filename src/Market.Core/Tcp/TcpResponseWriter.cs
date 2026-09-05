@@ -8,13 +8,10 @@ namespace Market.Core.Tcp;
 internal sealed class TcpResponseWriter : IDisposable
 {
     private readonly IMessageProtocol _protocol;
-
     private readonly PipeWriter _writer;
     private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
     private bool _disposed;
-
     private readonly ILogger<TcpResponseWriter> _logger;
-
 
     public TcpResponseWriter(
         PipeWriter writer,
@@ -44,7 +41,7 @@ internal sealed class TcpResponseWriter : IDisposable
             _writer.Advance(totalLength);
             await _writer.FlushAsync(cancellationToken);
 
-            _logger.LogInformation("Writing response: Command={Command} CorrelationId={CorrelationId} TotalLength={TotalLength}",
+            _logger.LogDebug("Writing response: Command={Command} CorrelationId={CorrelationId} TotalLength={TotalLength}",
                 commandType,
                 correlationId,
                 totalLength);

@@ -29,7 +29,7 @@ public class TcpCommandParser : IDisposable
 
     public async Task ReadPipeAsync(PipeReader reader, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Start reading pipe.");
+        _logger.LogDebug("Start reading pipe.");
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -38,7 +38,7 @@ public class TcpCommandParser : IDisposable
 
             while (TryReadPacket(ref buffer, out short commandId, out int correlationId, out byte[] payload))
             {
-                _logger.LogInformation("Command received. CommandId={CommandId} CorrelationId={CorrelationId}.", commandId, correlationId);
+                _logger.LogDebug("Command received. CommandId={CommandId} CorrelationId={CorrelationId}.", commandId, correlationId);
 
                 await ExecuteCommandAsync(
                     (CommandType)commandId,
@@ -55,7 +55,7 @@ public class TcpCommandParser : IDisposable
             }
         }
 
-        _logger.LogInformation("End reading pipe.");
+        _logger.LogDebug("End reading pipe.");
     }
 
     private static bool TryReadPacket(
@@ -110,7 +110,7 @@ public class TcpCommandParser : IDisposable
                 return;
             }
 
-            _logger.LogInformation("Executing command CommandType={Command} CorrelationId={CorrelationId}.", command.CommandType, correlationId);
+            _logger.LogDebug("Executing command CommandType={Command} CorrelationId={CorrelationId}.", command.CommandType, correlationId);
             await command.ExecuteAsync(correlationId, payload, cancellationToken);
         }
         catch (Exception ex)
