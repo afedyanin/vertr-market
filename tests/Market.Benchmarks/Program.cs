@@ -10,7 +10,7 @@ namespace Market.Benchmarks;
 internal static class Program
 {
     private const int Copies = 10;
-    private const int AssetCount = 150;
+    private const int AssetCount = 50;
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(30);
 
     public static async Task Main(string[] args)
@@ -56,7 +56,6 @@ internal static class Program
                         return Response.Fail(message: ex.Message, statusCode: "500");
                     }
                 })
-            .WithWarmUpDuration(TimeSpan.FromSeconds(1))
             .WithLoadSimulations(
                 Simulation.KeepConstant(
                     copies: Copies,
@@ -102,7 +101,6 @@ internal static class Program
                         return Response.Fail(message: ex.Message, statusCode: "500");
                     }
                 })
-            .WithWarmUpDuration(TimeSpan.FromSeconds(1))
             .WithLoadSimulations(
                 Simulation.KeepConstant(
                     copies: Copies,
