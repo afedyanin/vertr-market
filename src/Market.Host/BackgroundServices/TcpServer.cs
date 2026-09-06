@@ -82,7 +82,7 @@ public class TcpServer : BackgroundService
         }
         finally
         {
-            _logger.LogInformation("Client disconnected: {RemoteEndPoint}", socket.RemoteEndPoint);
+            _logger.LogInformation("Client disconnected: {RemoteEndPoint}. ({Commands}) commands processed.", socket.RemoteEndPoint, parser.CommandsProcessed);
 
             await pipe.Input.CompleteAsync();
             await pipe.Output.CompleteAsync();

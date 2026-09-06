@@ -16,6 +16,8 @@ public class TcpCommandParser : IDisposable
 
     private bool _disposed;
 
+    public long CommandsProcessed { get; private set; }
+
     public TcpCommandParser(IServiceScope serviceScope, PipeWriter writer)
     {
         _serviceScope = serviceScope;
@@ -29,7 +31,9 @@ public class TcpCommandParser : IDisposable
 
     public async Task ReadPipeAsync(PipeReader reader, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Start reading pipe.");
+        _logger.LogInformation("Start reading pipe.");
+
+        CommandsProcessed = 0;
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -40,6 +44,7 @@ public class TcpCommandParser : IDisposable
             {
                 _logger.LogDebug("Command received. CommandId={CommandId} CorrelationId={CorrelationId}.", commandId, correlationId);
 
+                CommandsProcessed++;
                 _ = ExecuteCommandAsync(
                     (CommandType)commandId,
                     correlationId,
@@ -55,7 +60,7 @@ public class TcpCommandParser : IDisposable
             }
         }
 
-        _logger.LogDebug("End reading pipe.");
+        _logger.LogInformation("End reading pipe.");
     }
 
     private static bool TryReadPacket(

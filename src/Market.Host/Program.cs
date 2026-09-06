@@ -26,6 +26,22 @@ public static class Program
             .AddHttpClientInstrumentation()
             .AddRuntimeInstrumentation());
 
+        /*
+        otel.WithTracing(tracing =>
+        {
+            tracing
+                .AddAspNetCoreInstrumentation() // Собираем входящие запросы к контроллерам/минимальным API
+                .AddHttpClientInstrumentation()   // Собираем исходящие запросы через HttpClient
+                .AddConsoleExporter();           // Локальный вывод в консоль для отладки
+
+            // Для отправки в Jaeger, Prometheus Agent, Grafana Tempo, Aspecto и др. по OTLP:
+            // tracing.AddOtlpExporter(options =>
+            // {
+            // options.Endpoint = new Uri("http://localhost:4317"); // Адрес OTel Collector
+            // });
+        });
+        */
+
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 

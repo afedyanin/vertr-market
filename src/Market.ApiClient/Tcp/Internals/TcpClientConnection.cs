@@ -8,7 +8,7 @@ internal sealed class TcpClientConnection : ITcpClientConnection
 {
     private readonly ITcpConnectionManager _connectionManager;
     private readonly IMessageProtocol _protocol;
-    private readonly TimeSpan _requestTimeout = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _requestTimeout = TimeSpan.FromSeconds(TcpConsts.DefaulrRequestTimeoutSec);
 
     private readonly ConcurrentDictionary<int, TaskCompletionSource<byte[]>> _pendingRequests = new();
     private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
@@ -76,9 +76,8 @@ internal sealed class TcpClientConnection : ITcpClientConnection
             await _writeSemaphore.WaitAsync(timeoutCts.Token);
             try
             {
-                byte[] packet = _protocol.Serialize(command, correlationId, dto);
-
-                Stream? stream = _connectionManager.Stream;
+                var packet = _protocol.Serialize(command, correlationId, dto);
+                var stream = _connectionManager.Stream;
 
                 if (stream == null)
                 {

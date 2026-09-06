@@ -9,25 +9,24 @@ namespace Market.Benchmarks;
 
 internal static class Program
 {
-    private const int Copies = 10_000;
+    private const int Copies = 10;
     private const int AssetCount = 150;
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(30);
 
     public static async Task Main(string[] args)
     {
-        var tcpConnction = new TcpClientConnection("localhost", 8005);
-        await tcpConnction.ConnectAsync();
-        var tcpClient = new MarketTcpApiClient(tcpConnction);
-        var tcpScenatio = CreateTcp(tcpClient);
+        var scenarios = new List<ScenarioProps>
+        {
+            CreateRest(),
+            CreateTcp(),
+        };
 
-        var restClient = RestService.For<IMarketRestApiClient>("http://localhost:5001");
-        var restScenatio = CreateRest(restClient);
-
-        NBomberRunner.RegisterScenarios([restScenatio, tcpScenatio]).Run();
+        NBomberRunner.RegisterScenarios([.. scenarios]).Run();
     }
 
-    private static ScenarioProps CreateRest(IMarketRestApiClient restClient)
+    private static ScenarioProps CreateRest()
     {
+        var restClient = RestService.For<IMarketRestApiClient>("http://localhost:5001");
         var generators = MarketDepthGenerator.InitGenerators(AssetCount);
         var minKey = generators.Keys.Min();
         var maxKey = generators.Keys.Max();
@@ -66,8 +65,11 @@ internal static class Program
         return scenario;
     }
 
-    private static ScenarioProps CreateTcp(IMarketTcpApiClient tcpClient)
+    private static ScenarioProps CreateTcp()
     {
+        var tcpConnction = new TcpClientConnection("localhost", 8005);
+        var tcpClient = new MarketTcpApiClient(tcpConnction);
+
         var generators = MarketDepthGenerator.InitGenerators(AssetCount);
         var minKey = generators.Keys.Min();
         var maxKey = generators.Keys.Max();
@@ -78,11 +80,14 @@ internal static class Program
                 {
                     try
                     {
+                        await tcpConnction.ConnectAsync(CancellationToken.None);
+
                         var assetId = (ushort)Random.Shared.Next(minKey, maxKey + 1);
                         var generator = generators[assetId];
                         var book = generator.GenerateNext();
 
                         await tcpClient.PostBooks([book]);
+
                         var saved = await tcpClient.GetBooks(assetId, 1);
 
                         if (saved is null || saved.Length == 0)
