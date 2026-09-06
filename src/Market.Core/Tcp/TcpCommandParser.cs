@@ -40,7 +40,7 @@ public class TcpCommandParser : IDisposable
             {
                 _logger.LogDebug("Command received. CommandId={CommandId} CorrelationId={CorrelationId}.", commandId, correlationId);
 
-                await ExecuteCommandAsync(
+                _ = ExecuteCommandAsync(
                     (CommandType)commandId,
                     correlationId,
                     payload,

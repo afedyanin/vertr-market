@@ -60,6 +60,20 @@ public class MarketDepthGenerator
         return new MarketDepthDto(_assetId, microsecondTimestamp, bids, asks);
     }
 
+    public static Dictionary<ushort, MarketDepthGenerator> InitGenerators(int count)
+    {
+        var res = new Dictionary<ushort, MarketDepthGenerator>();
+        ushort assetId = 1000;
+
+        for (var i = 0; i < count; i++)
+        {
+            res[assetId] = new MarketDepthGenerator(assetId, 100 + Random.Shared.Next(200));
+            assetId++;
+        }
+
+        return res;
+    }
+
     private uint GenerateRealisticVolume(int levelIndex)
     {
         // Базовый объем (ближе к спреду ликвидность обычно выше, но с шумом)

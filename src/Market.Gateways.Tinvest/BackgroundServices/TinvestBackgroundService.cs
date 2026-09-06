@@ -108,7 +108,10 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
             try
             {
-                await _tcpConnection.ConnectAsync(stoppingToken);
+                if (_apiSettings.UseTcp)
+                {
+                    await _tcpConnection.ConnectAsync(stoppingToken);
+                }
 
                 await Subscribe(onDataReceived: () =>
                 {

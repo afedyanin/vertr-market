@@ -37,7 +37,7 @@ public class TcpServer : BackgroundService
 
         _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _listenSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
-        _listenSocket.Listen(100);
+        _listenSocket.Listen(10000);
 
         _logger.LogInformation("TCP server started on {Port}", _port);
 

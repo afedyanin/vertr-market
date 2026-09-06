@@ -8,7 +8,7 @@ internal sealed class TcpClientConnection : ITcpClientConnection
 {
     private readonly ITcpConnectionManager _connectionManager;
     private readonly IMessageProtocol _protocol;
-    private readonly TimeSpan _requestTimeout = TimeSpan.FromSeconds(5);
+    private readonly TimeSpan _requestTimeout = TimeSpan.FromSeconds(30);
 
     private readonly ConcurrentDictionary<int, TaskCompletionSource<byte[]>> _pendingRequests = new();
     private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
