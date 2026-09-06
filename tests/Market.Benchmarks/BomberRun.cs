@@ -49,7 +49,7 @@ internal sealed class BomberRun
             .WithLoadSimulations(
                 Simulation.KeepConstant(
                     copies: copies,
-                    during: TimeSpan.FromSeconds(60)));
+                    during: TimeSpan.FromSeconds(30)));
 
         _ = NBomberRunner.RegisterScenarios(scenario).Run();
     }
