@@ -1,4 +1,5 @@
-﻿using Market.ApiClient.Tcp;
+﻿using System.Buffers;
+using Market.ApiClient.Tcp;
 using Market.ApiClient.Tcp.Dtos;
 using Market.Core.Abstractions;
 using Market.Core.Models;
@@ -16,10 +17,11 @@ internal sealed class DeleteBooksByAssetCommand : CommandBase
     public override async Task ExecuteAsync(
         TcpResponseWriter responseWriter,
         int correlationId,
-        byte[] payload,
+        ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        var request = MemoryPack.MemoryPackSerializer.Deserialize<DeleteBooksRequestDto>(payload);
+        // Deserialized before the first await: the payload is pipe memory released on AdvanceTo.
+        var request = TcpPayload.Deserialize<DeleteBooksRequestDto>(payload);
 
         if (request != null)
         {

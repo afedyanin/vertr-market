@@ -59,6 +59,12 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
 
             _tcpClient = new TcpClient();
             await _tcpClient.ConnectAsync(_host, _port, cancellationToken);
+
+            // Disable Nagle: with a request/response protocol and small packets, Nagle's
+            // algorithm combined with delayed ACK can stall each write by an extra round trip
+            // (up to ~200 ms), which dominates the latency of small requests.
+            _tcpClient.NoDelay = true;
+
             _stream = _tcpClient.GetStream();
 
             OnConnected?.Invoke(this, EventArgs.Empty);
@@ -95,7 +101,9 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
         _loopCts?.Dispose();
         _loopCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _managerCts.Token);
 
-        var pipeReader = PipeReader.Create(_stream);
+        // The pipe default buffer is 4 KB; a larger buffer means fewer socket read round
+        // trips per large GetBooks response. minimumReadSize must be > 0.
+        var pipeReader = PipeReader.Create(_stream, new StreamPipeReaderOptions(pool: null, bufferSize: 64 * 1024, minimumReadSize: 1024, leaveOpen: true));
         _ = RunReadLoopWithReconnectAsync(pipeReader, _loopCts.Token);
     }
 

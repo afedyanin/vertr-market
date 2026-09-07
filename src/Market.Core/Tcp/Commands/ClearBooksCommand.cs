@@ -1,4 +1,5 @@
-﻿using Market.ApiClient.Tcp;
+﻿using System.Buffers;
+using Market.ApiClient.Tcp;
 using Market.Core.Abstractions;
 using Market.Core.Models;
 
@@ -15,7 +16,7 @@ internal sealed class ClearBooksCommand : CommandBase
     public override async Task ExecuteAsync(
         TcpResponseWriter responseWriter,
         int correlationId,
-        byte[] payload,
+        ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
         BooksStore.Clear();

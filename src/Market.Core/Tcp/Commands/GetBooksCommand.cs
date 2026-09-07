@@ -1,4 +1,5 @@
-﻿using Market.ApiClient.Tcp;
+﻿using System.Buffers;
+using Market.ApiClient.Tcp;
 using Market.ApiClient.Tcp.Dtos;
 using Market.Core.Abstractions;
 using Market.Core.Converters;
@@ -18,10 +19,11 @@ internal sealed class GetBooksCommand : CommandBase
     public override async Task ExecuteAsync(
         TcpResponseWriter responseWriter,
         int correlationId,
-        byte[] payload,
+        ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        var request = MemoryPack.MemoryPackSerializer.Deserialize<GetBooksRequestDto>(payload);
+        // Deserialized before the first await: the payload is pipe memory released on AdvanceTo.
+        var request = TcpPayload.Deserialize<GetBooksRequestDto>(payload);
         byte[] responsePayload = [];
 
         if (request != null)

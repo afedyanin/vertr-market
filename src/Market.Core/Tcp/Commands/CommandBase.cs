@@ -1,4 +1,5 @@
-﻿using Market.ApiClient.Tcp;
+﻿using System.Buffers;
+using Market.ApiClient.Tcp;
 using Market.ApiClient.Tcp.Dtos;
 using Market.Core.Abstractions;
 using Market.Core.Models;
@@ -16,19 +17,24 @@ public abstract class CommandBase
         BooksStore = booksStore;
     }
 
+    // `payload` is a slice of pipe memory: it must be deserialized synchronously before the
+    // first await (see the lifetime contract in TcpCommandParser.ReadPipeAsync).
     public abstract Task ExecuteAsync(
         TcpResponseWriter responseWriter,
         int correlationId,
-        byte[] payload,
+        ReadOnlySequence<byte> payload,
         CancellationToken ct = default);
+
+    // The empty response body is identical for every command, so it is serialized once per
+    // process instead of re-serializing EmptyDto on each PostBooks/ClearBooks/DeleteBooks reply.
+    private static readonly byte[] EmptyPayload = MemoryPack.MemoryPackSerializer.Serialize(new EmptyDto());
+    private static readonly int EmptyTotalLength = TcpConsts.MessageHeaderSize + EmptyPayload.Length;
 
     protected virtual async Task WriteEmptyResponse(
         TcpResponseWriter responseWriter,
         int correlationId,
         CancellationToken ct = default)
     {
-        var responsePayload = MemoryPack.MemoryPackSerializer.Serialize(new EmptyDto());
-        int totalLength = TcpConsts.MessageHeaderSize + responsePayload.Length;
-        await responseWriter.WriteAsync(CommandType, totalLength, correlationId, responsePayload, ct);
+        await responseWriter.WriteAsync(CommandType, EmptyTotalLength, correlationId, EmptyPayload, ct);
     }
 }

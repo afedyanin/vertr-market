@@ -88,9 +88,19 @@ public class TcpServer : BackgroundService
         // finally to run, which is correct because no slot was acquired.
         await _semaphore.WaitAsync(stoppingToken);
 
+        // Nagle off on both ends: in a request/response protocol with small replies, Nagle's
+        // algorithm combined with delayed ACK can stall every response by a round trip
+        // (up to ~200 ms).
+        socket.NoDelay = true;
+
         try
         {
-            using var pipe = SocketExtensions.CreatePipe(socket);
+            var pipe = SocketExtensions.CreatePipes(socket);
+
+            // The NetworkStream is created with ownsSocket:false, so disposing it releases its
+            // buffer without closing the socket (the socket is closed separately below).
+            using var pipeStream = pipe.Stream;
+
             using var parser = new TcpCommandParser(_bookStore, pipe.Output, _loggerFactory);
 
             try
@@ -149,28 +159,23 @@ public class TcpServer : BackgroundService
 
 internal static class SocketExtensions
 {
-    public static StreamDuplexPipe CreatePipe(Socket socket)
+    public static (PipeReader Input, PipeWriter Output, NetworkStream Stream) CreatePipes(Socket socket)
     {
+        // The .NET 10 in-box System.IO.Pipelines pipes a Stream (not a raw Socket). Pipes use
+        // the stream's async I/O, which for NetworkStream goes straight to the socket without
+        // its 8 KB sync buffer, so no extra copy is added.
+        //
+        // The reader default buffer is 4 KB, but a depth response for a few dozen books is
+        // much larger, so a bigger buffer means fewer socket read/write round trips per
+        // payload. minimumReadSize is the default 1 KB (it must be > 0; it only controls
+        // when a new buffer segment is allocated, not when ReadAsync returns).
         var stream = new NetworkStream(socket, ownsSocket: false);
-        return new StreamDuplexPipe(stream);
+
+        var input = PipeReader.Create(stream, new StreamPipeReaderOptions(pool: null, bufferSize: PipeBufferSize, minimumReadSize: 1024, leaveOpen: true));
+        var output = PipeWriter.Create(stream, new StreamPipeWriterOptions(pool: null, minimumBufferSize: PipeBufferSize, leaveOpen: true));
+
+        return (input, output, stream);
     }
 
-    internal sealed class StreamDuplexPipe : IDuplexPipe, IDisposable
-    {
-        private readonly NetworkStream _stream;
-
-        public PipeReader Input { get; }
-        public PipeWriter Output { get; }
-
-        public StreamDuplexPipe(NetworkStream stream)
-        {
-            _stream = stream;
-            Input = PipeReader.Create(stream);
-            Output = PipeWriter.Create(stream);
-        }
-
-        // The NetworkStream was created with ownsSocket:false, so disposing it releases its
-        // buffer without closing the socket (the socket is closed separately by TcpServer).
-        public void Dispose() => _stream.Dispose();
-    }
+    private const int PipeBufferSize = 64 * 1024;
 }

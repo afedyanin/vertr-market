@@ -84,8 +84,9 @@ internal sealed class TcpClientConnection : ITcpClientConnection
                     throw new InvalidOperationException("Соединение разорвано перед отправкой.");
                 }
 
+                // No FlushAsync: NetworkStream writes go straight to the socket buffer, so a
+                // flush is a documented no-op that only adds an extra await per request.
                 await stream.WriteAsync(packet.AsMemory(), timeoutCts.Token);
-                await stream.FlushAsync(timeoutCts.Token);
             }
             finally
             {

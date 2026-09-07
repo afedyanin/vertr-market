@@ -31,8 +31,21 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
         {
             Interlocked.Increment(ref _getCount);
 
-            return _store.TryGetValue(assetId, out var list) ?
-                [.. list.TakeLast(count)] : [];
+            if (!_store.TryGetValue(assetId, out var list))
+            {
+                return [];
+            }
+
+            // TakeLast enumerates the whole list (LinkedList has no indexed access), which is
+            // O(items) even for count = 1; walking backwards from the tail keeps it O(count).
+            T[] result = new T[Math.Min(count, list.Count)];
+            int index = result.Length - 1;
+            for (var node = list.Last; node is not null && index >= 0; node = node.Previous)
+            {
+                result[index--] = node.Value;
+            }
+
+            return result;
         }
         finally
         {
