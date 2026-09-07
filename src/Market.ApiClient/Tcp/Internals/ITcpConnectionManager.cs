@@ -29,6 +29,10 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
     private bool _isDisposed;
     private Func<PipeReader, CancellationToken, Task>? _readLoopFactory;
 
+    // 0 = no read loop running, 1 = a read loop is running. Guards against spawning more than
+    // one PipeReader over the same NetworkStream (see StartReadLoop).
+    private int _readLoopActive;
+
     public event EventHandler? OnConnected;
     public event EventHandler? OnDisconnected;
 
@@ -68,9 +72,30 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
     public void StartReading(Func<PipeReader, CancellationToken, Task> readLoopFactory, CancellationToken cancellationToken)
     {
         _readLoopFactory = readLoopFactory;
+        StartReadLoop(cancellationToken);
+    }
+
+    // Starts a read loop, but at most one at a time. ConnectAsync is safe to call repeatedly (a
+    // load test shares a single client), yet every call must NOT spawn an extra PipeReader over the
+    // same NetworkStream: concurrent socket reads interleave the byte stream, so one loop can read
+    // payload bytes as the 4-byte length header (e.g. 0x48B90000) and the payload deserialization
+    // then fails with "Length header size is larger than buffer size".
+    private void StartReadLoop(CancellationToken cancellationToken)
+    {
+        if (_managerCts.IsCancellationRequested || _stream is null || _readLoopFactory is null)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _readLoopActive, 1) == 1)
+        {
+            return;
+        }
+
+        _loopCts?.Dispose();
         _loopCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _managerCts.Token);
 
-        var pipeReader = PipeReader.Create(_stream!);
+        var pipeReader = PipeReader.Create(_stream);
         _ = RunReadLoopWithReconnectAsync(pipeReader, _loopCts.Token);
     }
 
@@ -109,6 +134,10 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
         {
             await reader.CompleteAsync();
 
+            // Снять флаг "чтение активно" до ForceReconnect, чтобы StartReadLoop смог запустить
+            // новый цикл (и только один) после реконнекта.
+            Interlocked.Exchange(ref _readLoopActive, 0);
+
             // Если чтение упало или завершилось не по причине Dispose/планового закрытия
             if ((isFaulted || !token.IsCancellationRequested) && !_isDisposed)
             {
@@ -126,11 +155,11 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
                 await Task.Delay(_reconnectDelay, token);
                 await ConnectAsync(token);
 
-                // Перезапускаем чтение при успешном реконнекте
-                if (IsConnected && _readLoopFactory != null && _loopCts != null)
+                // Перезапускаем чтение при успешном реконнекте (StartReadLoop сам гарантирует,
+                // что запущен ровно один цикл чтения).
+                if (IsConnected)
                 {
-                    var pipeReader = PipeReader.Create(_stream!);
-                    _ = RunReadLoopWithReconnectAsync(pipeReader, _loopCts.Token);
+                    StartReadLoop(_managerCts.Token);
                 }
 
                 break;
