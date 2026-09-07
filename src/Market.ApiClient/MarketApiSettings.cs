@@ -11,4 +11,6 @@ public class MarketApiSettings
     public int TcpPort { get; set; }
 
     public bool UseTcp { get; set; }
+
+    public int MaxConcurrentConnections { get; set; } = 100;
 }

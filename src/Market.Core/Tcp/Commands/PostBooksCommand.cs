@@ -3,7 +3,6 @@ using Market.ApiClient.Tcp;
 using Market.Core.Abstractions;
 using Market.Core.Converters;
 using Market.Core.Models;
-using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI.Primitives;
 
 namespace Market.Core.Tcp.Commands;
@@ -12,21 +11,20 @@ internal sealed class PostBooksCommand : CommandBase
 {
     public override CommandType CommandType => CommandType.PostBooks;
 
-    private readonly IObjectStore<MarketDepth> _objectStore;
-
-    public PostBooksCommand(
-        IServiceScope serviceScope,
-        TcpResponseWriter responseWriter) : base(serviceScope, responseWriter)
+    public PostBooksCommand(IObjectStore<MarketDepth> booksStore) : base(booksStore)
     {
-        _objectStore = serviceScope.ServiceProvider.GetRequiredService<IObjectStore<MarketDepth>>();
     }
 
-    public override async Task ExecuteAsync(int correlationId, byte[] payload, CancellationToken ct = default)
+    public override async Task ExecuteAsync(
+        TcpResponseWriter responseWriter,
+        int correlationId,
+        byte[] payload,
+        CancellationToken ct = default)
     {
         var dtos = MemoryPack.MemoryPackSerializer.Deserialize<MarketDepthDto[]>(payload);
         var books = dtos?.FromDto().ToArray();
-        _objectStore.Set(books ?? []);
+        BooksStore.Set(books ?? []);
 
-        await WriteEmptyResponse(correlationId, ct);
+        await WriteEmptyResponse(responseWriter, correlationId, ct);
     }
 }

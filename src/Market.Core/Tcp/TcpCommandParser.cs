@@ -2,8 +2,9 @@
 using System.IO.Pipelines;
 using Market.ApiClient.Tcp;
 using Market.ApiClient.Tcp.Internals;
+using Market.Core.Abstractions;
+using Market.Core.Models;
 using Market.Core.Tcp.Commands;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Market.Core.Tcp;
@@ -11,28 +12,31 @@ namespace Market.Core.Tcp;
 public class TcpCommandParser : IDisposable
 {
     private readonly TcpResponseWriter _responseWriter;
-    private readonly IServiceScope _serviceScope;
+    private readonly CommandFactory _commandFactory;
     private readonly ILogger<TcpCommandParser> _logger;
 
     private bool _disposed;
 
     public long CommandsProcessed { get; private set; }
 
-    public TcpCommandParser(IServiceScope serviceScope, PipeWriter writer)
+    public TcpCommandParser(
+        IObjectStore<MarketDepth> booksStore,
+        PipeWriter writer,
+        ILoggerFactory loggerFactory)
     {
-        _serviceScope = serviceScope;
-        _logger = _serviceScope.ServiceProvider.GetRequiredService<ILogger<TcpCommandParser>>();
+        _logger = loggerFactory.CreateLogger<TcpCommandParser>();
 
         _responseWriter = new TcpResponseWriter(
             writer,
             new MessageProtocol(),
-            _serviceScope.ServiceProvider.GetRequiredService<ILogger<TcpResponseWriter>>());
+            loggerFactory.CreateLogger<TcpResponseWriter>());
+
+        _commandFactory = new CommandFactory(booksStore);
     }
 
     public async Task ReadPipeAsync(PipeReader reader, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Start reading pipe.");
-
         CommandsProcessed = 0;
 
         while (!cancellationToken.IsCancellationRequested)
@@ -42,8 +46,6 @@ public class TcpCommandParser : IDisposable
 
             while (TryReadPacket(ref buffer, out short commandId, out int correlationId, out byte[] payload))
             {
-                _logger.LogDebug("Command received. CommandId={CommandId} CorrelationId={CorrelationId}.", commandId, correlationId);
-
                 CommandsProcessed++;
                 _ = ExecuteCommandAsync(
                     (CommandType)commandId,
@@ -107,7 +109,7 @@ public class TcpCommandParser : IDisposable
     {
         try
         {
-            var command = CommandFactory.CreateCommand(commandType, _serviceScope, _responseWriter);
+            var command = _commandFactory.CreateCommand(commandType);
 
             if (command == null)
             {
@@ -115,8 +117,11 @@ public class TcpCommandParser : IDisposable
                 return;
             }
 
-            _logger.LogDebug("Executing command CommandType={Command} CorrelationId={CorrelationId}.", command.CommandType, correlationId);
-            await command.ExecuteAsync(correlationId, payload, cancellationToken);
+            await command.ExecuteAsync(
+                _responseWriter,
+                correlationId,
+                payload,
+                cancellationToken);
         }
         catch (Exception ex)
         {

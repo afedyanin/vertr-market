@@ -2,6 +2,8 @@
 using System.Net;
 using System.Net.Sockets;
 using Market.ApiClient;
+using Market.Core.Abstractions;
+using Market.Core.Models;
 using Market.Core.Tcp;
 using Microsoft.Extensions.Options;
 
@@ -10,8 +12,11 @@ namespace Market.Host.BackgroundServices;
 public class TcpServer : BackgroundService
 {
     private readonly ILogger<TcpServer> _logger;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly IObjectStore<MarketDepth> _bookStore;
+
     private readonly MarketApiSettings _settings;
+    private readonly SemaphoreSlim _semaphore;
 
     private readonly int _port;
     private Socket? _listenSocket;
@@ -23,8 +28,12 @@ public class TcpServer : BackgroundService
     {
         _settings = options.Value;
         _port = _settings.TcpPort;
-        _serviceProvider = serviceProvider;
-        _logger = _serviceProvider.GetRequiredService<ILogger<TcpServer>>();
+
+        _bookStore = serviceProvider.GetRequiredService<IObjectStore<MarketDepth>>();
+        _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+        _logger = _loggerFactory.CreateLogger<TcpServer>();
+        _semaphore = new SemaphoreSlim(_settings.MaxConcurrentConnections, _settings.MaxConcurrentConnections);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -37,7 +46,7 @@ public class TcpServer : BackgroundService
 
         _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _listenSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
-        _listenSocket.Listen(10000);
+        _listenSocket.Listen();
 
         _logger.LogInformation("TCP server started on {Port}", _port);
 
@@ -45,7 +54,7 @@ public class TcpServer : BackgroundService
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                Socket clientSocket = await _listenSocket.AcceptAsync(stoppingToken);
+                var clientSocket = await _listenSocket.AcceptAsync(stoppingToken);
                 _logger.LogInformation("Client connected: {RemoteEndPoint}", clientSocket.RemoteEndPoint);
 
                 _ = ProcessClientAsync(clientSocket, stoppingToken);
@@ -66,11 +75,14 @@ public class TcpServer : BackgroundService
         }
     }
 
-    private async Task ProcessClientAsync(Socket socket, CancellationToken stoppingToken)
+    private async Task ProcessClientAsync(
+        Socket socket,
+        CancellationToken stoppingToken)
     {
+        await _semaphore.WaitAsync(stoppingToken);
+
         var pipe = SocketExtensions.CreatePipe(socket);
-        using var scope = _serviceProvider.CreateScope();
-        using var parser = new TcpCommandParser(scope, pipe.Output);
+        using var parser = new TcpCommandParser(_bookStore, pipe.Output, _loggerFactory);
 
         try
         {
@@ -93,6 +105,7 @@ public class TcpServer : BackgroundService
             }
 
             socket.Close();
+            _semaphore.Release();
         }
     }
 
@@ -105,7 +118,10 @@ public class TcpServer : BackgroundService
             return;
         }
 
+        _loggerFactory?.Dispose();
         _listenSocket?.Dispose();
+        _semaphore.Dispose();
+
         _disposed = true;
     }
 }

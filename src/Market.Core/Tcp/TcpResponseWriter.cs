@@ -5,11 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Market.Core.Tcp;
 
-internal sealed class TcpResponseWriter : IDisposable
+public sealed class TcpResponseWriter : IDisposable
 {
     private readonly IMessageProtocol _protocol;
     private readonly PipeWriter _writer;
-    private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
     private bool _disposed;
     private readonly ILogger<TcpResponseWriter> _logger;
 
@@ -30,7 +29,6 @@ internal sealed class TcpResponseWriter : IDisposable
         byte[] responsePayload,
         CancellationToken cancellationToken = default)
     {
-        await _writeSemaphore.WaitAsync(cancellationToken);
         try
         {
             byte[] packet = _protocol.Serialize(commandType, correlationId, responsePayload);
@@ -41,10 +39,13 @@ internal sealed class TcpResponseWriter : IDisposable
             _writer.Advance(totalLength);
             await _writer.FlushAsync(cancellationToken);
 
-            _logger.LogDebug("Writing response: Command={Command} CorrelationId={CorrelationId} TotalLength={TotalLength}",
-                commandType,
-                correlationId,
-                totalLength);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Writing response: Command={Command} CorrelationId={CorrelationId} TotalLength={TotalLength}",
+                    commandType,
+                    correlationId,
+                    totalLength);
+            }
         }
         catch (Exception ex)
         {
@@ -53,12 +54,7 @@ internal sealed class TcpResponseWriter : IDisposable
                 correlationId,
                 ex.Message);
         }
-        finally
-        {
-            _writeSemaphore.Release();
-        }
     }
-
 
     public void Dispose()
     {
@@ -67,7 +63,6 @@ internal sealed class TcpResponseWriter : IDisposable
             return;
         }
 
-        _writeSemaphore?.Dispose();
         _disposed = true;
     }
 }

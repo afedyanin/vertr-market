@@ -1,27 +1,27 @@
 ﻿using Market.ApiClient.Tcp;
-using Microsoft.Extensions.DependencyInjection;
+using Market.Core.Abstractions;
+using Market.Core.Models;
 
 namespace Market.Core.Tcp.Commands;
 
-internal static class CommandFactory
+public class CommandFactory
 {
-    public static CommandBase? CreateCommand(
-        CommandType requestCommand,
-        IServiceScope serviceScope,
-        TcpResponseWriter responseWriter)
+    private readonly Dictionary<CommandType, CommandBase> _commands;
+
+    public CommandFactory(IObjectStore<MarketDepth> booksStore)
     {
-        return requestCommand switch
+        _commands = new Dictionary<CommandType, CommandBase>
         {
-            CommandType.GetBooksRequest
-                => new GetBooksCommand(serviceScope, responseWriter),
-            CommandType.PostBooks
-                => new PostBooksCommand(serviceScope, responseWriter),
-            CommandType.DeleteBooksByAsset
-                => new DeleteBooksByAssetCommand(serviceScope, responseWriter),
-            CommandType.ClearBooks
-                => new ClearBooksCommand(serviceScope, responseWriter),
-            _
-                => default,
+            [CommandType.GetBooksRequest] = new GetBooksCommand(booksStore),
+            [CommandType.PostBooks] = new PostBooksCommand(booksStore),
+            [CommandType.DeleteBooksByAsset] = new DeleteBooksByAssetCommand(booksStore),
+            [CommandType.ClearBooks] = new ClearBooksCommand(booksStore)
         };
+    }
+
+    public CommandBase? CreateCommand(CommandType requestCommand)
+    {
+        _commands.TryGetValue(requestCommand, out var command);
+        return command;
     }
 }
