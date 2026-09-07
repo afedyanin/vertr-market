@@ -47,7 +47,11 @@ public class TcpCommandParser : IDisposable
             while (TryReadPacket(ref buffer, out short commandId, out int correlationId, out byte[] payload))
             {
                 CommandsProcessed++;
-                _ = ExecuteCommandAsync(
+
+                // Sequential on purpose: the response writer (PipeWriter) is not thread-safe for
+                // concurrent GetMemory/Advance/FlushAsync, and awaiting here also guarantees every
+                // response is flushed before ReadPipeAsync returns and the connection is torn down.
+                await ExecuteCommandAsync(
                     (CommandType)commandId,
                     correlationId,
                     payload,
@@ -82,6 +86,14 @@ public class TcpCommandParser : IDisposable
 
         SequenceReader<byte> reader = new SequenceReader<byte>(buffer);
         reader.TryReadBigEndian(out int packetLength);
+
+        // A valid packet is always at least as long as its 10-byte header. Declaring a smaller
+        // length would produce a negative payload length and a crash (new byte[negative]); treat it
+        // as malformed and stop parsing (the connection drops when the peer closes).
+        if (packetLength < TcpConsts.MessageHeaderSize)
+        {
+            return false;
+        }
 
         if (buffer.Length < packetLength)
         {
