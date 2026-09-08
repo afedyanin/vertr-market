@@ -1,0 +1,90 @@
+[
+    {
+        "assetId": 1041,
+        "microsecondTimestamp": 1788837113041000,
+        "bids": [
+            {
+                "price": 195.92,
+                "volume": 275
+            },
+            {
+                "price": 195.91,
+                "volume": 79
+            },
+            {
+                "price": 195.9,
+                "volume": 129
+            },
+            {
+                "price": 195.89,
+                "volume": 122
+            },
+            {
+                "price": 195.88,
+                "volume": 1668
+            },
+            {
+                "price": 195.87,
+                "volume": 880
+            },
+            {
+                "price": 195.86,
+                "volume": 70
+            },
+            {
+                "price": 195.85,
+                "volume": 79
+            },
+            {
+                "price": 195.84,
+                "volume": 65
+            },
+            {
+                "price": 195.83,
+                "volume": 672
+            }
+        ],
+        "asks": [
+            {
+                "price": 195.98,
+                "volume": 47
+            },
+            {
+                "price": 195.99,
+                "volume": 87
+            },
+            {
+                "price": 196.0,
+                "volume": 114
+            },
+            {
+                "price": 196.01,
+                "volume": 58
+            },
+            {
+                "price": 196.02,
+                "volume": 11
+            },
+            {
+                "price": 196.03,
+                "volume": 90
+            },
+            {
+                "price": 196.04,
+                "volume": 27
+            },
+            {
+                "price": 196.05,
+                "volume": 630
+            },
+            {
+                "price": 196.06,
+                "volume": 50
+            },
+            {
+                "price": 196.07,
+                "volume": 47
+            }
+        ]
+    }
+]
