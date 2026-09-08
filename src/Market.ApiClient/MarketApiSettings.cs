@@ -13,4 +13,6 @@ public class MarketApiSettings
     public bool UseTcp { get; set; }
 
     public int MaxConcurrentConnections { get; set; } = 100;
+
+    public string OtelExporterOltpEndpoint { get; set; } = "http://localhost:4317";
 }

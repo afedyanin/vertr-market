@@ -73,7 +73,7 @@ internal static class Program
 
     private static ScenarioProps CreateTcp()
     {
-        var tcpConnction = new TcpClientConnection("localhost", 8005);
+        var tcpConnction = new TcpClientConnection("localhost", 7005);
         var tcpClient = new MarketTcpApiClient(tcpConnction);
 
         var generators = MarketDepthGenerator.InitGenerators(AssetsCount);

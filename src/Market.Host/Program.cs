@@ -17,6 +17,9 @@ public static class Program
         var builder = WebApplication.CreateBuilder(args);
         var configuration = builder.Configuration;
 
+        var settings = new MarketApiSettings();
+        configuration.GetSection("MarketApiSettings").Bind(settings);
+
         var serviceName = builder.Environment.ApplicationName;
         var resourceBuilder = ResourceBuilder.CreateDefault().AddService(serviceName);
         var hostActivitySource = new ActivitySource(serviceName);
@@ -31,13 +34,13 @@ public static class Program
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddSource(serviceName)
-                //.AddConsoleExporter()
-                // Для отправки в Jaeger, Prometheus Agent, Grafana Tempo, Aspecto и др. по OTLP:
-                // tracing.AddOtlpExporter(options =>
-                // {
-                // options.Endpoint = new Uri("http://localhost:4317"); // Адрес OTel Collector
-                // })
-                )
+                .AddOtlpExporter(options =>
+                {
+                    // Считываем эндпоинт из переменных окружения (в Docker это http://jaeger:4317)
+                    // Если переменная пустая (при локальном запуске без Docker), упадет на дефолтный http://localhost:4317
+                    options.Endpoint = new Uri(settings.OtelExporterOltpEndpoint);
+                    options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                }))
             .WithMetrics(metricsBuilder => metricsBuilder
                 .SetResourceBuilder(resourceBuilder)
                 .AddAspNetCoreInstrumentation()
@@ -48,9 +51,6 @@ public static class Program
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
-
-        var settings = new MarketApiSettings();
-        configuration.GetSection("MarketApiSettings").Bind(settings);
 
         builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
         builder.Services.AddObjectStores();
