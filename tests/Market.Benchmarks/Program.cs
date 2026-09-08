@@ -9,7 +9,7 @@ namespace Market.Benchmarks;
 
 internal static class Program
 {
-    private const int Copies = 1000;
+    private const int Copies = 100;
     private const int AssetCount = 50;
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(30);
 

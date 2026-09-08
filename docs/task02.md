@@ -1,6 +1,7 @@
-Найди причины низкой производительности приложения
-- на серверной стороне: файл TcpServer.cs
-- на клиентской стороне: файл MarketTcpApiClient.cs
+Проанализируй код классов:
+- TcpServer.cs
+- MarketTcpApiClient.cs
 
-Предложи варианты улучшения производительности
+Предложи варианты перехода с MemoryPack на JsonSerializer + SourceGenerators
+
 
