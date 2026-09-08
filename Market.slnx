@@ -9,7 +9,9 @@
   <Folder Name="/docs/">
     <File Path="docs/demo01.png" />
     <File Path="docs/demo02.png" />
+    <File Path="docs/Diagram.png" />
     <File Path="docs/main_task.md" />
+    <File Path="docs/Market Service Diagram.drawio" />
   </Folder>
   <Folder Name="/infra/">
     <File Path="infra/compose.yaml" />

@@ -19,7 +19,7 @@ internal static class Program
     {
         var scenarios = new List<ScenarioProps>
         {
-            CreateRest(),
+            //CreateRest(),
             CreateTcp(),
         };
 

@@ -36,8 +36,6 @@ public static class Program
                 .AddSource(serviceName)
                 .AddOtlpExporter(options =>
                 {
-                    // Считываем эндпоинт из переменных окружения (в Docker это http://jaeger:4317)
-                    // Если переменная пустая (при локальном запуске без Docker), упадет на дефолтный http://localhost:4317
                     options.Endpoint = new Uri(settings.OtelExporterOltpEndpoint);
                     options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
                 }))
