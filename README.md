@@ -28,6 +28,11 @@ TBD
 - **`Directory.Build.props`**: Shared MSBuild properties across all projects
 - **`Market.slnx`**: Main solution file (XML-based solution format)
 
+### Ключевые технические моменты
+
+- InMemory Object Store  
+
+
 ## Инфраструктура
 
 TBD
