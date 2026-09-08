@@ -1,12 +1,46 @@
 # vertr-market
 
-## Metrics
+## Система обработки и хранения рыночных данных
 
-### Grafana Dashboards
+Сервис слушает потоки рыночных котировок (стаканов) из нескольких источников и сохраняет их в InMemory объектное хранилище.
+Доступ к сохраненным данным реализован через API:
+- REST: IMarketRestApiClient
+- TCP: IMarketTcpApiClient
 
-- https://grafana.com/grafana/dashboards/20568-opentelemetry-dotnet-webapi/
-- https://github.com/petabridge/dotnet-grafana-dashboards
-- https://grafana.com/grafana/dashboards/24163-dotnet-performance-with-hsn/
+## Архитектурная схема
+
+TBD
+
+### Структура кода
+
+- **`/src`**: Основная папка с исходным кодом
+  - `/Market.ApiClient/`: Клиентская библиотека для доступа к API сервиса. Реализует REST и TCP API.
+  - `/Market.ConsoleApp/`: Демонстрационное консольное приложение, использующее API клиента для доступа к хранилищу
+  - `/Market.Core/`: Доменная модель и основные сущности приложения.
+  - `/Market.Gateways.Tinvest/`: Шлюз для получения и сохранения рыночных данных из T-invest API
+  - `/Market.Host/`: ASP.NET Web API хост плюс TCP сервер как BackgroundService
+- **`/tests`**: Набор тестов
+  - `/Market.Benchmarks/`: Перформанс тесты на основе NBommber
+- **`/docs`**: Документация
+
+### Key Configuration Files
+- **`.editorconfig`**: Code formatting rules, null annotations, diagnostic configurations
+- **`Directory.Build.props`**: Shared MSBuild properties across all projects
+- **`Market.slnx`**: Main solution file (XML-based solution format)
+
+## Инфраструктура
+
+TBD
+
+## Запуск и примеры использования
+
+TBD
+
+## Дашборды и метрики
+
+TBD
+
+
 
 
 

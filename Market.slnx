@@ -14,7 +14,6 @@
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/task01.md" />
-    <File Path="docs/task02.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Market.ApiClient/Market.ApiClient.csproj" Id="f45932ee-8317-45fb-912a-1896f914bfb3" />
