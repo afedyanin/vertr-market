@@ -30,7 +30,7 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
     private Func<PipeReader, CancellationToken, Task>? _readLoopFactory;
 
     // 0 = no read loop running, 1 = a read loop is running. Guards against spawning more than
-    // one PipeReader over the same NetworkStream (see StartReadLoop).
+    // one PipeReader over the same NetworkStream.
     private int _readLoopActive;
 
     public event EventHandler? OnConnected;
@@ -59,12 +59,7 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
 
             _tcpClient = new TcpClient();
             await _tcpClient.ConnectAsync(_host, _port, cancellationToken);
-
-            // Disable Nagle: with a request/response protocol and small packets, Nagle's
-            // algorithm combined with delayed ACK can stall each write by an extra round trip
-            // (up to ~200 ms), which dominates the latency of small requests.
             _tcpClient.NoDelay = true;
-
             _stream = _tcpClient.GetStream();
 
             OnConnected?.Invoke(this, EventArgs.Empty);
@@ -81,11 +76,6 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
         StartReadLoop(cancellationToken);
     }
 
-    // Starts a read loop, but at most one at a time. ConnectAsync is safe to call repeatedly (a
-    // load test shares a single client), yet every call must NOT spawn an extra PipeReader over the
-    // same NetworkStream: concurrent socket reads interleave the byte stream, so one loop can read
-    // payload bytes as the 4-byte length header (e.g. 0x48B90000) and the payload deserialization
-    // then fails with "Length header size is larger than buffer size".
     private void StartReadLoop(CancellationToken cancellationToken)
     {
         if (_managerCts.IsCancellationRequested || _stream is null || _readLoopFactory is null)
@@ -101,8 +91,6 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
         _loopCts?.Dispose();
         _loopCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _managerCts.Token);
 
-        // The pipe default buffer is 4 KB; a larger buffer means fewer socket read round
-        // trips per large GetBooks response. minimumReadSize must be > 0.
         var pipeReader = PipeReader.Create(_stream, new StreamPipeReaderOptions(pool: null, bufferSize: 64 * 1024, minimumReadSize: 1024, leaveOpen: true));
         _ = RunReadLoopWithReconnectAsync(pipeReader, _loopCts.Token);
     }
@@ -141,12 +129,8 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
         finally
         {
             await reader.CompleteAsync();
-
-            // Снять флаг "чтение активно" до ForceReconnect, чтобы StartReadLoop смог запустить
-            // новый цикл (и только один) после реконнекта.
             Interlocked.Exchange(ref _readLoopActive, 0);
 
-            // Если чтение упало или завершилось не по причине Dispose/планового закрытия
             if ((isFaulted || !token.IsCancellationRequested) && !_isDisposed)
             {
                 ForceReconnect();
@@ -163,8 +147,6 @@ internal sealed class TcpConnectionManager : ITcpConnectionManager
                 await Task.Delay(_reconnectDelay, token);
                 await ConnectAsync(token);
 
-                // Перезапускаем чтение при успешном реконнекте (StartReadLoop сам гарантирует,
-                // что запущен ровно один цикл чтения).
                 if (IsConnected)
                 {
                     StartReadLoop(_managerCts.Token);

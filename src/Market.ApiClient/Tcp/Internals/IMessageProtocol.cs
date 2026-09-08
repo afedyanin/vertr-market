@@ -54,8 +54,6 @@ public sealed class MessageProtocol : IMessageProtocol
         var seqReader = new SequenceReader<byte>(buffer);
         seqReader.TryReadBigEndian(out int packetLength);
 
-        // A valid packet is at least as long as its 10-byte header; a smaller declared length
-        // would yield a negative payload length and a crash (new byte[negative]).
         if (packetLength < TcpConsts.MessageHeaderSize)
         {
             return false;

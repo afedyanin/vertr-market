@@ -21,7 +21,6 @@ internal sealed class PostBooksCommand : CommandBase
         ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        // Deserialized before the first await: the payload is pipe memory released on AdvanceTo.
         var dtos = TcpPayload.Deserialize<MarketDepthDto[]>(payload);
         var books = dtos?.FromDto().ToArray();
         BooksStore.Set(books ?? []);

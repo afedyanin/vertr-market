@@ -22,7 +22,6 @@ internal sealed class GetBooksCommand : CommandBase
         ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        // Deserialized before the first await: the payload is pipe memory released on AdvanceTo.
         var request = TcpPayload.Deserialize<GetBooksRequestDto>(payload);
         byte[] responsePayload = [];
 

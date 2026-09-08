@@ -31,8 +31,6 @@ public sealed class TcpResponseWriter : IDisposable
     {
         try
         {
-            // Write header + payload straight into the pipe buffer. This avoids allocating a
-            // separate packet array and copying it; the only buffer is the pipe's own (reused).
             Memory<byte> memory = _writer.GetMemory(totalLength);
             _protocol.WriteHeader(memory.Span[..TcpConsts.MessageHeaderSize], commandType, correlationId, totalLength);
             responsePayload.AsSpan().CopyTo(memory.Span[TcpConsts.MessageHeaderSize..]);
