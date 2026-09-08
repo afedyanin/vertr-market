@@ -1,11 +1,4 @@
 <Solution>
-  <Folder Name="/agents/" />
-  <Folder Name="/agents/skills/">
-    <File Path="agents/skills/clean-architecture.md" />
-    <File Path="agents/skills/configuration.md" />
-    <File Path="agents/skills/convention-learner.md" />
-    <File Path="agents/skills/modern-csharp.md" />
-  </Folder>
   <Folder Name="/common/">
     <File Path=".editorconfig" />
     <File Path="compose.yaml" />
@@ -13,7 +6,8 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/task01.md" />
+    <File Path="docs/grafana.md" />
+    <File Path="docs/main_task.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Market.ApiClient/Market.ApiClient.csproj" Id="f45932ee-8317-45fb-912a-1896f914bfb3" />
