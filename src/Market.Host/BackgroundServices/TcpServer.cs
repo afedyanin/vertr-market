@@ -1,4 +1,6 @@
-﻿using System.IO.Pipelines;
+﻿using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using Market.ApiClient;
@@ -11,6 +13,10 @@ namespace Market.Host.BackgroundServices;
 
 public class TcpServer : BackgroundService
 {
+    private readonly ActivitySource _activitySource;
+    private readonly Counter<long> _commandCounter;
+    private readonly Histogram<double> _commandDurationHistogram;
+
     private readonly ILogger<TcpServer> _logger;
 
 #pragma warning disable CA2213 // Disposable fields should be disposed
@@ -27,11 +33,17 @@ public class TcpServer : BackgroundService
     private bool _disposed;
 
     public TcpServer(
+        ActivitySource activitySource,
+        Meter meter,
         IServiceProvider serviceProvider,
         IOptions<MarketApiSettings> options)
     {
         _settings = options.Value;
         _port = _settings.TcpPort;
+
+        _activitySource = activitySource;
+        _commandCounter = meter.CreateCounter<long>("commands.total");
+        _commandDurationHistogram = meter.CreateHistogram<double>("commands.duration");
 
         _bookStore = serviceProvider.GetRequiredService<IObjectStore<MarketDepth>>();
         _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
@@ -90,7 +102,14 @@ public class TcpServer : BackgroundService
         {
             var pipe = SocketExtensions.CreatePipes(socket);
             using var pipeStream = pipe.Stream;
-            using var parser = new TcpCommandParser(_bookStore, pipe.Output, _loggerFactory);
+
+            using var parser = new TcpCommandParser(
+                _bookStore,
+                pipe.Output,
+                _loggerFactory,
+                _activitySource,
+                _commandCounter,
+                _commandDurationHistogram);
 
             try
             {

@@ -30,8 +30,10 @@ TBD
 
 ### Ключевые технические моменты
 
-- InMemory Object Store  
-
+- InMemory Object Store использует ReaderWriterLockSlim для эффективного доступа и Interlocked для сбора статистики
+- Асинхронный TCP-сервер использует System.IO.Pipelines
+- Парсер команд реализован с использованием MemoryPack
+- 
 
 ## Инфраструктура
 

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using Market.ApiClient;
 using Market.Core;
 using Market.Host.BackgroundServices;
@@ -15,32 +17,35 @@ public static class Program
         var builder = WebApplication.CreateBuilder(args);
         var configuration = builder.Configuration;
 
-        var otel = builder.Services.AddOpenTelemetry();
+        var serviceName = builder.Environment.ApplicationName;
+        var resourceBuilder = ResourceBuilder.CreateDefault().AddService(serviceName);
+        var hostActivitySource = new ActivitySource(serviceName);
+        var hostMeter = new Meter(serviceName);
 
-        otel.ConfigureResource(resource => resource
-            .AddService(serviceName: builder.Environment.ApplicationName));
+        builder.Services.AddSingleton(hostActivitySource);
+        builder.Services.AddSingleton(hostMeter);
 
-        otel.WithMetrics(metrics => metrics
-            .AddPrometheusExporter()
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddRuntimeInstrumentation());
-
-        /*
-        otel.WithTracing(tracing =>
-        {
-            tracing
-                .AddAspNetCoreInstrumentation() // Собираем входящие запросы к контроллерам/минимальным API
-                .AddHttpClientInstrumentation()   // Собираем исходящие запросы через HttpClient
-                .AddConsoleExporter();           // Локальный вывод в консоль для отладки
-
-            // Для отправки в Jaeger, Prometheus Agent, Grafana Tempo, Aspecto и др. по OTLP:
-            // tracing.AddOtlpExporter(options =>
-            // {
-            // options.Endpoint = new Uri("http://localhost:4317"); // Адрес OTel Collector
-            // });
-        });
-        */
+        builder.Services.AddOpenTelemetry()
+            .WithTracing(tracerBuilder => tracerBuilder
+                .SetResourceBuilder(resourceBuilder)
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddSource(serviceName)
+                .AddConsoleExporter()
+                // Для отправки в Jaeger, Prometheus Agent, Grafana Tempo, Aspecto и др. по OTLP:
+                // tracing.AddOtlpExporter(options =>
+                // {
+                // options.Endpoint = new Uri("http://localhost:4317"); // Адрес OTel Collector
+                // })
+                )
+            .WithMetrics(metricsBuilder => metricsBuilder
+                .SetResourceBuilder(resourceBuilder)
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation()
+                .AddMeter(serviceName)
+                .AddPrometheusExporter()
+                .AddConsoleExporter());
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();

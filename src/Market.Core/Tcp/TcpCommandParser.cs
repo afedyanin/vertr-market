@@ -1,4 +1,6 @@
 ﻿using System.Buffers;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.IO.Pipelines;
 using Market.ApiClient.Tcp;
 using Market.ApiClient.Tcp.Internals;
@@ -14,6 +16,9 @@ public class TcpCommandParser : IDisposable
     private readonly TcpResponseWriter _responseWriter;
     private readonly CommandFactory _commandFactory;
     private readonly ILogger<TcpCommandParser> _logger;
+    private readonly ActivitySource _activitySource;
+    private readonly Counter<long> _commandCounter;
+    private readonly Histogram<double> _commandDurationHistogram;
 
     private bool _disposed;
 
@@ -22,7 +27,11 @@ public class TcpCommandParser : IDisposable
     public TcpCommandParser(
         IObjectStore<MarketDepth> booksStore,
         PipeWriter writer,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        ActivitySource activitySource,
+        Counter<long> commandCounter,
+        Histogram<double> commandDurationHistogram
+        )
     {
         _logger = loggerFactory.CreateLogger<TcpCommandParser>();
 
@@ -32,12 +41,14 @@ public class TcpCommandParser : IDisposable
             loggerFactory.CreateLogger<TcpResponseWriter>());
 
         _commandFactory = new CommandFactory(booksStore);
+        _activitySource = activitySource;
+        _commandCounter = commandCounter;
+        _commandDurationHistogram = commandDurationHistogram;
     }
 
     public async Task ReadPipeAsync(PipeReader reader, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Start reading pipe.");
-        CommandsProcessed = 0;
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -46,13 +57,17 @@ public class TcpCommandParser : IDisposable
 
             while (TryReadPacket(ref buffer, out short commandId, out int correlationId, out ReadOnlySequence<byte> payload))
             {
-                CommandsProcessed++;
+                var stopwatch = Stopwatch.StartNew();
 
                 await ExecuteCommandAsync(
                     (CommandType)commandId,
                     correlationId,
                     payload,
                     cancellationToken);
+
+                _commandCounter.Add(1);
+                _commandDurationHistogram.Record(stopwatch.Elapsed.TotalMilliseconds);
+
             }
 
             reader.AdvanceTo(buffer.Start, buffer.End);
@@ -118,6 +133,14 @@ public class TcpCommandParser : IDisposable
             {
                 _logger.LogWarning("Cannot execute command type: {Command}", commandType);
                 return;
+            }
+
+            using var activity = _activitySource.StartActivity($"Process command", ActivityKind.Server);
+
+            if (activity is not null)
+            {
+                activity.SetTag("command.type", commandType);
+                activity.SetTag("command.correlationId", correlationId);
             }
 
             await command.ExecuteAsync(
