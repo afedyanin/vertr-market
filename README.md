@@ -2,14 +2,15 @@
 
 ## Система обработки и хранения рыночных данных
 
-Сервис слушает потоки рыночных котировок (стаканов) из нескольких источников и сохраняет их в InMemory объектное хранилище.
-Доступ к сохраненным данным реализован через API:
+Сервис слушает потоки рыночных данных (стаканов котировок) из биржи и сохраняет их в InMemory объектное хранилище.
+
+Работа с хранилищем реализована через две версии API:
 - REST: IMarketRestApiClient
 - TCP: IMarketTcpApiClient
 
 ## Архитектурная схема
 
-TBD
+![Diagram](docs/diagram.png)
 
 ### Структура кода
 
@@ -20,7 +21,7 @@ TBD
   - `/Market.Gateways.Tinvest/`: Шлюз для получения и сохранения рыночных данных из T-invest API
   - `/Market.Host/`: ASP.NET Web API хост плюс TCP сервер как BackgroundService
 - **`/tests`**: Набор тестов
-  - `/Market.Benchmarks/`: Перформанс тесты на основе NBommber
+  - `/Market.Benchmarks/`: Перформанс тесты на основе NBomber
 - **`/docs`**: Документация
 
 ### Key Configuration Files
@@ -33,19 +34,85 @@ TBD
 - InMemory Object Store использует ReaderWriterLockSlim для эффективного доступа и Interlocked для сбора статистики
 - Асинхронный TCP-сервер использует System.IO.Pipelines
 - Парсер команд реализован с использованием MemoryPack
-- 
+
 
 ## Инфраструктура
 
-TBD
+Хост сервиса и фид рыночных данных (T-инвест) поднимаются в Docker контейнере - файл compose.yaml в корне солюшена.
+
+В Docker контейнере также разворачивается инфраструктура для сервиса - файл compose.yaml в папке infra:
+
+- Jaeger для трейсов
+- Prometheus для метрик
+- Grafana для отображения дашбордов
 
 ## Запуск и примеры использования
 
-TBD
+1. Собрать и запустить инфраструктуру 
 
-## Дашборды и метрики
+```
+cd infra
+docker-compose up -d
+```
 
-TBD
+2. Собрать и запустить связку сервисов: Хост и Т-инвест фид
+
+В файле Market.Gateways.Tinvest\appsettings.Docker.json необходимо указать AccessToken для T-Invest API - 
+
+```
+cd ..
+docker-compose build
+docker-compose up -d
+```
+
+3. Запустить демо-консоль и убедиться, что рыночные данные приходят и сохраняются
+
+Рыночные данные (стаканы котировок) будут обновляться только в рабочие часы Мосбиржи.
+
+```
+cd src\Market.ConsoleApp
+dotnet run 
+```
+
+![demo01.png](docs/demo01.png)
+
+
+## Ендпоинты
+
+- Swagger REST API: [http://localhost:7001/swagger](http://localhost:7001/swagger)
+- Метрики хоста доступны по адресу: [http://localhost:7001/metrics](http://localhost:7001/metrics)
+- Так же метрики в Prometheus: [http://localhost:9090/query](http://localhost:9090/query)
+- Трейсы: [http://localhost:16686/search](http://localhost:16686/search)
+- Дашборд: [http://localhost:3000/dashboards](http://localhost:3000/dashboards)
+
+## Нагрузочные тесты
+
+Для нагрузочных тестов реализовано два сценария (см. tests\Market.Benchmarks\Program.cs):
+
+- с использованием REST API
+- с использованием TCP API
+
+Запуск сценариев:
+
+```
+cd tests\Market.Benchmarks
+dotnet run --configuration Release
+```
+
+![demo02.png](docs/demo02.png)
+
+## Настройка дашборда для Grafana
+
+Можно импортировать готовые дашборды
+
+- https://grafana.com/grafana/dashboards/20568-opentelemetry-dotnet-webapi/
+- https://github.com/petabridge/dotnet-grafana-dashboards
+- https://grafana.com/grafana/dashboards/24163-dotnet-performance-with-hsn/
+
+
+
+
+
 
 
 

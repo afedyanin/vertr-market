@@ -13,13 +13,13 @@ internal static class Program
     private const int Copies = 10;
     private const int AssetsCount = 50;
     private const int BooksCount = 37;
-    private static readonly TimeSpan Duration = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Duration = TimeSpan.FromSeconds(60);
 
     public static async Task Main(string[] args)
     {
         var scenarios = new List<ScenarioProps>
         {
-            //CreateRest(),
+            CreateRest(),
             CreateTcp(),
         };
 

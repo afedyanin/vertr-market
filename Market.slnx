@@ -7,8 +7,12 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/grafana.md" />
+    <File Path="docs/demo01.png" />
+    <File Path="docs/demo02.png" />
     <File Path="docs/main_task.md" />
+  </Folder>
+  <Folder Name="/infra/">
+    <File Path="infra/compose.yaml" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Market.ApiClient/Market.ApiClient.csproj" Id="f45932ee-8317-45fb-912a-1896f914bfb3" />
