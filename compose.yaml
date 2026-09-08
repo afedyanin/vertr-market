@@ -7,7 +7,7 @@ services:
       dockerfile: src/Market.Host/Dockerfile
     ports:
       - "7001:8080"
-      - "7005:8085"
+      - "7005:8005"
     networks:
       - vertr-infrastructure_infra
     environment:
