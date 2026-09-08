@@ -8,7 +8,6 @@
   </Folder>
   <Folder Name="/common/">
     <File Path=".editorconfig" />
-    <File Path="AGENTS.md" />
     <File Path="compose.yaml" />
     <File Path="Directory.Build.props" />
     <File Path="README.md" />
