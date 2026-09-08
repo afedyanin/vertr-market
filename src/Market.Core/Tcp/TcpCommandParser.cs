@@ -65,9 +65,9 @@ public class TcpCommandParser : IDisposable
                     payload,
                     cancellationToken);
 
+                CommandsProcessed++;
                 _commandCounter.Add(1);
                 _commandDurationHistogram.Record(stopwatch.Elapsed.TotalMilliseconds);
-
             }
 
             reader.AdvanceTo(buffer.Start, buffer.End);

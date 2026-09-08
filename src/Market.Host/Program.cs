@@ -31,7 +31,7 @@ public static class Program
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddSource(serviceName)
-                .AddConsoleExporter()
+                //.AddConsoleExporter()
                 // Для отправки в Jaeger, Prometheus Agent, Grafana Tempo, Aspecto и др. по OTLP:
                 // tracing.AddOtlpExporter(options =>
                 // {
@@ -44,8 +44,7 @@ public static class Program
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
                 .AddMeter(serviceName)
-                .AddPrometheusExporter()
-                .AddConsoleExporter());
+                .AddPrometheusExporter());
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();

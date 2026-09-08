@@ -13,13 +13,13 @@ internal static class Program
     private const int Copies = 10;
     private const int AssetsCount = 50;
     private const int BooksCount = 37;
-    private static readonly TimeSpan Duration = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan Duration = TimeSpan.FromSeconds(10);
 
     public static async Task Main(string[] args)
     {
         var scenarios = new List<ScenarioProps>
         {
-            CreateRest(),
+            //CreateRest(),
             CreateTcp(),
         };
 
@@ -73,7 +73,7 @@ internal static class Program
 
     private static ScenarioProps CreateTcp()
     {
-        var tcpConnction = new TcpClientConnection("localhost", 7005);
+        var tcpConnction = new TcpClientConnection("localhost", 8005);
         var tcpClient = new MarketTcpApiClient(tcpConnction);
 
         var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
