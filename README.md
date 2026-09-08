@@ -10,7 +10,7 @@
 
 ## Архитектурная схема
 
-![Diagram](docs/diagram.png)
+![Diagram.png](docs/Diagram.png)
 
 ### Структура кода
 
@@ -48,16 +48,16 @@
 
 ## Запуск и примеры использования
 
-1. Собрать и запустить инфраструктуру 
+### 1. Собрать и запустить инфраструктуру 
 
 ```
 cd infra
 docker-compose up -d
 ```
 
-2. Собрать и запустить связку сервисов: Хост и Т-инвест фид
+### 2. Собрать и запустить связку сервисов: Хост и Т-инвест фид
 
-В файле Market.Gateways.Tinvest\appsettings.Docker.json необходимо указать AccessToken для T-Invest API - 
+В файле Market.Gateways.Tinvest\appsettings.Docker.json необходимо указать AccessToken для T-Invest API
 
 ```
 cd ..
@@ -65,7 +65,7 @@ docker-compose build
 docker-compose up -d
 ```
 
-3. Запустить демо-консоль и убедиться, что рыночные данные приходят и сохраняются
+### 3. Запустить демо-консоль и убедиться, что рыночные данные приходят и сохраняются
 
 Рыночные данные (стаканы котировок) будут обновляться только в рабочие часы Мосбиржи.
 
@@ -98,6 +98,8 @@ dotnet run
 cd tests\Market.Benchmarks
 dotnet run --configuration Release
 ```
+
+Результат нагрузочных тестов
 
 ![demo02.png](docs/demo02.png)
 
