@@ -44,6 +44,7 @@ public static class Program
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
+                .AddProcessInstrumentation()
                 .AddMeter(serviceName)
                 .AddPrometheusExporter());
 
