@@ -17,11 +17,23 @@ internal static class Program
 
     public static async Task Main(string[] args)
     {
-        var scenarios = new List<ScenarioProps>
+        var scenarios = new List<ScenarioProps>();
+
+        var mode = args == null || args.Length == 0 ? string.Empty : args[0] ?? string.Empty;
+
+        if (mode.Equals("TCP", StringComparison.OrdinalIgnoreCase))
         {
-            //CreateRest(),
-            CreateTcp(),
-        };
+            scenarios.Add(CreateTcp());
+        }
+        else if (mode.Equals("REST", StringComparison.OrdinalIgnoreCase))
+        {
+            scenarios.Add(CreateRest());
+        }
+        else
+        {
+            scenarios.Add(CreateTcp());
+            scenarios.Add(CreateRest());
+        }
 
         NBomberRunner.RegisterScenarios([.. scenarios]).Run();
     }
