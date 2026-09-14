@@ -5,13 +5,13 @@ using Market.Core.Models;
 
 namespace Market.Core.Tcp.Commands;
 
-internal sealed class ClearBooksCommand : OrderBookCommandBase
+internal sealed class ClearTradesCommand : TradeCommandBase
 {
-    public override CommandType CommandType => CommandType.ClearBooks;
-
-    public ClearBooksCommand(IObjectStore<MarketDepth> booksStore) : base(booksStore)
+    public ClearTradesCommand(IObjectStore<TradeTick> tradesStore) : base(tradesStore)
     {
     }
+
+    public override CommandType CommandType => CommandType.ClearTrades;
 
     public override async Task ExecuteAsync(
         TcpResponseWriter responseWriter,
@@ -19,7 +19,7 @@ internal sealed class ClearBooksCommand : OrderBookCommandBase
         ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        BooksStore.Clear();
+        TradesStore.Clear();
         await WriteEmptyResponse(responseWriter, correlationId, ct);
     }
 }

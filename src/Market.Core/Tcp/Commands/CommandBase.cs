@@ -1,8 +1,6 @@
 ﻿using System.Buffers;
 using Market.ApiClient.Tcp;
 using Market.ApiClient.Tcp.Dtos;
-using Market.Core.Abstractions;
-using Market.Core.Models;
 
 namespace Market.Core.Tcp.Commands;
 
@@ -11,13 +9,10 @@ public abstract class CommandBase
     private static readonly byte[] EmptyPayload = MemoryPack.MemoryPackSerializer.Serialize(new EmptyDto());
     private static readonly int EmptyTotalLength = TcpConsts.MessageHeaderSize + EmptyPayload.Length;
 
-    protected IObjectStore<MarketDepth> BooksStore { get; private set; }
-
     public abstract CommandType CommandType { get; }
 
-    protected CommandBase(IObjectStore<MarketDepth> booksStore)
+    protected CommandBase()
     {
-        BooksStore = booksStore;
     }
 
     public abstract Task ExecuteAsync(

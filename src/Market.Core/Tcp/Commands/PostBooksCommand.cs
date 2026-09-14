@@ -7,7 +7,7 @@ using Market.Core.Models;
 
 namespace Market.Core.Tcp.Commands;
 
-internal sealed class PostBooksCommand : CommandBase
+internal sealed class PostBooksCommand : OrderBookCommandBase
 {
     public override CommandType CommandType => CommandType.PostBooks;
 
