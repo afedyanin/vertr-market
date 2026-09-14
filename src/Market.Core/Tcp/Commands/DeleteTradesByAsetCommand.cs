@@ -6,11 +6,11 @@ using Market.Core.Models;
 
 namespace Market.Core.Tcp.Commands;
 
-internal sealed class DeleteBooksByAssetCommand : OrderBookCommandBase
+internal sealed class DeleteTradesByAsetCommand : TradeCommandBase
 {
-    public override CommandType CommandType => CommandType.DeleteBooksByAsset;
+    public override CommandType CommandType => CommandType.DeleteTradesByAsset;
 
-    public DeleteBooksByAssetCommand(IObjectStore<MarketDepth> booksStore) : base(booksStore)
+    public DeleteTradesByAsetCommand(IObjectStore<TradeTick> tradesStore) : base(tradesStore)
     {
     }
 
@@ -20,11 +20,11 @@ internal sealed class DeleteBooksByAssetCommand : OrderBookCommandBase
         ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        var request = TcpPayload.Deserialize<DeleteBooksRequestDto>(payload);
+        var request = TcpPayload.Deserialize<DeleteTradesRequestDto>(payload);
 
         if (request != null)
         {
-            BooksStore.Delete(request.AssetId);
+            TradesStore.Delete(request.AssetId);
         }
 
         await WriteEmptyResponse(responseWriter, correlationId, ct);

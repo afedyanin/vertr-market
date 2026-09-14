@@ -24,6 +24,7 @@ public class TcpServer : BackgroundService
 #pragma warning restore CA2213 // Disposable fields should be disposed
 
     private readonly IObjectStore<MarketDepth> _bookStore;
+    private readonly IObjectStore<TradeTick> _tradeStore;
 
     private readonly MarketApiSettings _settings;
     private readonly SemaphoreSlim _semaphore;
@@ -46,6 +47,8 @@ public class TcpServer : BackgroundService
         _commandDurationHistogram = meter.CreateHistogram<double>("commands.duration");
 
         _bookStore = serviceProvider.GetRequiredService<IObjectStore<MarketDepth>>();
+        _tradeStore = serviceProvider.GetRequiredService<IObjectStore<TradeTick>>();
+
         _loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
         _logger = _loggerFactory.CreateLogger<TcpServer>();
@@ -105,6 +108,7 @@ public class TcpServer : BackgroundService
 
             using var parser = new TcpCommandParser(
                 _bookStore,
+                _tradeStore,
                 pipe.Output,
                 _loggerFactory,
                 _activitySource,

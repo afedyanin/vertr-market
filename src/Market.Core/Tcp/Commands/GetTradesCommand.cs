@@ -4,15 +4,14 @@ using Market.ApiClient.Tcp.Dtos;
 using Market.Core.Abstractions;
 using Market.Core.Converters;
 using Market.Core.Models;
-using ReactiveUI.Primitives;
 
 namespace Market.Core.Tcp.Commands;
 
-internal sealed class GetBooksCommand : OrderBookCommandBase
+internal sealed class GetTradesCommand : TradeCommandBase
 {
-    public override CommandType CommandType => CommandType.GetBooksResponse;
+    public override CommandType CommandType => CommandType.GetTradesResponse;
 
-    public GetBooksCommand(IObjectStore<MarketDepth> booksStore) : base(booksStore)
+    public GetTradesCommand(IObjectStore<TradeTick> tradesStore) : base(tradesStore)
     {
     }
 
@@ -22,13 +21,13 @@ internal sealed class GetBooksCommand : OrderBookCommandBase
         ReadOnlySequence<byte> payload,
         CancellationToken ct = default)
     {
-        var request = TcpPayload.Deserialize<GetBooksRequestDto>(payload);
+        var request = TcpPayload.Deserialize<GetTradesRequestDto>(payload);
         byte[] responsePayload = [];
 
         if (request != null)
         {
-            var books = BooksStore.Get(request.AssetId, request.Count);
-            var result = books.ToDto().ToArray();
+            var trades = TradesStore.Get(request.AssetId, request.Count);
+            var result = trades.ToDto().ToArray();
             responsePayload = MemoryPack.MemoryPackSerializer.Serialize(result);
         }
 

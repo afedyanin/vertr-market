@@ -26,6 +26,7 @@ public class TcpCommandParser : IDisposable
 
     public TcpCommandParser(
         IObjectStore<MarketDepth> booksStore,
+        IObjectStore<TradeTick> tradesStore,
         PipeWriter writer,
         ILoggerFactory loggerFactory,
         ActivitySource activitySource,
@@ -40,7 +41,7 @@ public class TcpCommandParser : IDisposable
             new MessageProtocol(),
             loggerFactory.CreateLogger<TcpResponseWriter>());
 
-        _commandFactory = new CommandFactory(booksStore);
+        _commandFactory = new CommandFactory(booksStore, tradesStore);
         _activitySource = activitySource;
         _commandCounter = commandCounter;
         _commandDurationHistogram = commandDurationHistogram;
