@@ -183,7 +183,14 @@ internal sealed class TinvestBackgroundService : BackgroundService
             {
                 try
                 {
-                    await _restApiClient.PostTrades([trade]);
+                    if (_apiSettings.UseTcp && trade.AssetId % 2 == 0)
+                    {
+                        await _tcpClient.PostTrades([trade]);
+                    }
+                    else
+                    {
+                        await _restApiClient.PostTrades([trade]);
+                    }
                 }
                 catch (Exception ex)
                 {

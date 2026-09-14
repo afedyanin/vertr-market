@@ -15,6 +15,16 @@ internal static class Program
     private const int BooksCount = 37;
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(60);
 
+
+    // localhost
+    //private const int RestPort = 5001;
+    //private const int TcpPort = 8005;
+
+    // docker
+    private const int RestPort = 7001;
+    private const int TcpPort = 7005;
+
+
     public static async Task Main(string[] args)
     {
         var scenarios = new List<ScenarioProps>();
@@ -40,7 +50,7 @@ internal static class Program
 
     private static ScenarioProps CreateRest()
     {
-        var restClient = RestService.For<IMarketRestApiClient>("http://localhost:5001");
+        var restClient = RestService.For<IMarketRestApiClient>($"http://localhost:{RestPort}");
         var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
         var minKey = generators.Keys.Min();
         var maxKey = generators.Keys.Max();
@@ -85,7 +95,7 @@ internal static class Program
 
     private static ScenarioProps CreateTcp()
     {
-        var tcpConnction = new TcpClientConnection("localhost", 8005);
+        var tcpConnction = new TcpClientConnection("localhost", TcpPort);
         var tcpClient = new MarketTcpApiClient(tcpConnction);
 
         var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
