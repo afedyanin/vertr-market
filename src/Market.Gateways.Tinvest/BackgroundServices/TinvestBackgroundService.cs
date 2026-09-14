@@ -152,7 +152,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
             {
                 try
                 {
-                    if (_apiSettings.UseTcp)
+                    if (_apiSettings.UseTcp && book.AssetId % 2 == 0)
                     {
                         await _tcpClient.PostBooks([book]);
                     }

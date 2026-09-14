@@ -40,7 +40,7 @@ internal static class Program
 
     private static ScenarioProps CreateRest()
     {
-        var restClient = RestService.For<IMarketRestApiClient>("http://localhost:7001");
+        var restClient = RestService.For<IMarketRestApiClient>("http://localhost:5001");
         var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
         var minKey = generators.Keys.Min();
         var maxKey = generators.Keys.Max();
@@ -85,7 +85,7 @@ internal static class Program
 
     private static ScenarioProps CreateTcp()
     {
-        var tcpConnction = new TcpClientConnection("localhost", 7005);
+        var tcpConnction = new TcpClientConnection("localhost", 8005);
         var tcpClient = new MarketTcpApiClient(tcpConnction);
 
         var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
