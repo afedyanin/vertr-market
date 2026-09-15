@@ -1,9 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using Market.ApiClient.Dtos;
 
-namespace Market.ConsoleApp.Extensions;
+namespace Market.ApiClient.Extensions;
 
-internal static class MarketDepthDtoEtensions
+public static class MarketDepthDtoEtensions
 {
     // ANSI Escape-коды для управления цветом в консоли (0 аллокаций)
     private const string ResetColor = "\x1b[0m";

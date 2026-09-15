@@ -15,8 +15,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
     private readonly IMarketRestApiClient _restApiClient;
     private readonly TinvestSettings _tinvestSettings;
 
-    private readonly MarketApiSettings _apiSettings;
-
     private readonly string _serviceName;
 
     private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
@@ -27,12 +25,10 @@ internal sealed class TinvestBackgroundService : BackgroundService
     public TinvestBackgroundService(
         IServiceProvider serviceProvider,
         IOptions<TinvestSettings> tinvestOptions,
-        IOptions<MarketApiSettings> apiOptions,
         ILogger<TinvestBackgroundService> logger)
     {
         _serviceProvider = serviceProvider;
         _tinvestSettings = tinvestOptions.Value;
-        _apiSettings = apiOptions.Value;
         _logger = logger;
         _serviceName = GetType().Name;
 
@@ -276,7 +272,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
             if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.Orderbook)
             {
-                if (response.Orderbook != null)
+                if (response.Orderbook != null && response.Orderbook.IsConsistent)
                 {
                     var assetId = GetAssetId(response.Orderbook.InstrumentUid);
                     var dto = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
