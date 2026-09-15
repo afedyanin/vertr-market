@@ -13,11 +13,8 @@ internal static class Program
     private const int BooksCount = 37;
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(60);
 
-    // localhost
-    //private const int RestPort = 5001;
-
     // docker
-    private const int RestPort = 7001;
+    private const int RestPort = 7001; // 5001 - localhost
 
     public static async Task Main(string[] args)
     {
