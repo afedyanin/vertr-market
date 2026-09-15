@@ -52,7 +52,7 @@ internal sealed class MarketInfoTcpClientService : BackgroundService
                 _logger.LogError(ex, "Error occured: {Message}", ex.Message);
             }
 
-            await Task.Delay(2000, stoppingToken);
+            await Task.Delay(1000, stoppingToken);
         }
     }
 
