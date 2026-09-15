@@ -1,8 +1,4 @@
-﻿using MemoryPack;
-
-namespace Market.ApiClient.Dtos;
-
-[MemoryPackable]
+﻿namespace Market.ApiClient.Dtos;
 
 public partial record MarketDepthDto(
     ushort AssetId,

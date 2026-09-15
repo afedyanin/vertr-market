@@ -38,7 +38,6 @@ public static class Program
         var settings = new MarketApiSettings();
         configuration.GetSection("MarketApiSettings").Bind(settings);
         builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
-        builder.Services.AddMarketTcpClient(settings.TcpHost, settings.TcpPort);
 
         builder.Services.AddRefitClient<IMarketRestApiClient>()
             .ConfigureHttpClient((serviceProvider, client) =>

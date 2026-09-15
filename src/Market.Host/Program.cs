@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Market.ApiClient;
 using Market.Core;
-using Market.Host.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -53,7 +52,6 @@ public static class Program
 
         builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
         builder.Services.AddObjectStores();
-        builder.Services.AddHostedService<TcpServer>();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

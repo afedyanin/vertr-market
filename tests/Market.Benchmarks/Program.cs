@@ -1,7 +1,5 @@
 ﻿using Market.ApiClient;
 using Market.ApiClient.Dtos;
-using Market.ApiClient.Tcp;
-using Market.ApiClient.Tcp.Internals;
 using NBomber.Contracts;
 using NBomber.CSharp;
 using Refit;
@@ -15,36 +13,16 @@ internal static class Program
     private const int BooksCount = 37;
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(60);
 
-
     // localhost
     //private const int RestPort = 5001;
-    //private const int TcpPort = 8005;
 
     // docker
     private const int RestPort = 7001;
-    private const int TcpPort = 7005;
-
 
     public static async Task Main(string[] args)
     {
         var scenarios = new List<ScenarioProps>();
-
-        var mode = args == null || args.Length == 0 ? string.Empty : args[0] ?? string.Empty;
-
-        if (mode.Equals("TCP", StringComparison.OrdinalIgnoreCase))
-        {
-            scenarios.Add(CreateTcp());
-        }
-        else if (mode.Equals("REST", StringComparison.OrdinalIgnoreCase))
-        {
-            scenarios.Add(CreateRest());
-        }
-        else
-        {
-            scenarios.Add(CreateTcp());
-            scenarios.Add(CreateRest());
-        }
-
+        scenarios.Add(CreateRest());
         NBomberRunner.RegisterScenarios([.. scenarios]).Run();
     }
 
@@ -72,56 +50,6 @@ internal static class Program
 
                         await restClient.PostBooks(books);
                         var saved = await restClient.GetBooks(assetId, 2);
-
-                        if (saved is null || saved.Length == 0)
-                        {
-                            return Response.Fail(message: "GET returned empty result", statusCode: "500");
-                        }
-
-                        return Response.Ok();
-                    }
-                    catch (Exception ex)
-                    {
-                        return Response.Fail(message: ex.Message, statusCode: "500");
-                    }
-                })
-            .WithLoadSimulations(
-                Simulation.KeepConstant(
-                    copies: Copies,
-                    during: Duration));
-
-        return scenario;
-    }
-
-    private static ScenarioProps CreateTcp()
-    {
-        var tcpConnction = new TcpClientConnection("localhost", TcpPort);
-        var tcpClient = new MarketTcpApiClient(tcpConnction);
-
-        var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
-        var minKey = generators.Keys.Min();
-        var maxKey = generators.Keys.Max();
-
-        var scenario = Scenario.Create(
-                "tcp_benchmark_books",
-                async context =>
-                {
-                    try
-                    {
-
-                        var books = new MarketDepthDto[BooksCount];
-                        var assetId = (ushort)Random.Shared.Next(minKey, maxKey + 1);
-                        var generator = generators[assetId];
-
-                        for (var i = 0; i < BooksCount; i++)
-                        {
-                            books[i] = generator.GenerateNext();
-                        }
-
-                        await tcpConnction.ConnectAsync(CancellationToken.None);
-                        await tcpClient.PostBooks(books);
-
-                        var saved = await tcpClient.GetBooks(assetId, 2);
 
                         if (saved is null || saved.Length == 0)
                         {
