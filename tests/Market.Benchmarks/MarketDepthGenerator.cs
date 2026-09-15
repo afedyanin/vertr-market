@@ -54,10 +54,7 @@ public class MarketDepthGenerator
             asks[i] = new PriceLevelDto(askPrice, GenerateRealisticVolume(i));
         }
 
-        // 4. Формируем таймstamp в микросекундах (Unix Epoch)
-        long microsecondTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
-
-        return new MarketDepthDto(_assetId, microsecondTimestamp, bids, asks);
+        return new MarketDepthDto(_assetId, DateTime.UtcNow, bids, asks);
     }
 
     public static Dictionary<ushort, MarketDepthGenerator> InitGenerators(int count)

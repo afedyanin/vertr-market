@@ -1,4 +1,5 @@
 ﻿using Market.ApiClient.Dtos;
+using Market.ApiClient.Extensions;
 using Market.Core.Models;
 
 namespace Market.Core.Converters;
@@ -13,21 +14,24 @@ public static class MarketDepthConverter
 
     public static MarketDepthDto ToDto(this MarketDepth book)
         => new MarketDepthDto(
-            book.AssetId,
-            book.MicrosecondTimestamp,
-            [.. book.GetBids().ToDto()],
-            [.. book.GetAsks().ToDto()]);
+                book.AssetId,
+                DateTimeHelper.MicrosecondsToDateTime(book.MicrosecondTimestamp),
+                [.. book.GetBids().ToDto()],
+                [.. book.GetAsks().ToDto()]);
 
     public static MarketDepth FromDto(this MarketDepthDto dto)
     {
-        // TODO: Test it
         var bidsBuffer = new DepthBuffer10();
         dto.Bids.FromDto(ref bidsBuffer);
 
         var asksBuffer = new DepthBuffer10();
         dto.Asks.FromDto(ref asksBuffer);
 
-        return new MarketDepth(dto.AssetId, dto.MicrosecondTimestamp, ref bidsBuffer, ref asksBuffer);
+        return new MarketDepth(
+            dto.AssetId,
+            DateTimeHelper.DateTimeToMicroseconds(dto.Timestamp),
+            ref bidsBuffer,
+            ref asksBuffer);
     }
 
     private static void FromDto(this PriceLevelDto[] dtos, ref DepthBuffer10 buffer)

@@ -13,12 +13,10 @@ public static class MarketDepthDtoEtensions
 
     public static string Dump(this MarketDepthDto dto)
     {
-        var messageDate = DateTime.UnixEpoch.AddTicks(dto.MicrosecondTimestamp * 10);
-
         // Выделяем буфер с запасом, так как ANSI-коды занимают дополнительные символы
         var handler = new DefaultInterpolatedStringHandler(literalLength: 1024, formattedCount: 40);
 
-        handler.AppendLiteral($"{CyanColor}=== Market Depth | Asset: {dto.AssetId} | {messageDate:yyyy-MM-dd HH:mm:ss.ffffff} ==={ResetColor}\n");
+        handler.AppendLiteral($"{CyanColor}=== Market Depth | Asset: {dto.AssetId} | {dto.Timestamp:yyyy-MM-dd HH:mm:ss.ffffff} ==={ResetColor}\n");
 
         // 1. Выводим ASKS (Красный цвет)
         handler.AppendLiteral($"{RedColor}--- ASKS (Sells) ---{ResetColor}\n");

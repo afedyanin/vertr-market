@@ -1,4 +1,5 @@
 ﻿using Market.ApiClient.Dtos;
+using Market.ApiClient.Extensions;
 using Market.Core.Models;
 
 namespace Market.Core.Converters;
@@ -12,8 +13,18 @@ public static class TradeTickConverter
         => dtos.Select(FromDto);
 
     public static TradeTickDto ToDto(this TradeTick tradeTick)
-        => new TradeTickDto(tradeTick.MicrosecondTimestamp, tradeTick.Price, tradeTick.Volume, tradeTick.AssetId, tradeTick.Side);
+        => new TradeTickDto(
+            DateTimeHelper.MicrosecondsToDateTime(tradeTick.MicrosecondTimestamp),
+            tradeTick.Price,
+            tradeTick.Volume,
+            tradeTick.AssetId,
+            tradeTick.Side);
 
     public static TradeTick FromDto(this TradeTickDto dto)
-        => new TradeTick(dto.MicrosecondTimestamp, dto.Price, dto.Volume, dto.AssetId, dto.Side);
+        => new TradeTick(
+            DateTimeHelper.DateTimeToMicroseconds(dto.Timestamp),
+            dto.Price,
+            dto.Volume,
+            dto.AssetId,
+            dto.Side);
 }

@@ -2,7 +2,7 @@
 
 public interface IObjectStore<T> where T : struct
 {
-    public void Set(T[] items);
+    public void Set(IEnumerable<T> items);
 
     public T[] Get(ushort key, int count = 1);
 

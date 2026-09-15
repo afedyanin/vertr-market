@@ -2,7 +2,7 @@
 
 public partial record MarketDepthDto(
     ushort AssetId,
-    long MicrosecondTimestamp,
+    DateTime Timestamp,
     PriceLevelDto[] Bids,
     PriceLevelDto[] Asks);
 

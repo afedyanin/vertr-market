@@ -9,12 +9,6 @@ internal static class TinvestMapper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static MarketDepthDto ToMarketDepth(OrderBook orderBook, ushort assetId)
     {
-        long microsecondTimestamp = 0;
-        if (orderBook.Time != null)
-        {
-            microsecondTimestamp = (orderBook.Time.Seconds * 1_000_000) + (orderBook.Time.Nanos / 1_000);
-        }
-
         var bidsBuffer = new PriceLevelDto[10];
         var asksBuffer = new PriceLevelDto[10];
 
@@ -40,22 +34,16 @@ internal static class TinvestMapper
             );
         }
 
-        return new MarketDepthDto(assetId, microsecondTimestamp, bidsBuffer, asksBuffer);
+        return new MarketDepthDto(assetId, orderBook.Time?.ToDateTime() ?? default, bidsBuffer, asksBuffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TradeTickDto ToTradeTick(Trade protoTrade, ushort assetId)
     {
-        long microsecondTimestamp = 0;
-        if (protoTrade.Time != null)
-        {
-            microsecondTimestamp = (protoTrade.Time.Seconds * 1_000_000) + (protoTrade.Time.Nanos / 1_000);
-        }
-
         var side = (byte)(protoTrade.Direction == TradeDirection.Sell ? 1 : 0);
 
         return new TradeTickDto(
-            MicrosecondTimestamp: microsecondTimestamp,
+            Timestamp: protoTrade.Time.ToDateTime(),
             Price: protoTrade.Price,
             Volume: (uint)protoTrade.Quantity,
             AssetId: assetId,

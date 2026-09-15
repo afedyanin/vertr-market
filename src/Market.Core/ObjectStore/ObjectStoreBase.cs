@@ -1,4 +1,5 @@
-﻿using Market.Core.Abstractions;
+﻿using Market.ApiClient.Extensions;
+using Market.Core.Abstractions;
 
 namespace Market.Core.ObjectStore;
 
@@ -10,6 +11,8 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
 
     private readonly int _assetItemsMaxLimit;
 
+    private readonly long _dicreteIntervalMs;
+
     private long _setCount;
     private long _getCount;
     private long _deleteCount;
@@ -18,9 +21,10 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
 
     protected abstract long GetTimestamp(T item);
 
-    protected ObjectStoreBase(int assetItemsMaxLimit = 1000)
+    protected ObjectStoreBase(long dicreteIntervalMs = 1, int assetItemsMaxLimit = 1000)
     {
         _assetItemsMaxLimit = assetItemsMaxLimit;
+        _dicreteIntervalMs = dicreteIntervalMs;
     }
 
     public T[] Get(ushort assetId, int count = 1)
@@ -53,7 +57,7 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
         }
     }
 
-    public void Set(T[] items)
+    public void Set(IEnumerable<T> items)
     {
         _lock.EnterWriteLock();
         try
@@ -69,10 +73,30 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
                 {
                     list = new LinkedList<T>();
                     _store.Add(assetId, list);
+                    list.AddLast(item);
+                    continue;
                 }
 
-                // TODO: Implement replace by Timestamp discrete value
-                list.AddLast(item);
+                var last = list.Last!;
+                var lastDiscreteTime = DateTimeHelper.FloorMicrosecondsByMsInterval(GetTimestamp(last.Value), _dicreteIntervalMs);
+                var currentDiscreteTime = DateTimeHelper.FloorMicrosecondsByMsInterval(GetTimestamp(item), _dicreteIntervalMs);
+
+                if (currentDiscreteTime > lastDiscreteTime)
+                {
+                    // new interval
+                    list.AddLast(item);
+                }
+
+                if (currentDiscreteTime == lastDiscreteTime)
+                {
+                    // current interval: replace
+                    last.Value = item;
+                }
+
+                if (currentDiscreteTime < lastDiscreteTime)
+                {
+                    // past interval: ignore
+                }
 
                 if (list.Count > _assetItemsMaxLimit)
                 {
