@@ -21,7 +21,9 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
 
     protected abstract long GetTimestamp(T item);
 
-    protected ObjectStoreBase(long dicreteIntervalMs = 1, int assetItemsMaxLimit = 1000)
+    protected ObjectStoreBase(
+        long dicreteIntervalMs = 1,
+        int assetItemsMaxLimit = 1000)
     {
         _assetItemsMaxLimit = assetItemsMaxLimit;
         _dicreteIntervalMs = dicreteIntervalMs;
@@ -81,22 +83,19 @@ internal abstract class ObjectStoreBase<T> : IObjectStore<T>, IDisposable where 
                 var lastDiscreteTime = DateTimeHelper.FloorMicrosecondsByMsInterval(GetTimestamp(last.Value), _dicreteIntervalMs);
                 var currentDiscreteTime = DateTimeHelper.FloorMicrosecondsByMsInterval(GetTimestamp(item), _dicreteIntervalMs);
 
+                // new interval
                 if (currentDiscreteTime > lastDiscreteTime)
                 {
-                    // new interval
                     list.AddLast(item);
                 }
 
+                // current interval: replace
                 if (currentDiscreteTime == lastDiscreteTime)
                 {
-                    // current interval: replace
                     last.Value = item;
                 }
 
-                if (currentDiscreteTime < lastDiscreteTime)
-                {
-                    // past interval: ignore
-                }
+                // past interval: ignore
 
                 if (list.Count > _assetItemsMaxLimit)
                 {
