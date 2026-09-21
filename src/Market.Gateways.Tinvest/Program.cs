@@ -1,10 +1,13 @@
 
+using System.Threading.Channels;
 using Market.ApiClient;
+using Market.Core.Models;
 using Market.Gateways.Tinvest.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Refit;
 using Serilog;
+using StackExchange.Redis;
 using Tinkoff.InvestApi;
 
 namespace Market.Gateways.Tinvest;
@@ -29,6 +32,17 @@ public static class Program
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
+
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect("localhost:6379"));
+        builder.Services.AddSingleton(TimeProvider.System);
+
+        var barChannel = Channel.CreateUnbounded<TimeQuant>(new UnboundedChannelOptions
+        {
+            SingleReader = true, // Если индикаторы считает один поток
+            SingleWriter = false // Писать могут разные потоки (таймер и WebSocket-трейды)
+        });
+
+        builder.Services.AddSingleton(barChannel);
 
         // Add Tinvest API
         builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));

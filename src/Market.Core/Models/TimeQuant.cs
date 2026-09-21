@@ -1,18 +1,34 @@
-﻿namespace Market.Core.Models;
+﻿using MessagePack;
 
+namespace Market.Core.Models;
+
+[MessagePackObject]
 public readonly struct TimeQuant
 {
-    public readonly ushort AssetId;
-    public readonly DateTime Timestamp;
-    public readonly decimal Open;
-    public readonly decimal High;
-    public readonly decimal Low;
-    public readonly decimal Close;
-    public readonly uint Volume;
+    [Key(0)]
+    public readonly ushort AssetId { get; }
+
+    [Key(1)]
+    public readonly long Timestamp { get; }
+
+    [Key(2)]
+    public readonly decimal Open { get; }
+
+    [Key(3)]
+    public readonly decimal High { get; }
+
+    [Key(4)]
+    public readonly decimal Low { get; }
+
+    [Key(5)]
+    public readonly decimal Close { get; }
+
+    [Key(6)]
+    public readonly uint Volume { get; }
 
     public TimeQuant(
         ushort assetId,
-        DateTime timestamp,
+        long timestamp,
         decimal open,
         decimal high,
         decimal low,
@@ -28,8 +44,6 @@ public readonly struct TimeQuant
         Volume = volume;
     }
 
-    public static TimeQuant CreateEmpty(ushort assetId, DateTime timestamp, decimal lastPrice)
-    {
-        return new TimeQuant(assetId, timestamp, lastPrice, lastPrice, lastPrice, lastPrice, 0);
-    }
+    public static TimeQuant CreateEmpty(ushort assetId, long timestamp, decimal lastPrice)
+        => new TimeQuant(assetId, timestamp, lastPrice, lastPrice, lastPrice, lastPrice, 0);
 }

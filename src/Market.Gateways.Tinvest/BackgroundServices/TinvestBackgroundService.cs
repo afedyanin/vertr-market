@@ -2,6 +2,8 @@
 using Grpc.Core;
 using Market.ApiClient;
 using Market.ApiClient.Dtos;
+using Market.Core;
+using Market.Core.Models;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
@@ -10,6 +12,8 @@ namespace Market.Gateways.Tinvest.BackgroundServices;
 
 internal sealed class TinvestBackgroundService : BackgroundService
 {
+    private static readonly TimeSpan DicreteInterval = TimeSpan.FromMilliseconds(10_000);
+
     private readonly ILogger<TinvestBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IMarketRestApiClient _restApiClient;
@@ -21,6 +25,9 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
     private readonly Channel<MarketDepthDto> _marketDepthChannel;
     private readonly Channel<TradeTickDto> _tradesChannel;
+    private readonly Channel<TimeQuant> _barChannel;
+
+    private readonly MarketDataAggregator _marketDataAggregator;
 
     public TinvestBackgroundService(
         IServiceProvider serviceProvider,
@@ -46,7 +53,15 @@ internal sealed class TinvestBackgroundService : BackgroundService
             FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый трейд
         });
 
+
         _restApiClient = _serviceProvider.GetRequiredService<IMarketRestApiClient>();
+
+        _barChannel = serviceProvider.GetRequiredService<Channel<TimeQuant>>();
+
+        _marketDataAggregator = new MarketDataAggregator(
+            TimeProvider.System,
+            DicreteInterval,
+            _barChannel.Writer);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,7 +77,10 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
         try
         {
-            await StartConsumingLoop(stoppingToken);
+            var timerTask = Task.Run(() => _marketDataAggregator.StartHighResolutionLoop(stoppingToken), stoppingToken);
+            var consumerTask = StartConsumingLoop(stoppingToken);
+
+            await Task.WhenAll(orderBooksWritingTask, consumerTask);
         }
         catch (Exception ex)
         {
@@ -156,7 +174,8 @@ internal sealed class TinvestBackgroundService : BackgroundService
             {
                 try
                 {
-                    await _restApiClient.PostTrades([trade]);
+                    _marketDataAggregator.ProcessTrade(trade);
+                    // await _restApiClient.PostTrades([trade]);
                 }
                 catch (Exception ex)
                 {

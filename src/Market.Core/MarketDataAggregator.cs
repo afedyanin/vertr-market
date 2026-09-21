@@ -5,20 +5,17 @@ using Market.Core.Models;
 
 namespace Market.Core;
 
-public class MarketDataAggregator : IDisposable
+public class MarketDataAggregator
 {
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _barInterval;
     private readonly ChannelWriter<TimeQuant> _outputWriter;
     private readonly ConcurrentDictionary<ushort, InstrumentState> _instruments = new();
 
-    private readonly CancellationTokenSource _cts = new();
-    private Task? _heartbeatTask;
-
     private sealed class InstrumentState
     {
         public readonly object Lock = new();
-        public DateTime NextBarEndTime;
+        public DateTimeOffset NextBarEndTime;
         public decimal LastKnownPrice;
         public decimal? CurrentOpen;
         public decimal CurrentHigh = decimal.MinValue;
@@ -37,15 +34,28 @@ public class MarketDataAggregator : IDisposable
         _outputWriter = outputWriter;
     }
 
-    public void Start()
+    public void StartHighResolutionLoop(CancellationToken ct)
     {
-        if (_timeProvider == TimeProvider.System)
+        // Если мы на бэктесте (FakeTimeProvider), отдельный поток-таймер запускать не нужно, 
+        // так как время там двигается искусственно через вызовы ProcessTrade
+        if (_timeProvider != TimeProvider.System)
         {
-            _heartbeatTask = Task.Factory.StartNew(
-                () => HighResolutionHeartbeatLoop(_cts.Token),
-                _cts.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default);
+            return;
+        }
+
+        // Проверка каждые 5 мс гарантирует точность закрытия 10-100 мс баров
+        long ticksPerCheck = TimeSpan.FromMilliseconds(5).Ticks;
+        long nextCheckTicks = _timeProvider.GetTimestamp() + ticksPerCheck;
+
+        while (!ct.IsCancellationRequested)
+        {
+            if (_timeProvider.GetTimestamp() >= nextCheckTicks)
+            {
+                ProcessHeartbeat();
+                nextCheckTicks += ticksPerCheck;
+            }
+
+            Thread.SpinWait(50);
         }
     }
 
@@ -108,7 +118,7 @@ public class MarketDataAggregator : IDisposable
         while (currentTime >= state.NextBarEndTime)
         {
             TimeQuant finishedBar;
-            DateTime barStartTime = state.NextBarEndTime.Subtract(_barInterval);
+            var barStartTime = state.NextBarEndTime.Subtract(_barInterval).ToUnixTimeMilliseconds();
 
             if (state.CurrentOpen.HasValue)
             {
@@ -137,23 +147,6 @@ public class MarketDataAggregator : IDisposable
         }
     }
 
-    private void HighResolutionHeartbeatLoop(CancellationToken ct)
-    {
-        long ticksPerCheck = TimeSpan.FromMilliseconds(5).Ticks; // Проверка каждые 5 мс гарантирует точность для 10-100 мс баров
-        long nextCheckTicks = _timeProvider.GetTimestamp() + ticksPerCheck;
-
-        while (!ct.IsCancellationRequested)
-        {
-            if (_timeProvider.GetTimestamp() >= nextCheckTicks)
-            {
-                ProcessHeartbeat();
-                nextCheckTicks += ticksPerCheck;
-            }
-
-            Thread.SpinWait(50);
-        }
-    }
-
     private InstrumentState InitInstrumentState(DateTime now)
         => new InstrumentState
         {
@@ -162,20 +155,4 @@ public class MarketDataAggregator : IDisposable
 
     private static DateTime RoundDown(DateTime dateTime, TimeSpan interval)
         => new DateTime(dateTime.Ticks - (dateTime.Ticks % interval.Ticks));
-
-    public void Dispose()
-    {
-        try
-        {
-            _cts.Cancel();
-#pragma warning disable MA0040 // Forward the CancellationToken parameter to methods that take one
-            _heartbeatTask?.Wait();
-#pragma warning restore MA0040 // Forward the CancellationToken parameter to methods that take one
-        }
-        catch
-        {
-        }
-
-        _cts.Dispose();
-    }
 }
