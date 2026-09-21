@@ -12,16 +12,16 @@ public readonly struct TimeQuant
     public readonly long Timestamp { get; }
 
     [Key(2)]
-    public readonly decimal Open { get; }
+    public readonly double Open { get; }
 
     [Key(3)]
-    public readonly decimal High { get; }
+    public readonly double High { get; }
 
     [Key(4)]
-    public readonly decimal Low { get; }
+    public readonly double Low { get; }
 
     [Key(5)]
-    public readonly decimal Close { get; }
+    public readonly double Close { get; }
 
     [Key(6)]
     public readonly uint Volume { get; }
@@ -29,10 +29,10 @@ public readonly struct TimeQuant
     public TimeQuant(
         ushort assetId,
         long timestamp,
-        decimal open,
-        decimal high,
-        decimal low,
-        decimal close,
+        double open,
+        double high,
+        double low,
+        double close,
         uint volume)
     {
         AssetId = assetId;
@@ -44,6 +44,6 @@ public readonly struct TimeQuant
         Volume = volume;
     }
 
-    public static TimeQuant CreateEmpty(ushort assetId, long timestamp, decimal lastPrice)
+    public static TimeQuant CreateEmpty(ushort assetId, long timestamp, double lastPrice)
         => new TimeQuant(assetId, timestamp, lastPrice, lastPrice, lastPrice, lastPrice, 0);
 }

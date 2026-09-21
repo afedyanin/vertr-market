@@ -16,11 +16,11 @@ public class MarketDataAggregator
     {
         public readonly object Lock = new();
         public DateTimeOffset NextBarEndTime;
-        public decimal LastKnownPrice;
-        public decimal? CurrentOpen;
-        public decimal CurrentHigh = decimal.MinValue;
-        public decimal CurrentLow = decimal.MaxValue;
-        public decimal CurrentClose;
+        public double LastKnownPrice;
+        public double? CurrentOpen;
+        public double CurrentHigh = double.NaN;
+        public double CurrentLow = double.NaN;
+        public double CurrentClose;
         public uint CurrentVolume;
     }
 
@@ -77,20 +77,20 @@ public class MarketDataAggregator
                 CheckAndEmitBars(trade.AssetId, state, _timeProvider.GetUtcNow().UtcDateTime);
             }
 
-            state.LastKnownPrice = trade.Price;
-            state.CurrentOpen ??= trade.Price;
+            state.LastKnownPrice = (double)trade.Price;
+            state.CurrentOpen ??= (double)trade.Price;
 
-            if (trade.Price > state.CurrentHigh)
+            if ((double)trade.Price > state.CurrentHigh)
             {
-                state.CurrentHigh = trade.Price;
+                state.CurrentHigh = (double)trade.Price;
             }
 
-            if (trade.Price < state.CurrentLow)
+            if ((double)trade.Price < state.CurrentLow)
             {
-                state.CurrentLow = trade.Price;
+                state.CurrentLow = (double)trade.Price;
             }
 
-            state.CurrentClose = trade.Price;
+            state.CurrentClose = (double)trade.Price;
             state.CurrentVolume += trade.Volume;
         }
     }
@@ -133,8 +133,8 @@ public class MarketDataAggregator
                 );
 
                 state.CurrentOpen = null;
-                state.CurrentHigh = decimal.MinValue;
-                state.CurrentLow = decimal.MaxValue;
+                state.CurrentHigh = double.NaN;
+                state.CurrentLow = double.NaN;
                 state.CurrentVolume = 0;
             }
             else

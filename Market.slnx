@@ -22,6 +22,9 @@
     <Project Path="src/Market.Core/Market.Core.csproj" Id="f0162eba-8f10-4e8f-884c-baad07945a5f" />
     <Project Path="src/Market.Gateways.Tinvest/Market.Gateways.Tinvest.csproj" Id="cfb503f7-4d8a-4a0a-9e06-9dffc24fad02" />
     <Project Path="src/Market.Host/Market.Host.csproj" />
+    <Project Path="src/Market.PythonApp/Market.PythonApp.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="ab834bed-067d-4788-b3e4-e3ca7ace155e">
+      <Build Project="false" />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Market.Benchmarks/Market.Benchmarks.csproj" Id="2c9cac3c-1eba-43e1-8a44-311f91f25e6c" />
