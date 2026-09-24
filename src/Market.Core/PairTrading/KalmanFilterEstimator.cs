@@ -1,4 +1,4 @@
-﻿namespace Market.Core;
+﻿namespace Market.Core.PairTrading;
 
 /// <summary>
 /// Облегченный фильтр Калмана для отслеживания динамической беты (отношения Y к X)

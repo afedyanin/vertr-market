@@ -28,5 +28,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Market.Benchmarks/Market.Benchmarks.csproj" Id="2c9cac3c-1eba-43e1-8a44-311f91f25e6c" />
+    <Project Path="tests/Market.ConsoleApp/Market.ConsoleApp.csproj" Id="1b49fff6-bae2-43d8-972b-ec7823cbc351" />
   </Folder>
 </Solution>
