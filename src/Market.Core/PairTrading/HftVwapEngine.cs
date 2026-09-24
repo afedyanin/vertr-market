@@ -100,7 +100,9 @@ public class HftVwapEngine
             VwapBidX = vwapBidX,
             VwapAskY = vwapAskY,
             VwapBidY = vwapBidY,
-            Signal = signal
+            VolumeX = requiredVolumeX,
+            VolumeY = _tradeVolumeY,
+            Signal = signal,
         };
     }
 }
@@ -115,6 +117,9 @@ public struct VwapResult
     public double VwapBidX { get; set; }
     public double VwapAskY { get; set; }
     public double VwapBidY { get; set; }
+    public double VolumeX { get; set; }
+    public double VolumeY { get; set; }
+
     public string Signal { get; set; }
 }
 

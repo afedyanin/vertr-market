@@ -22,7 +22,7 @@ public class HftVwapEngineDeltaTime
 {
     private double _beta;
     private double _pBeta = 1.0;
-    
+
     // В HFT-моделях Q и R задаются на единицу времени (в секунду), а не на шаг!
     private const double QBetaPerSecond = 0.00005;
     private const double RBetaBase = 0.01;
@@ -78,10 +78,14 @@ public class HftVwapEngineDeltaTime
         {
             dt = (timestamp - _lastEventTime).TotalSeconds;
         }
+
         _lastEventTime = timestamp;
 
         // Защита от одновременных или сетевых пакетов из одной микросекунды
-        if (dt < 0.000001) dt = 0.000001;
+        if (dt < 0.000001)
+        {
+            dt = 0.000001;
+        }
 
         // 2. Считаем VWAP для Актива Y на основе жестко заданного объема лота
         double vwapAskY = _lastDepthY.GetVwap(_tradeVolumeY, isBuy: true);
@@ -104,7 +108,7 @@ public class HftVwapEngineDeltaTime
         double timeSinceLastX = (timestamp - _lastUpdateXTime).TotalSeconds;
         double timeSinceLastY = (timestamp - _lastUpdateYTime).TotalSeconds;
         double maxStaleTime = Math.Max(timeSinceLastX, timeSinceLastY);
-        
+
         // Чем старее данные одного из стаканов, тем сильнее мы раздуваем RBeta для текущего шага
         double rBetaDynamic = RBetaBase + (maxStaleTime * 0.05);
 
@@ -159,6 +163,8 @@ public class HftVwapEngineDeltaTime
             VwapBidX = vwapBidX,
             VwapAskY = vwapAskY,
             VwapBidY = vwapBidY,
+            VolumeX = requiredVolumeX,
+            VolumeY = _tradeVolumeY,
             Signal = signal
         };
     }
