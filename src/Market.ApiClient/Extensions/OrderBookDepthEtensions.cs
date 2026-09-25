@@ -1,9 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
-using Market.ApiClient.Dtos;
+using Market.ApiClient.Models;
 
 namespace Market.ApiClient.Extensions;
 
-public static class MarketDepthDtoEtensions
+public static class OrderBookDepthEtensions
 {
     // ANSI Escape-коды для управления цветом в консоли (0 аллокаций)
     private const string ResetColor = "\x1b[0m";
@@ -11,22 +11,22 @@ public static class MarketDepthDtoEtensions
     private const string GreenColor = "\x1b[32m"; // Для Bids (Покупатели)
     private const string CyanColor = "\x1b[36m";  // Для мета-информации
 
-    public static string Dump(this MarketDepthDto dto)
+    public static string Dump(this OrderBookDepth dto)
     {
         // Выделяем буфер с запасом, так как ANSI-коды занимают дополнительные символы
         var handler = new DefaultInterpolatedStringHandler(literalLength: 1024, formattedCount: 40);
 
-        handler.AppendLiteral($"{CyanColor}=== Market Depth | Asset: {dto.AssetId} | {dto.Timestamp:yyyy-MM-dd HH:mm:ss.ffffff} ==={ResetColor}\n");
+        handler.AppendLiteral($"{CyanColor}=== Market Depth | Asset: {dto.AssetId} ==={ResetColor}\n");
 
         // 1. Выводим ASKS (Красный цвет)
         handler.AppendLiteral($"{RedColor}--- ASKS (Sells) ---{ResetColor}\n");
         for (var i = dto.Asks.Length - 1; i >= 0; i--)
         {
             ref readonly var level = ref dto.Asks[i];
-            if (level.Volume > 0 || level.Price > 0)
+            if (level.Size > 0 || level.Price > 0)
             {
                 // Подсвечиваем только значения цен и объемов, сохраняя структуру
-                handler.AppendLiteral($"  [Ask {i}] Price: {RedColor}{level.Price,-10}{ResetColor} | Volume: {RedColor}{level.Volume}{ResetColor}");
+                handler.AppendLiteral($"  [Ask {i}] Price: {RedColor}{level.Price,-10}{ResetColor} | Volume: {RedColor}{level.Size}{ResetColor}");
 
                 // Маркер для лучшего Ask
                 if (i == 0)
@@ -45,9 +45,9 @@ public static class MarketDepthDtoEtensions
         for (var i = 0; i < dto.Bids.Length; i++)
         {
             ref readonly var level = ref dto.Bids[i];
-            if (level.Volume > 0 || level.Price > 0)
+            if (level.Size > 0 || level.Price > 0)
             {
-                handler.AppendLiteral($"  [Bid {i}] Price: {GreenColor}{level.Price,-10}{ResetColor} | Volume: {GreenColor}{level.Volume}{ResetColor}");
+                handler.AppendLiteral($"  [Bid {i}] Price: {GreenColor}{level.Price,-10}{ResetColor} | Volume: {GreenColor}{level.Size}{ResetColor}");
 
                 // Маркер для лучшего Bid
                 if (i == 0)

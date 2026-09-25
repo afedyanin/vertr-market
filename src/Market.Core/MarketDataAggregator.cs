@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Market.ApiClient.Dtos;
-using Market.Core.Models;
+using Market.ApiClient.Models;
 
 namespace Market.Core;
 
@@ -9,7 +8,7 @@ public class MarketDataAggregator
 {
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _barInterval;
-    private readonly ChannelWriter<TimeQuant> _outputWriter;
+    private readonly ChannelWriter<Candle> _outputWriter;
     private readonly ConcurrentDictionary<ushort, InstrumentState> _instruments = new();
 
     private sealed class InstrumentState
@@ -27,7 +26,7 @@ public class MarketDataAggregator
     public MarketDataAggregator(
         TimeProvider timeProvider,
         TimeSpan barInterval,
-        ChannelWriter<TimeQuant> outputWriter)
+        ChannelWriter<Candle> outputWriter)
     {
         _timeProvider = timeProvider;
         _barInterval = barInterval;
@@ -59,7 +58,7 @@ public class MarketDataAggregator
         }
     }
 
-    public void ProcessTrade(in TradeTickDto trade)
+    public void ProcessTrade(in TradeTick trade)
     {
         var state = _instruments.GetOrAdd(trade.AssetId, _ => InitInstrumentState(_timeProvider.GetUtcNow().UtcDateTime));
 
@@ -117,12 +116,12 @@ public class MarketDataAggregator
     {
         while (currentTime >= state.NextBarEndTime)
         {
-            TimeQuant finishedBar;
+            Candle finishedBar;
             var barStartTime = state.NextBarEndTime.Subtract(_barInterval).ToUnixTimeMilliseconds();
 
             if (state.CurrentOpen.HasValue)
             {
-                finishedBar = new TimeQuant(
+                finishedBar = new Candle(
                     assetId,
                     barStartTime,
                     state.CurrentOpen.Value,
@@ -139,7 +138,7 @@ public class MarketDataAggregator
             }
             else
             {
-                finishedBar = TimeQuant.CreateEmpty(assetId, barStartTime, state.LastKnownPrice);
+                finishedBar = Candle.CreateEmpty(assetId, barStartTime, state.LastKnownPrice);
             }
 
             _outputWriter.TryWrite(finishedBar);

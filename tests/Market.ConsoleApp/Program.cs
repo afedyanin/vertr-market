@@ -1,4 +1,5 @@
-﻿using Market.Core.PairTrading;
+﻿using Market.ApiClient.Models;
+using Market.Core.PairTrading;
 
 namespace Market.ConsoleApp;
 
@@ -104,15 +105,15 @@ internal static class Program
         var engine = new HftVwapEngine(initialBeta: initialBeta, tradeVolumeY: tradeVolumeY);
 
         // Имитируем глубокий стакан (L2) для Актива X (Цена, Объем)
-        var orderBookX = new OrderBookDepth(
-            bids: new List<OrderBookLevel> { new(100.0, 2.0), new(99.9, 4.0), new(99.8, 10.0) },
-            asks: new List<OrderBookLevel> { new(100.1, 1.5), new(100.2, 3.5), new(100.3, 8.0) }
+        var orderBookX = new OrderBookDepth(1,
+            bids: [new(100.0, 2.0), new(99.9, 4.0), new(99.8, 10.0)],
+            asks: [new(100.1, 1.5), new(100.2, 3.5), new(100.3, 8.0)]
         );
 
         // Имитируем глубокий стакан (L2) для Актива Y (Цена, Объем)
-        var orderBookY = new OrderBookDepth(
-            bids: new List<OrderBookLevel> { new(150.0, 1.0), new(149.8, 3.0), new(149.5, 5.0) },
-            asks: new List<OrderBookLevel> { new(150.2, 2.0), new(150.4, 4.0), new(150.6, 6.0) }
+        var orderBookY = new OrderBookDepth(2,
+            bids: [new(150.0, 1.0), new(149.8, 3.0), new(149.5, 5.0)],
+            asks: [new(150.2, 2.0), new(150.4, 4.0), new(150.6, 6.0)]
         );
 
         // Тестируем расчет VWAP и фильтрацию
@@ -137,16 +138,16 @@ internal static class Program
         var engine = new HftFeesEngine(initialBeta: 1.5, tradeVolumeY: tradeVolumeY, feeRateX: feeRateX, feeRateY: feeRateY);
 
         // Стакан X (Цена, Объем)
-        var orderBookX = new OrderBookDepth(
-            bids: new List<OrderBookLevel> { new(100.0, 10.0) },
-            asks: new List<OrderBookLevel> { new(100.1, 10.0) }
+        var orderBookX = new OrderBookDepth(1,
+            bids: [new(100.0, 10.0)],
+            asks: [new(100.1, 10.0)]
         );
 
         // Стакан Y: Симулируем ситуацию, где спред расширился (Z-Score высокий), 
         // но из-за комиссий алгоритм должен проигнорировать этот вход
-        var orderBookY = new OrderBookDepth(
-            bids: new List<OrderBookLevel> { new(151.2, 10.0) },
-            asks: new List<OrderBookLevel> { new(151.5, 10.0) }
+        var orderBookY = new OrderBookDepth(2,
+            bids: [new(151.2, 10.0)],
+            asks: [new(151.5, 10.0)]
         );
 
         var r = engine.ProcessSecond(orderBookX, orderBookY);

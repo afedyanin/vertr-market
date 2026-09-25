@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Market.Core.Models;
+using Market.ApiClient.Models;
 using MessagePack;
 using StackExchange.Redis;
 
@@ -8,7 +8,7 @@ namespace Market.Gateways.Tinvest.BackgroundServices;
 
 public class RedisAggregatedTradesPublisherService : BackgroundService
 {
-    private readonly ChannelReader<TimeQuant> _barChannel;
+    private readonly ChannelReader<Candle> _barChannel;
     private readonly ILogger<RedisAggregatedTradesPublisherService> _logger;
     private readonly IDatabase _redisDb;
     private readonly ConcurrentDictionary<ushort, RedisChannel> _channelCache = new();
@@ -18,7 +18,7 @@ public class RedisAggregatedTradesPublisherService : BackgroundService
          IConnectionMultiplexer redis,
         ILogger<RedisAggregatedTradesPublisherService> logger)
     {
-        _barChannel = serviceProvider.GetRequiredService<Channel<TimeQuant>>();
+        _barChannel = serviceProvider.GetRequiredService<Channel<Candle>>();
         _redisDb = redis.GetDatabase();
         _logger = logger;
     }

@@ -1,9 +1,7 @@
-﻿using Market.ApiClient;
-using Market.ConsoleApp.BackgroundServices;
+﻿using Market.ConsoleApp.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Refit;
 using Serilog;
 
 namespace Market.ConsoleApp;
@@ -34,18 +32,7 @@ internal static class Program
 
             builder.ConfigureServices((context, services) =>
             {
-                var settings = new MarketApiSettings();
-                context.Configuration.GetSection("MarketApiSettings").Bind(settings);
-
-                services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
-
-                services.AddRefitClient<IMarketRestApiClient>()
-                    .ConfigureHttpClient((serviceProvider, client) =>
-                    {
-                        client.BaseAddress = new Uri(settings.BaseUrl ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
-                    });
-
-                services.AddHostedService<MarketInfoRestClientService>();
+                services.AddHostedService<RedisOrderBooksSubscriberService>();
             });
 
             builder.UseEnvironment(environment);

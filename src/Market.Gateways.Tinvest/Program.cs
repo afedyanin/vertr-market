@@ -1,8 +1,5 @@
-
 using System.Threading.Channels;
-using Market.ApiClient;
-using Market.ApiClient.Dtos;
-using Market.Core.Models;
+using Market.ApiClient.Models;
 using Market.Gateways.Tinvest.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -34,7 +31,7 @@ public static class Program
         builder.Services.AddOpenApi();
 
         // Channels
-        var barChannel = Channel.CreateUnbounded<TimeQuant>(new UnboundedChannelOptions
+        var barChannel = Channel.CreateUnbounded<Candle>(new UnboundedChannelOptions
         {
             SingleReader = true, // Если индикаторы считает один поток
             SingleWriter = false // Писать могут разные потоки (таймер и WebSocket-трейды)
@@ -43,7 +40,7 @@ public static class Program
         builder.Services.AddSingleton(barChannel);
         builder.Services.AddSingleton(TimeProvider.System);
 
-        var marketDepthChannel = Channel.CreateBounded<MarketDepthDto>(new BoundedChannelOptions(10000)
+        var marketDepthChannel = Channel.CreateBounded<OrderBookDepth>(new BoundedChannelOptions(10000)
         {
             SingleWriter = true, // Писать в канал будет только gRPC поток
             SingleReader = true, // Читать будет один фоновый воркер записи
@@ -56,10 +53,6 @@ public static class Program
         builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));
         builder.Services.AddInvestApiClient((_, settings) => configuration.Bind($"{nameof(TinvestSettings)}:{nameof(InvestApiSettings)}", settings));
         builder.Services.AddHostedService<TinvestBackgroundService>();
-
-        var settings = new MarketApiSettings();
-        configuration.GetSection("MarketApiSettings").Bind(settings);
-        builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
 
         // Redis publishers
         var redisConnectionString = configuration.GetConnectionString("Redis");

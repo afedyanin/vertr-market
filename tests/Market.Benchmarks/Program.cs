@@ -1,8 +1,6 @@
-﻿using Market.ApiClient;
-using Market.ApiClient.Dtos;
+﻿using Market.ApiClient.Models;
 using NBomber.Contracts;
 using NBomber.CSharp;
-using Refit;
 
 namespace Market.Benchmarks;
 
@@ -14,7 +12,7 @@ internal static class Program
     private static readonly TimeSpan Duration = TimeSpan.FromSeconds(60);
 
     // docker
-    private const int RestPort = 7001; // 5001 - localhost
+    //private const int RestPort = 7001; // 5001 - localhost
 
     public static async Task Main(string[] args)
     {
@@ -25,8 +23,7 @@ internal static class Program
 
     private static ScenarioProps CreateRest()
     {
-        var restClient = RestService.For<IMarketRestApiClient>($"http://localhost:{RestPort}");
-        var generators = MarketDepthGenerator.InitGenerators(AssetsCount);
+        var generators = OrderBookDepthGenerator.InitGenerators(AssetsCount);
         var minKey = generators.Keys.Min();
         var maxKey = generators.Keys.Max();
 
@@ -36,7 +33,7 @@ internal static class Program
                 {
                     try
                     {
-                        var books = new MarketDepthDto[BooksCount];
+                        var books = new OrderBookDepth[BooksCount];
                         var assetId = (ushort)Random.Shared.Next(minKey, maxKey + 1);
                         var generator = generators[assetId];
 
@@ -45,6 +42,7 @@ internal static class Program
                             books[i] = generator.GenerateNext();
                         }
 
+                        /*
                         await restClient.PostBooks(books);
                         var saved = await restClient.GetBooks(assetId, 2);
 
@@ -52,6 +50,7 @@ internal static class Program
                         {
                             return Response.Fail(message: "GET returned empty result", statusCode: "500");
                         }
+                        */
 
                         return Response.Ok();
                     }

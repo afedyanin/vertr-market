@@ -1,4 +1,7 @@
-﻿namespace Market.Core.PairTrading;
+﻿using Market.ApiClient.Models;
+using Market.Core.Extensions;
+
+namespace Market.Core.PairTrading;
 
 
 /*

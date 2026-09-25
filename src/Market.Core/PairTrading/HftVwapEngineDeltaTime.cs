@@ -1,3 +1,6 @@
+using Market.ApiClient.Models;
+using Market.Core.Extensions;
+
 namespace Market.Core.PairTrading;
 
 /*
@@ -46,7 +49,7 @@ public class HftVwapEngineDeltaTime
     /// <summary>
     /// Вызывается асинхронно при обновлении стакана инструмента X
     /// </summary>
-    public VwapResult? ProcessTickX(OrderBookDepth depthX, DateTime timestamp)
+    public PairTradingSignal? ProcessTickX(OrderBookDepth depthX, DateTime timestamp)
     {
         _lastDepthX = depthX;
         _lastUpdateXTime = timestamp;
@@ -56,14 +59,14 @@ public class HftVwapEngineDeltaTime
     /// <summary>
     /// Вызывается асинхронно при обновлении стакана инструмента Y
     /// </summary>
-    public VwapResult? ProcessTickY(OrderBookDepth depthY, DateTime timestamp)
+    public PairTradingSignal? ProcessTickY(OrderBookDepth depthY, DateTime timestamp)
     {
         _lastDepthY = depthY;
         _lastUpdateYTime = timestamp;
         return ProcessTick(timestamp);
     }
 
-    private VwapResult? ProcessTick(DateTime timestamp)
+    private PairTradingSignal? ProcessTick(DateTime timestamp)
     {
         // Пока не получили данные по обоим инструментам — расчет невозможен
         if (_lastDepthX == null || _lastDepthY == null)
@@ -154,7 +157,7 @@ public class HftVwapEngineDeltaTime
             _currentPosition = PositionState.None;
         }
 
-        return new VwapResult
+        return new PairTradingSignal
         {
             Beta = _beta,
             ZScoreBuy = zScoreBuy,

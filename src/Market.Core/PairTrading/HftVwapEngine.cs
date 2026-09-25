@@ -1,4 +1,7 @@
-﻿namespace Market.Core.PairTrading;
+﻿using Market.ApiClient.Models;
+using Market.Core.Extensions;
+
+namespace Market.Core.PairTrading;
 
 /*
 1. Динамический пересчет объема X: Так как соотношение цен меняется, 
@@ -31,7 +34,7 @@ public class HftVwapEngine
         _tradeVolumeY = tradeVolumeY;
     }
 
-    public VwapResult ProcessSecond(OrderBookDepth x, OrderBookDepth y)
+    public PairTradingSignal ProcessSecond(OrderBookDepth x, OrderBookDepth y)
     {
         // 1. Считаем VWAP для Актива Y на основе жестко заданного объема торгового лота
         double vwapAskY = y.GetVwap(_tradeVolumeY, isBuy: true);
@@ -91,7 +94,7 @@ public class HftVwapEngine
             _currentPosition = PositionState.None;
         }
 
-        return new VwapResult
+        return new PairTradingSignal
         {
             Beta = _beta,
             ZScoreBuy = zScoreBuy,
@@ -106,75 +109,3 @@ public class HftVwapEngine
         };
     }
 }
-
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "<Pending>")]
-public struct VwapResult
-{
-    public double Beta { get; set; }
-    public double ZScoreBuy { get; set; }
-    public double ZScoreSell { get; set; }
-    public double VwapAskX { get; set; }
-    public double VwapBidX { get; set; }
-    public double VwapAskY { get; set; }
-    public double VwapBidY { get; set; }
-    public double VolumeX { get; set; }
-    public double VolumeY { get; set; }
-
-    public string Signal { get; set; }
-}
-
-#region СТРУКТУРЫ СТАКАНА
-public struct OrderBookLevel
-{
-    public double Price { get; }
-    public double Size { get; }
-    public OrderBookLevel(double price, double size)
-    {
-        Price = price;
-        Size = size;
-    }
-}
-
-public class OrderBookDepth
-{
-    public List<OrderBookLevel> Bids { get; } // Покупатели (сортировка от лучшей/высшей к худшей)
-    public List<OrderBookLevel> Asks { get; } // Продавцы (сортировка от лучшей/низшей к худшей)
-
-    public OrderBookDepth(List<OrderBookLevel> bids, List<OrderBookLevel> asks)
-    {
-        Bids = bids;
-        Asks = asks;
-    }
-
-    /// <summary>
-    /// Расчет VWAP для проедания стакана на заданный объем
-    /// </summary>
-    public double GetVwap(double requiredVolume, bool isBuy)
-    {
-        var levels = isBuy ? Asks : Bids; // Если покупаем, бьем в лимиты продавцов (Asks), если продаем — в Bids
-        double accumulatedVolume = 0;
-        double accumulatedCash = 0;
-
-        foreach (var level in levels)
-        {
-            double remainingVolume = requiredVolume - accumulatedVolume;
-            if (remainingVolume <= 0)
-            {
-                break;
-            }
-
-            double volumeToTake = Math.Min(remainingVolume, level.Size);
-            accumulatedCash += volumeToTake * level.Price;
-            accumulatedVolume += volumeToTake;
-        }
-
-        // Если в стакане не хватило ликвидности для нашего объема, возвращаем худшую цену или выкидываем ошибку
-        if (accumulatedVolume < requiredVolume)
-        {
-            return levels[^1].Price; // Худшая доступная цена (рыночное проскальзывание)
-        }
-
-        return accumulatedCash / requiredVolume;
-    }
-}
-#endregion

@@ -1,8 +1,7 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
-using Market.ApiClient.Dtos;
+using Market.ApiClient.Models;
 using Market.Core;
-using Market.Core.Models;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
@@ -18,9 +17,9 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
     private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
 
-    private readonly Channel<MarketDepthDto> _marketDepthChannel;
-    private readonly Channel<TradeTickDto> _tradesChannel;
-    private readonly Channel<TimeQuant> _barChannel;
+    private readonly Channel<OrderBookDepth> _marketDepthChannel;
+    private readonly Channel<TradeTick> _tradesChannel;
+    private readonly Channel<ApiClient.Models.Candle> _barChannel;
 
     private readonly MarketDataAggregator _marketDataAggregator;
 
@@ -35,7 +34,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
         _serviceName = GetType().Name;
 
         // Приватный канал неаггрегированных трейдов. Соообщения обрабатываются через _marketDataAggregator
-        _tradesChannel = Channel.CreateBounded<TradeTickDto>(new BoundedChannelOptions(10000)
+        _tradesChannel = Channel.CreateBounded<TradeTick>(new BoundedChannelOptions(10000)
         {
             SingleWriter = true, // Писать в канал будет только gRPC поток
             SingleReader = true, // Читать будет один фоновый воркер записи
@@ -43,10 +42,10 @@ internal sealed class TinvestBackgroundService : BackgroundService
         });
 
         // Общий канал аггрегированных трейдов. Сообщения читаются в RedisPublisher
-        _barChannel = serviceProvider.GetRequiredService<Channel<TimeQuant>>();
+        this._barChannel = serviceProvider.GetRequiredService<Channel<ApiClient.Models.Candle>>();
 
         // Общий канал стаканов. Сообщения читаются в RedisPublisher
-        _marketDepthChannel = serviceProvider.GetRequiredService<Channel<MarketDepthDto>>();
+        _marketDepthChannel = serviceProvider.GetRequiredService<Channel<OrderBookDepth>>();
 
         // Аггрегатор трейов в бары
         _marketDataAggregator = new MarketDataAggregator(
@@ -257,9 +256,9 @@ internal sealed class TinvestBackgroundService : BackgroundService
                 if (response.Orderbook != null && response.Orderbook.IsConsistent)
                 {
                     var assetId = GetAssetId(response.Orderbook.InstrumentUid);
-                    var dto = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
+                    var book = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
 
-                    _marketDepthChannel.Writer.TryWrite(dto);
+                    _marketDepthChannel.Writer.TryWrite(book);
 
                     if (_logger.IsEnabled(LogLevel.Debug))
                     {

@@ -1,9 +1,9 @@
 ﻿using MessagePack;
 
-namespace Market.Core.Models;
+namespace Market.ApiClient.Models;
 
 [MessagePackObject]
-public readonly struct TimeQuant
+public readonly struct Candle
 {
     [Key(0)]
     public readonly ushort AssetId { get; }
@@ -26,7 +26,7 @@ public readonly struct TimeQuant
     [Key(6)]
     public readonly uint Volume { get; }
 
-    public TimeQuant(
+    public Candle(
         ushort assetId,
         long timestamp,
         double open,
@@ -44,6 +44,6 @@ public readonly struct TimeQuant
         Volume = volume;
     }
 
-    public static TimeQuant CreateEmpty(ushort assetId, long timestamp, double lastPrice)
-        => new TimeQuant(assetId, timestamp, lastPrice, lastPrice, lastPrice, lastPrice, 0);
+    public static Candle CreateEmpty(ushort assetId, long timestamp, double lastPrice)
+        => new Candle(assetId, timestamp, lastPrice, lastPrice, lastPrice, lastPrice, 0);
 }

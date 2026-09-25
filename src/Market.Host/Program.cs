@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using Market.ApiClient;
-using Market.Core;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -15,10 +13,6 @@ public static class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var configuration = builder.Configuration;
-
-        var settings = new MarketApiSettings();
-        configuration.GetSection("MarketApiSettings").Bind(settings);
-
         var serviceName = builder.Environment.ApplicationName;
         var resourceBuilder = ResourceBuilder.CreateDefault().AddService(serviceName);
         var hostActivitySource = new ActivitySource(serviceName);
@@ -35,7 +29,7 @@ public static class Program
                 .AddSource(serviceName)
                 .AddOtlpExporter(options =>
                 {
-                    options.Endpoint = new Uri(settings.OtelExporterOltpEndpoint);
+                    options.Endpoint = new Uri("http://localhost:4317");
                     options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
                 }))
             .WithMetrics(metricsBuilder => metricsBuilder
@@ -49,9 +43,6 @@ public static class Program
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
-
-        builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
-        builder.Services.AddObjectStores();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

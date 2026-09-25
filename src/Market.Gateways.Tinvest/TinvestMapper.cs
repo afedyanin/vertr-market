@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using Market.ApiClient.Dtos;
+using Market.ApiClient.Models;
 using Tinkoff.InvestApi.V1;
 
 namespace Market.Gateways.Tinvest;
@@ -7,19 +7,19 @@ namespace Market.Gateways.Tinvest;
 internal static class TinvestMapper
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static MarketDepthDto ToMarketDepth(OrderBook orderBook, ushort assetId)
+    public static OrderBookDepth ToMarketDepth(OrderBook orderBook, ushort assetId)
     {
-        var bidsBuffer = new PriceLevelDto[10];
-        var asksBuffer = new PriceLevelDto[10];
+        var bidsBuffer = new OrderBookLevel[10];
+        var asksBuffer = new OrderBookLevel[10];
 
         var bidsCount = Math.Min(orderBook.Bids.Count, 10);
         for (var i = 0; i < bidsCount; i++)
         {
             var protoBid = orderBook.Bids[i];
 
-            bidsBuffer[i] = new PriceLevelDto(
-                Price: protoBid.Price,
-                Volume: (uint)protoBid.Quantity
+            bidsBuffer[i] = new OrderBookLevel(
+                price: (double)(decimal)protoBid.Price,
+                size: protoBid.Quantity
             );
         }
 
@@ -28,21 +28,21 @@ internal static class TinvestMapper
         {
             var protoAsk = orderBook.Asks[i];
 
-            asksBuffer[i] = new PriceLevelDto(
-                Price: protoAsk.Price,
-                Volume: (uint)protoAsk.Quantity
+            asksBuffer[i] = new OrderBookLevel(
+                price: (double)(decimal)protoAsk.Price,
+                size: protoAsk.Quantity
             );
         }
 
-        return new MarketDepthDto(assetId, orderBook.Time?.ToDateTime() ?? default, bidsBuffer, asksBuffer);
+        return new OrderBookDepth(assetId, bidsBuffer, asksBuffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TradeTickDto ToTradeTick(Trade protoTrade, ushort assetId)
+    public static TradeTick ToTradeTick(Trade protoTrade, ushort assetId)
     {
         var side = (byte)(protoTrade.Direction == TradeDirection.Sell ? 1 : 0);
 
-        return new TradeTickDto(
+        return new TradeTick(
             Timestamp: protoTrade.Time.ToDateTime(),
             Price: protoTrade.Price,
             Volume: (uint)protoTrade.Quantity,
