@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using Market.ApiClient.Models;
+using Market.Contracts.Models;
 using Tinkoff.InvestApi.V1;
 
 namespace Market.Gateways.Tinvest;

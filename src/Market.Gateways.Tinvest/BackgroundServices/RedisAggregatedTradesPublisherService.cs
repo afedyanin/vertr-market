@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Market.ApiClient.Models;
+using Market.Contracts.Models;
 using MessagePack;
 using StackExchange.Redis;
 

@@ -1,4 +1,4 @@
-﻿using Market.ApiClient.Models;
+﻿using Market.Contracts.Models;
 using NBomber.Contracts;
 using NBomber.CSharp;
 

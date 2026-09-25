@@ -1,4 +1,4 @@
-﻿using Market.ApiClient.Models;
+﻿using Market.Contracts.Models;
 
 namespace Market.Core.Extensions;
 

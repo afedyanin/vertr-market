@@ -1,4 +1,4 @@
-﻿using Market.ApiClient.Models;
+﻿using Market.Contracts.Models;
 using MessagePack;
 using StackExchange.Redis;
 

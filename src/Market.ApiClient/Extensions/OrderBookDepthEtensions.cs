@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
-using Market.ApiClient.Models;
+using Market.Contracts.Models;
 
-namespace Market.ApiClient.Extensions;
+namespace Market.Contracts.Extensions;
 
 public static class OrderBookDepthEtensions
 {

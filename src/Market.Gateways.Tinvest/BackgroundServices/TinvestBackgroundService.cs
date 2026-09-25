@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
-using Market.ApiClient.Models;
+using Market.Contracts.Models;
 using Market.Core;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
@@ -19,7 +19,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
     private readonly Channel<OrderBookDepth> _marketDepthChannel;
     private readonly Channel<TradeTick> _tradesChannel;
-    private readonly Channel<ApiClient.Models.Candle> _barChannel;
+    private readonly Channel<Contracts.Models.Candle> _barChannel;
 
     private readonly MarketDataAggregator _marketDataAggregator;
 
@@ -42,7 +42,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
         });
 
         // Общий канал аггрегированных трейдов. Сообщения читаются в RedisPublisher
-        this._barChannel = serviceProvider.GetRequiredService<Channel<ApiClient.Models.Candle>>();
+        this._barChannel = serviceProvider.GetRequiredService<Channel<Contracts.Models.Candle>>();
 
         // Общий канал стаканов. Сообщения читаются в RedisPublisher
         _marketDepthChannel = serviceProvider.GetRequiredService<Channel<OrderBookDepth>>();

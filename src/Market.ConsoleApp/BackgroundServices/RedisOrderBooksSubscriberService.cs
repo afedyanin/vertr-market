@@ -1,9 +1,9 @@
-﻿using Market.ApiClient.Models;
-using MessagePack;
+﻿using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using Market.ApiClient.Extensions;
+using Market.Contracts.Models;
+using Market.Contracts.Extensions;
 
 namespace Market.ConsoleApp.BackgroundServices;
 

@@ -1,4 +1,4 @@
-﻿namespace Market.ApiClient.Models;
+﻿namespace Market.Contracts.Models;
 
 public partial record TradeTick(
     DateTime Timestamp,
