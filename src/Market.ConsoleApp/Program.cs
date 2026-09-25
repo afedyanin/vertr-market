@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using StackExchange.Redis;
 
 namespace Market.ConsoleApp;
 
@@ -34,6 +35,9 @@ internal static class Program
 
             builder.ConfigureServices((context, services) =>
             {
+                // Redis consumers
+                var redisConnectionString = configuration.GetConnectionString("Redis");
+                services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
                 services.AddHostedService<RedisOrderBooksSubscriberService>();
             });
 

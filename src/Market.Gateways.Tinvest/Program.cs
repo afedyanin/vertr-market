@@ -60,17 +60,6 @@ public static class Program
         builder.Services.AddHostedService<RedisAggregatedTradesPublisherService>();
         builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
 
-        /*
-        builder.Services.AddRefitClient<IMarketRestApiClient>()
-            .ConfigureHttpClient((serviceProvider, client) =>
-            {
-                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-                var baseAddress = configuration["MarketApiSettings:BaseUrl"];
-
-                client.BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
-            });
-        */
-
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
