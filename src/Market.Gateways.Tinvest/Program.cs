@@ -33,6 +33,7 @@ public static class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
+        // Channels
         var barChannel = Channel.CreateUnbounded<TimeQuant>(new UnboundedChannelOptions
         {
             SingleReader = true, // Если индикаторы считает один поток
@@ -40,6 +41,7 @@ public static class Program
         });
 
         builder.Services.AddSingleton(barChannel);
+        builder.Services.AddSingleton(TimeProvider.System);
 
         var marketDepthChannel = Channel.CreateBounded<MarketDepthDto>(new BoundedChannelOptions(10000)
         {
@@ -60,8 +62,8 @@ public static class Program
         builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
 
         // Redis publishers
-        builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect("localhost:6379"));
-        builder.Services.AddSingleton(TimeProvider.System);
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
         builder.Services.AddHostedService<RedisAggregatedTradesPublisherService>();
         builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
 
