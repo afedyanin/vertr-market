@@ -1,11 +1,11 @@
 
 using System.Threading.Channels;
 using Market.ApiClient;
+using Market.ApiClient.Dtos;
 using Market.Core.Models;
 using Market.Gateways.Tinvest.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using Refit;
 using Serilog;
 using StackExchange.Redis;
 using Tinkoff.InvestApi;
@@ -33,9 +33,6 @@ public static class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
-        builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect("localhost:6379"));
-        builder.Services.AddSingleton(TimeProvider.System);
-
         var barChannel = Channel.CreateUnbounded<TimeQuant>(new UnboundedChannelOptions
         {
             SingleReader = true, // Если индикаторы считает один поток
@@ -43,6 +40,15 @@ public static class Program
         });
 
         builder.Services.AddSingleton(barChannel);
+
+        var marketDepthChannel = Channel.CreateBounded<MarketDepthDto>(new BoundedChannelOptions(10000)
+        {
+            SingleWriter = true, // Писать в канал будет только gRPC поток
+            SingleReader = true, // Читать будет один фоновый воркер записи
+            FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый стакан
+        });
+
+        builder.Services.AddSingleton(marketDepthChannel);
 
         // Add Tinvest API
         builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));
@@ -53,6 +59,13 @@ public static class Program
         configuration.GetSection("MarketApiSettings").Bind(settings);
         builder.Services.AddOptions<MarketApiSettings>().BindConfiguration(nameof(MarketApiSettings));
 
+        // Redis publishers
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect("localhost:6379"));
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddHostedService<RedisAggregatedTradesPublisherService>();
+        builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
+
+        /*
         builder.Services.AddRefitClient<IMarketRestApiClient>()
             .ConfigureHttpClient((serviceProvider, client) =>
             {
@@ -61,6 +74,7 @@ public static class Program
 
                 client.BaseAddress = new Uri(baseAddress ?? throw new InvalidOperationException("Market API BaseUrl is not configured."));
             });
+        */
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

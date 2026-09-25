@@ -1,6 +1,5 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
-using Market.ApiClient;
 using Market.ApiClient.Dtos;
 using Market.Core;
 using Market.Core.Models;
@@ -12,13 +11,9 @@ namespace Market.Gateways.Tinvest.BackgroundServices;
 
 internal sealed class TinvestBackgroundService : BackgroundService
 {
-    private static readonly TimeSpan DicreteInterval = TimeSpan.FromMilliseconds(10_000);
-
     private readonly ILogger<TinvestBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IMarketRestApiClient _restApiClient;
     private readonly TinvestSettings _tinvestSettings;
-
     private readonly string _serviceName;
 
     private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
@@ -39,13 +34,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
         _logger = logger;
         _serviceName = GetType().Name;
 
-        _marketDepthChannel = Channel.CreateBounded<MarketDepthDto>(new BoundedChannelOptions(10000)
-        {
-            SingleWriter = true, // Писать в канал будет только gRPC поток
-            SingleReader = true, // Читать будет один фоновый воркер записи
-            FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый стакан
-        });
-
+        // Приватный канал неаггрегированных трейдов. Соообщения обрабатываются через _marketDataAggregator
         _tradesChannel = Channel.CreateBounded<TradeTickDto>(new BoundedChannelOptions(10000)
         {
             SingleWriter = true, // Писать в канал будет только gRPC поток
@@ -53,14 +42,16 @@ internal sealed class TinvestBackgroundService : BackgroundService
             FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый трейд
         });
 
-
-        _restApiClient = _serviceProvider.GetRequiredService<IMarketRestApiClient>();
-
+        // Общий канал аггрегированных трейдов. Сообщения читаются в RedisPublisher
         _barChannel = serviceProvider.GetRequiredService<Channel<TimeQuant>>();
 
+        // Общий канал стаканов. Сообщения читаются в RedisPublisher
+        _marketDepthChannel = serviceProvider.GetRequiredService<Channel<MarketDepthDto>>();
+
+        // Аггрегатор трейов в бары
         _marketDataAggregator = new MarketDataAggregator(
             TimeProvider.System,
-            DicreteInterval,
+            _tinvestSettings.TradeAggergationInterval,
             _barChannel.Writer);
     }
 
@@ -72,15 +63,13 @@ internal sealed class TinvestBackgroundService : BackgroundService
             return;
         }
 
-        var orderBooksWritingTask = StartMarketDepthWritingLoopAsync();
         var tradesWritingTask = StartMarketUpdatesWritingLoopAsync();
 
         try
         {
             var timerTask = Task.Run(() => _marketDataAggregator.StartHighResolutionLoop(stoppingToken), stoppingToken);
             var consumerTask = StartConsumingLoop(stoppingToken);
-
-            await Task.WhenAll(orderBooksWritingTask, consumerTask);
+            await Task.WhenAll(timerTask, consumerTask);
         }
         catch (Exception ex)
         {
@@ -92,8 +81,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
             _marketDepthChannel.Writer.TryComplete();
             _tradesChannel.Writer.TryComplete();
-
-            await Task.WhenAll(orderBooksWritingTask, tradesWritingTask);
+            await Task.WhenAll(tradesWritingTask);
 
             _logger.LogInformation($"{_serviceName} execution completed at {DateTime.UtcNow:O}");
         }
@@ -140,30 +128,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
         }
     }
 
-    private async Task StartMarketDepthWritingLoopAsync()
-    {
-        _logger.LogInformation("Market depth writing task started...");
-
-        try
-        {
-            await foreach (var book in _marketDepthChannel.Reader.ReadAllAsync())
-            {
-                try
-                {
-                    await _restApiClient.PostBooks([book]);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Market depth writing error.");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "FATAL: Market depth writing loop crashed.");
-        }
-    }
-
     private async Task StartMarketUpdatesWritingLoopAsync()
     {
         _logger.LogInformation("Market updates writing task started...");
@@ -175,7 +139,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
                 try
                 {
                     _marketDataAggregator.ProcessTrade(trade);
-                    // await _restApiClient.PostTrades([trade]);
                 }
                 catch (Exception ex)
                 {

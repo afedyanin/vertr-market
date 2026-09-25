@@ -13,6 +13,8 @@ public class TinvestSettings
     public SubscriptionRequest[] Subscriptions { get; set; } = [];
 
     public string OutputDirectory { get; set; } = "tinvest";
+
+    public TimeSpan TradeAggergationInterval { get; set; } = TimeSpan.FromSeconds(5);
 }
 
 public record class SubscriptionRequest

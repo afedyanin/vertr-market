@@ -1,25 +1,24 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Market.Core.Models;
+using Market.ApiClient.Dtos;
 using MessagePack;
 using StackExchange.Redis;
 
 namespace Market.Gateways.Tinvest.BackgroundServices;
 
-public class RedisPublisherService : BackgroundService
+public class RedisOrderBooksPublisherService : BackgroundService
 {
-    private readonly ChannelReader<TimeQuant> _barChannel;
-    private readonly ILogger<RedisPublisherService> _logger;
+    private readonly ChannelReader<MarketDepthDto> _marketDepthChannel;
+    private readonly ILogger<RedisOrderBooksPublisherService> _logger;
     private readonly IDatabase _redisDb;
-
     private readonly ConcurrentDictionary<ushort, RedisChannel> _channelCache = new();
 
-    public RedisPublisherService(
+    public RedisOrderBooksPublisherService(
         IServiceProvider serviceProvider,
-         IConnectionMultiplexer redis,
-        ILogger<RedisPublisherService> logger)
+        IConnectionMultiplexer redis,
+        ILogger<RedisOrderBooksPublisherService> logger)
     {
-        _barChannel = serviceProvider.GetRequiredService<Channel<TimeQuant>>();
+        _marketDepthChannel = serviceProvider.GetRequiredService<Channel<MarketDepthDto>>();
         _redisDb = redis.GetDatabase();
         _logger = logger;
     }
@@ -28,11 +27,11 @@ public class RedisPublisherService : BackgroundService
     {
         try
         {
-            await foreach (var bar in _barChannel.ReadAllAsync(stoppingToken))
+            await foreach (var bar in _marketDepthChannel.ReadAllAsync(stoppingToken))
             {
                 var redisChannel = _channelCache.GetOrAdd(
                     bar.AssetId,
-                    symbol => new RedisChannel($"bars:{symbol}", RedisChannel.PatternMode.Auto));
+                    symbol => new RedisChannel($"books:{symbol}", RedisChannel.PatternMode.Auto));
 
                 await _redisDb.PublishAsync(
                     redisChannel,
