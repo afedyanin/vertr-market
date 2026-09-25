@@ -8,7 +8,7 @@ services:
     ports:
       - "7001:8080"
     networks:
-      - vertr-infrastructure_infra
+      - infra_infra
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker 
 
@@ -20,11 +20,11 @@ services:
     ports:
       - "7002:8080"
     networks:
-      - vertr-infrastructure_infra
+      - infra_infra
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker 
 
 networks:
-  vertr-infrastructure_infra:
+  infra_infra:
     external: true
     driver: bridge

@@ -61,7 +61,10 @@ public class RedisOrderBooksSubscriberService : BackgroundService
     {
         _logger.LogDebug($"Received order book for Asset: {marketDepth.AssetId} from channel: {channel}");
 
-        Console.Clear();
-        Console.Write(marketDepth.Dump());
+        if (marketDepth.AssetId == 1)
+        {
+            Console.Clear();
+            Console.Write(marketDepth.Dump());
+        }
     }
 }
