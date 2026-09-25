@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Market.ApiClient\Market.Contracts.csproj" />
+    <ProjectReference Include="..\Market.Contracts\Market.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

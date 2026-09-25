@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Market.ApiClient\Market.Contracts.csproj" />
     <ProjectReference Include="..\Market.Core\Market.Core.csproj" />
   </ItemGroup>
 
