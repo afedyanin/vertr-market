@@ -46,13 +46,13 @@ public class PairTradingStrategy
     {
         var assetXChannel = new RedisChannel($"books:{_assetX}", RedisChannel.PatternMode.Literal);
         await _subscriber.SubscribeAsync(assetXChannel,
-            (channel, value) => HadleChannelMessages(value));
+            (channel, value) => HandleChannelMessages(value));
 
         var assetYChannel = new RedisChannel($"books:{_assetY}", RedisChannel.PatternMode.Literal);
         await _subscriber.SubscribeAsync(assetYChannel,
-            (channel, value) => HadleChannelMessages(value));
+            (channel, value) => HandleChannelMessages(value));
 
-        var processingTask = ProcessQueueAsync(stoppingToken);
+        var processingTask = ProcessQueueAsync();
 
         try
         {
@@ -60,6 +60,7 @@ public class PairTradingStrategy
         }
         catch (OperationCanceledException)
         {
+            _logger.LogInformation("Stopping strategy for Assets: [{AssetX}:{AssetY}]", _assetX, _assetY);
         }
         finally
         {
@@ -71,7 +72,7 @@ public class PairTradingStrategy
         }
     }
 
-    private void HadleChannelMessages(RedisValue value)
+    private void HandleChannelMessages(RedisValue value)
     {
         try
         {
@@ -80,8 +81,7 @@ public class PairTradingStrategy
                 return;
             }
 
-            var marketDepth = MessagePackSerializer
-            .Deserialize<OrderBookDepth>(value);
+            var marketDepth = MessagePackSerializer.Deserialize<OrderBookDepth>(value);
 
             if (marketDepth is null)
             {
@@ -95,9 +95,9 @@ public class PairTradingStrategy
             _logger.LogError(ex, "Error handling channel message: {Message}", ex.Message);
         }
     }
-    private async Task ProcessQueueAsync(CancellationToken stoppingToken)
+    private async Task ProcessQueueAsync()
     {
-        await foreach (var marketDepth in _marketDataChannel.Reader.ReadAllAsync(stoppingToken))
+        await foreach (var marketDepth in _marketDataChannel.Reader.ReadAllAsync())
         {
             try
             {
@@ -116,10 +116,14 @@ public class PairTradingStrategy
                     continue;
                 }
 
-                await _redisDb.PublishAsync(
+#pragma warning disable CA1849 // Call async methods when in an async method
+#pragma warning disable MA0042 // Do not use blocking calls when the calling method is async
+                _ = _redisDb.Publish(
                     _signalsChannel,
                     MessagePackSerializer.Serialize(signal),
                     CommandFlags.FireAndForget);
+#pragma warning restore MA0042 // Do not use blocking calls when the calling method is async
+#pragma warning restore CA1849 // Call async methods when in an async method
             }
             catch (Exception ex)
             {
