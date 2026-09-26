@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using Market.Contracts.Models;
-using Market.Contracts.Extensions;
+using Market.Core.Models;
+using Market.Core.Extensions;
 
 namespace Market.ConsoleApp.BackgroundServices;
 

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Market.Contracts.Extensions;
+namespace Market.Core.Extensions;
 
 public static class DateTimeHelper
 {

@@ -1,4 +1,4 @@
-﻿namespace Market.Contracts.Models;
+﻿namespace Market.Core.Models;
 
 public record PairTradingSignal
 {

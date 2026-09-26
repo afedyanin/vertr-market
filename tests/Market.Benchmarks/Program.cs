@@ -1,4 +1,4 @@
-﻿using Market.Contracts.Models;
+﻿using Market.Core.Models;
 using NBomber.Contracts;
 using NBomber.CSharp;
 
@@ -41,16 +41,6 @@ internal static class Program
                         {
                             books[i] = generator.GenerateNext();
                         }
-
-                        /*
-                        await restClient.PostBooks(books);
-                        var saved = await restClient.GetBooks(assetId, 2);
-
-                        if (saved is null || saved.Length == 0)
-                        {
-                            return Response.Fail(message: "GET returned empty result", statusCode: "500");
-                        }
-                        */
 
                         return Response.Ok();
                     }

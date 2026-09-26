@@ -1,6 +1,6 @@
 ﻿using MessagePack;
 
-namespace Market.Contracts.Models;
+namespace Market.Core.Models;
 
 [MessagePackObject]
 public class OrderBookDepth

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Market.Contracts.Models;
+using Market.Core.Models;
 
 namespace Market.Core;
 

@@ -1,4 +1,4 @@
-﻿using Market.Contracts.Models;
+﻿using Market.Core.Models;
 
 namespace Market.Benchmarks;
 

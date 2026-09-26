@@ -1,5 +1,5 @@
-﻿using Market.Contracts.Models;
-using Market.Core.Extensions;
+﻿using Market.Core.Extensions;
+using Market.Core.Models;
 
 namespace Market.Core.PairTrading;
 

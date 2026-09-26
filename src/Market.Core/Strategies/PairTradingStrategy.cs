@@ -1,5 +1,5 @@
 ﻿using System.Threading.Channels;
-using Market.Contracts.Models;
+using Market.Core.Models;
 using Market.Core.PairTrading;
 using MessagePack;
 using Microsoft.Extensions.Logging;
