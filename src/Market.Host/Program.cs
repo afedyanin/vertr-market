@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using Market.Host.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using StackExchange.Redis;
 
 namespace Market.Host;
 
@@ -53,6 +55,13 @@ public static class Program
             .ReadFrom.Configuration(context.Configuration) // Read from appsettings.json
             .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
             .Enrich.WithThreadId());
+
+        // Redis publishers
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
+
+        // Strategies
+        builder.Services.AddHostedService<PairTradingService>();
 
         var app = builder.Build();
 
