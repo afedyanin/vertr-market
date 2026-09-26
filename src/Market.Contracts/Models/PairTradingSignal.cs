@@ -1,6 +1,6 @@
 ﻿namespace Market.Contracts.Models;
 
-public readonly struct PairTradingSignal
+public record PairTradingSignal
 {
     public double Beta { get; init; }
     public double ZScoreBuy { get; init; }
@@ -11,5 +11,5 @@ public readonly struct PairTradingSignal
     public double VwapBidY { get; init; }
     public double VolumeX { get; init; }
     public double VolumeY { get; init; }
-    public string Signal { get; init; }
+    public string Signal { get; init; } = string.Empty;
 }
