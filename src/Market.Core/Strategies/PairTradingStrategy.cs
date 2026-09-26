@@ -46,11 +46,11 @@ public class PairTradingStrategy
     {
         var assetXChannel = new RedisChannel($"books:{_assetX}", RedisChannel.PatternMode.Literal);
         await _subscriber.SubscribeAsync(assetXChannel,
-            (channel, value) => HadleChannelMessages(value, stoppingToken));
+            (channel, value) => HadleChannelMessages(value));
 
         var assetYChannel = new RedisChannel($"books:{_assetY}", RedisChannel.PatternMode.Literal);
         await _subscriber.SubscribeAsync(assetYChannel,
-            (channel, value) => HadleChannelMessages(value, stoppingToken));
+            (channel, value) => HadleChannelMessages(value));
 
         var processingTask = ProcessQueueAsync(stoppingToken);
 
@@ -71,7 +71,7 @@ public class PairTradingStrategy
         }
     }
 
-    private void HadleChannelMessages(RedisValue value, CancellationToken cancellationToken)
+    private void HadleChannelMessages(RedisValue value)
     {
         try
         {
@@ -81,7 +81,7 @@ public class PairTradingStrategy
             }
 
             var marketDepth = MessagePackSerializer
-            .Deserialize<OrderBookDepth>(value, cancellationToken: cancellationToken);
+            .Deserialize<OrderBookDepth>(value);
 
             if (marketDepth is null)
             {
@@ -118,7 +118,7 @@ public class PairTradingStrategy
 
                 await _redisDb.PublishAsync(
                     _signalsChannel,
-                    MessagePackSerializer.Serialize(signal, cancellationToken: stoppingToken),
+                    MessagePackSerializer.Serialize(signal),
                     CommandFlags.FireAndForget);
             }
             catch (Exception ex)
