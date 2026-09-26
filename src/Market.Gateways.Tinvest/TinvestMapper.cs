@@ -34,7 +34,11 @@ internal static class TinvestMapper
             );
         }
 
-        return new OrderBookDepth(assetId, bidsBuffer, asksBuffer);
+        return new OrderBookDepth(
+            orderBook.Time.ToDateTime(),
+            assetId,
+            bidsBuffer,
+            asksBuffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

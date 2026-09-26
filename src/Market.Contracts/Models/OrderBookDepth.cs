@@ -6,16 +6,24 @@ namespace Market.Contracts.Models;
 public class OrderBookDepth
 {
     [Key(0)]
-    public ushort AssetId { get; }
+    public DateTime Timestamp { get; }
 
     [Key(1)]
-    public OrderBookLevel[] Bids { get; } // Покупатели (сортировка от лучшей/высшей к худшей)
+    public ushort AssetId { get; }
 
     [Key(2)]
+    public OrderBookLevel[] Bids { get; } // Покупатели (сортировка от лучшей/высшей к худшей)
+
+    [Key(3)]
     public OrderBookLevel[] Asks { get; } // Продавцы (сортировка от лучшей/низшей к худшей)
 
-    public OrderBookDepth(ushort assetId, OrderBookLevel[] bids, OrderBookLevel[] asks)
+    public OrderBookDepth(
+        DateTime timestamp,
+        ushort assetId,
+        OrderBookLevel[] bids,
+        OrderBookLevel[] asks)
     {
+        Timestamp = timestamp;
         AssetId = assetId;
         Bids = bids;
         Asks = asks;

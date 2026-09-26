@@ -54,7 +54,7 @@ public class OrderBookDepthGenerator
             asks[i] = new OrderBookLevel(askPrice, GenerateRealisticVolume(i));
         }
 
-        return new OrderBookDepth(_assetId, bids, asks);
+        return new OrderBookDepth(DateTime.UtcNow, _assetId, bids, asks);
     }
 
     public static Dictionary<ushort, OrderBookDepthGenerator> InitGenerators(int count)

@@ -44,30 +44,13 @@ public class PairTradingStrategy
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // TODO: Limit pattern to asset X,Y only
-        var patternChannel = new RedisChannel("books:*", RedisChannel.PatternMode.Pattern);
+        var assetXChannel = new RedisChannel($"books:{_assetX}", RedisChannel.PatternMode.Literal);
+        await _subscriber.SubscribeAsync(assetXChannel,
+            (channel, value) => HadleChannelMessages(value, stoppingToken));
 
-        _logger.LogInformation($"Subscribing to channel pattern: {patternChannel}");
-
-        await _subscriber.SubscribeAsync(patternChannel, (channel, value) =>
-        {
-            try
-            {
-                if (value.IsNullOrEmpty)
-                {
-                    return;
-                }
-
-                var marketDepth = MessagePackSerializer
-                .Deserialize<OrderBookDepth>(value, cancellationToken: stoppingToken);
-
-                _marketDataChannel.Writer.TryWrite(marketDepth);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"[Redis Subscriber Error parsing message]: {ex.Message}");
-            }
-        });
+        var assetYChannel = new RedisChannel($"books:{_assetY}", RedisChannel.PatternMode.Literal);
+        await _subscriber.SubscribeAsync(assetYChannel,
+            (channel, value) => HadleChannelMessages(value, stoppingToken));
 
         var processingTask = ProcessQueueAsync(stoppingToken);
 
@@ -77,16 +60,41 @@ public class PairTradingStrategy
         }
         catch (OperationCanceledException)
         {
-            await _subscriber.UnsubscribeAsync(patternChannel);
         }
         finally
         {
+            await _subscriber.UnsubscribeAsync(assetXChannel);
+            await _subscriber.UnsubscribeAsync(assetYChannel);
+
             _marketDataChannel.Writer.Complete();
-            await _subscriber.UnsubscribeAsync(patternChannel);
             await processingTask;
         }
     }
 
+    private void HadleChannelMessages(RedisValue value, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (value.IsNullOrEmpty)
+            {
+                return;
+            }
+
+            var marketDepth = MessagePackSerializer
+            .Deserialize<OrderBookDepth>(value, cancellationToken: cancellationToken);
+
+            if (marketDepth is null)
+            {
+                return;
+            }
+
+            _marketDataChannel.Writer.TryWrite(marketDepth);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling channel message: {Message}", ex.Message);
+        }
+    }
     private async Task ProcessQueueAsync(CancellationToken stoppingToken)
     {
         await foreach (var marketDepth in _marketDataChannel.Reader.ReadAllAsync(stoppingToken))
@@ -99,12 +107,9 @@ public class PairTradingStrategy
                     continue;
                 }
 
-                // TODO: Use timestamp from OrderBook
-                var currentTimestamp = DateTime.UtcNow;
-
                 var signal = marketDepth.AssetId == _assetX
-                        ? _algo.ProcessTickX(marketDepth, currentTimestamp)
-                        : _algo.ProcessTickY(marketDepth, currentTimestamp);
+                        ? _algo.ProcessTickX(marketDepth, marketDepth.Timestamp)
+                        : _algo.ProcessTickY(marketDepth, marketDepth.Timestamp);
 
                 if (signal is null)
                 {
