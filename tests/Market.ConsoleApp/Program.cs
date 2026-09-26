@@ -38,7 +38,8 @@ internal static class Program
                 // Redis consumers
                 var redisConnectionString = configuration.GetConnectionString("Redis");
                 services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
-                services.AddHostedService<RedisOrderBooksSubscriberService>();
+                // services.AddHostedService<RedisOrderBooksSubscriberService>();
+                services.AddHostedService<RedisTradingSignalsSubscriberService>();
             });
 
             builder.UseEnvironment(environment);
