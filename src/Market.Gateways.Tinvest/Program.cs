@@ -30,16 +30,6 @@ public static class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
-        // Channels
-        var barChannel = Channel.CreateUnbounded<Candle>(new UnboundedChannelOptions
-        {
-            SingleReader = true, // Если индикаторы считает один поток
-            SingleWriter = false // Писать могут разные потоки (таймер и WebSocket-трейды)
-        });
-
-        builder.Services.AddSingleton(barChannel);
-        builder.Services.AddSingleton(TimeProvider.System);
-
         var marketDepthChannel = Channel.CreateBounded<OrderBookDepth>(new BoundedChannelOptions(10000)
         {
             SingleWriter = true, // Писать в канал будет только gRPC поток
@@ -57,7 +47,6 @@ public static class Program
         // Redis publishers
         var redisConnectionString = configuration.GetConnectionString("Redis");
         builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
-        builder.Services.AddHostedService<RedisAggregatedTradesPublisherService>();
         builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
 
         Log.Logger = new LoggerConfiguration()

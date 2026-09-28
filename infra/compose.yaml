@@ -26,17 +26,17 @@ services:
 #    volumes:
 #      - kafka-data:/var/lib/kafka/data
 
-  pgsql:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_PASSWORD: "admin"
-    restart: always        
-    volumes:
-      - pgsql-data:/var/lib/postgresql
-    networks:
-      - infra
+#  pgsql:
+#    image: postgres
+#   ports:
+#     - "5432:5432"
+#   environment:
+#     POSTGRES_PASSWORD: "admin"
+#   restart: always        
+#   volumes:
+#      - pgsql-data:/var/lib/postgresql
+#    networks:
+#      - infra
 
   redis:
     image: redis
@@ -90,21 +90,21 @@ services:
     networks:
       - infra
 
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: jaeger
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true 
-    ports:
-      - "16686:16686" # Web UI
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-    networks:
-      - infra
+#  jaeger:
+#    image: jaegertracing/all-in-one:latest
+#    container_name: jaeger
+#    environment:
+#      - COLLECTOR_OTLP_ENABLED=true 
+#    ports:
+#      - "16686:16686" # Web UI
+#      - "4317:4317"   # OTLP gRPC
+#      - "4318:4318"   # OTLP HTTP
+#    networks:
+#      - infra
 
 volumes:
-  pgsql-data:
-  kafka-data:
+#  pgsql-data:
+#  kafka-data:
   redis-data:
   redisinsight-data:
   grafana-storage:

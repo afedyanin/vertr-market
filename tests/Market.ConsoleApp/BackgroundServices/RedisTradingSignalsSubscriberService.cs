@@ -9,12 +9,12 @@ namespace Market.ConsoleApp.BackgroundServices;
 public class RedisTradingSignalsSubscriberService : BackgroundService
 {
     private readonly IConnectionMultiplexer _redis;
-    private readonly ILogger<RedisOrderBooksSubscriberService> _logger;
+    private readonly ILogger<RedisTradingSignalsSubscriberService> _logger;
     private readonly ISubscriber _subscriber;
 
     public RedisTradingSignalsSubscriberService(
         IConnectionMultiplexer redis,
-        ILogger<RedisOrderBooksSubscriberService> logger)
+        ILogger<RedisTradingSignalsSubscriberService> logger)
     {
         _redis = redis;
         _logger = logger;

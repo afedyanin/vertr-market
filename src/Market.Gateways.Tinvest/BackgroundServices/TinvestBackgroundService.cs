@@ -1,6 +1,5 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
-using Market.Core;
 using Market.Core.Models;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
@@ -18,10 +17,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
     private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
 
     private readonly Channel<OrderBookDepth> _marketDepthChannel;
-    private readonly Channel<TradeTick> _tradesChannel;
-    private readonly Channel<Core.Models.Candle> _barChannel;
-
-    private readonly MarketDataAggregator _marketDataAggregator;
 
     public TinvestBackgroundService(
         IServiceProvider serviceProvider,
@@ -32,26 +27,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
         _tinvestSettings = tinvestOptions.Value;
         _logger = logger;
         _serviceName = GetType().Name;
-
-        // Приватный канал неаггрегированных трейдов. Соообщения обрабатываются через _marketDataAggregator
-        _tradesChannel = Channel.CreateBounded<TradeTick>(new BoundedChannelOptions(10000)
-        {
-            SingleWriter = true, // Писать в канал будет только gRPC поток
-            SingleReader = true, // Читать будет один фоновый воркер записи
-            FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый трейд
-        });
-
-        // Общий канал аггрегированных трейдов. Сообщения читаются в RedisPublisher
-        this._barChannel = serviceProvider.GetRequiredService<Channel<Core.Models.Candle>>();
-
-        // Общий канал стаканов. Сообщения читаются в RedisPublisher
         _marketDepthChannel = serviceProvider.GetRequiredService<Channel<OrderBookDepth>>();
-
-        // Аггрегатор трейов в бары
-        _marketDataAggregator = new MarketDataAggregator(
-            TimeProvider.System,
-            _tinvestSettings.TradeAggergationInterval,
-            _barChannel.Writer);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,13 +38,11 @@ internal sealed class TinvestBackgroundService : BackgroundService
             return;
         }
 
-        var tradesWritingTask = StartMarketUpdatesWritingLoopAsync();
+        // var tradesWritingTask = StartMarketUpdatesWritingLoopAsync();
 
         try
         {
-            var timerTask = Task.Run(() => _marketDataAggregator.StartHighResolutionLoop(stoppingToken), stoppingToken);
-            var consumerTask = StartConsumingLoop(stoppingToken);
-            await Task.WhenAll(timerTask, consumerTask);
+            await StartConsumingLoop(stoppingToken);
         }
         catch (Exception ex)
         {
@@ -77,11 +51,7 @@ internal sealed class TinvestBackgroundService : BackgroundService
         finally
         {
             _logger.LogInformation($"Stopping token signaled. Initiating graceful shutdown for channels...");
-
             _marketDepthChannel.Writer.TryComplete();
-            _tradesChannel.Writer.TryComplete();
-            await Task.WhenAll(tradesWritingTask);
-
             _logger.LogInformation($"{_serviceName} execution completed at {DateTime.UtcNow:O}");
         }
     }
@@ -127,30 +97,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
         }
     }
 
-    private async Task StartMarketUpdatesWritingLoopAsync()
-    {
-        _logger.LogInformation("Market updates writing task started...");
-
-        try
-        {
-            await foreach (var trade in _tradesChannel.Reader.ReadAllAsync())
-            {
-                try
-                {
-                    _marketDataAggregator.ProcessTrade(trade);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Trades writing error.");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "FATAL: Market updates writing loop crashed.");
-        }
-    }
-
     private TimeSpan MultiplyDelay(TimeSpan current, TimeSpan baseValue, TimeSpan max)
     {
         // Экспоненциальное увеличение: 2с -> 4с -> 8с -> 16с -> 32с -> 60с
@@ -181,12 +127,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
             SubscriptionAction = SubscriptionAction.Subscribe,
         };
 
-        var tradesRequest = new SubscribeTradesRequest
-        {
-            SubscriptionAction = SubscriptionAction.Subscribe,
-            WithOpenInterest = true,
-        };
-
         foreach (var sub in _tinvestSettings.Subscriptions)
         {
             if (sub.Disabled)
@@ -202,18 +142,12 @@ internal sealed class TinvestBackgroundService : BackgroundService
                 OrderBookType = OrderBookType.All,
             });
 
-            tradesRequest.Instruments.Add(new TradeInstrument()
-            {
-                InstrumentId = sub.InstrumentId.ToString(),
-            });
-
             _instruments[sub.InstrumentId.ToString()] = sub.AssetId;
         }
 
         var request = new MarketDataServerSideStreamRequest()
         {
             SubscribeOrderBookRequest = orderBookRequest,
-            SubscribeTradesRequest = tradesRequest
         };
 
         using var stream = investApiClient.MarketDataStream.MarketDataServerSideStream(request, headers: null, deadline: null, stoppingToken);
@@ -276,40 +210,6 @@ internal sealed class TinvestBackgroundService : BackgroundService
 
                 _logger.LogInformation($"Order book subscriptions received: TrackingId={subs.TrackingId} Details={string.Join(',',
                     [.. all.Select(s => $"Id={s.SubscriptionId} Status={s.SubscriptionStatus} Instrument={s.InstrumentUid} Depth={s.Depth}")])}");
-                continue;
-            }
-
-            if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.Trade)
-            {
-                if (response.Trade != null)
-                {
-                    var assetId = GetAssetId(response.Trade.InstrumentUid);
-                    var dto = TinvestMapper.ToTradeTick(response.Trade, assetId);
-
-                    _tradesChannel.Writer.TryWrite(dto);
-
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        _logger.LogDebug("Trade received: {Trade}", response.Trade);
-                    }
-                }
-
-                continue;
-            }
-
-            if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.OpenInterest)
-            {
-                _logger.LogDebug("Open interest received: {OpenInterest}", response.OpenInterest);
-                continue;
-            }
-
-            if (response.PayloadCase == MarketDataResponse.PayloadOneofCase.SubscribeTradesResponse)
-            {
-                var subs = response.SubscribeTradesResponse;
-                var all = subs.TradeSubscriptions.ToArray();
-
-                _logger.LogInformation($"Trade subscriptions received: TrackingId={subs.TrackingId} Details={string.Join(',',
-                    [.. all.Select(s => $"Id={s.SubscriptionId} Status={s.SubscriptionStatus} Instrument={s.InstrumentUid} WithOpenInterest={s.WithOpenInterest}")])}");
                 continue;
             }
         }

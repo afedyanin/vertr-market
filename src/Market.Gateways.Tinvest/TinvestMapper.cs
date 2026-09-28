@@ -40,19 +40,5 @@ internal static class TinvestMapper
             bidsBuffer,
             asksBuffer);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TradeTick ToTradeTick(Trade protoTrade, ushort assetId)
-    {
-        var side = (byte)(protoTrade.Direction == TradeDirection.Sell ? 1 : 0);
-
-        return new TradeTick(
-            Timestamp: protoTrade.Time.ToDateTime(),
-            Price: protoTrade.Price,
-            Volume: (uint)protoTrade.Quantity,
-            AssetId: assetId,
-            Side: side
-        );
-    }
 }
 
