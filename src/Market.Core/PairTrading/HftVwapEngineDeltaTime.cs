@@ -131,7 +131,7 @@ public class HftVwapEngineDeltaTime
         double zScoreSell = spreadSellY_BuyX / sigma;
 
         // 5. Логика генерации сигналов
-        string signal = "HOLD";
+        string? signal = null;
 
         if (_currentPosition == PositionState.None)
         {
@@ -155,6 +155,11 @@ public class HftVwapEngineDeltaTime
         {
             signal = $"EXIT POSITION (TAKE PROFIT)";
             _currentPosition = PositionState.None;
+        }
+
+        if (signal == null)
+        {
+            return null;
         }
 
         return new PairTradingSignal
