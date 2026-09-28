@@ -79,15 +79,15 @@ public class HftVwapEngineDeltaTime
         double dt = 0;
         if (_lastEventTime != DateTime.MinValue)
         {
-            dt = (timestamp - _lastEventTime).TotalSeconds;
+            dt = (timestamp - _lastEventTime).TotalMilliseconds;
         }
 
         _lastEventTime = timestamp;
 
         // Защита от одновременных или сетевых пакетов из одной микросекунды
-        if (dt < 0.000001)
+        if (dt < 0.001)
         {
-            dt = 0.000001;
+            dt = 0.001;
         }
 
         // 2. Считаем VWAP для Актива Y на основе жестко заданного объема лота
@@ -108,8 +108,8 @@ public class HftVwapEngineDeltaTime
 
         // --- ДИНАМИЧЕСКИЙ ШТРАФ STALE DATA (Корректировка R) ---
         // Считаем, как давно обновлялся каждый из стаканов относительно текущего события
-        double timeSinceLastX = (timestamp - _lastUpdateXTime).TotalSeconds;
-        double timeSinceLastY = (timestamp - _lastUpdateYTime).TotalSeconds;
+        double timeSinceLastX = (timestamp - _lastUpdateXTime).TotalMilliseconds;
+        double timeSinceLastY = (timestamp - _lastUpdateYTime).TotalMilliseconds;
         double maxStaleTime = Math.Max(timeSinceLastX, timeSinceLastY);
 
         // Чем старее данные одного из стаканов, тем сильнее мы раздуваем RBeta для текущего шага
