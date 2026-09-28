@@ -17,6 +17,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Market.Benchmarks/Market.Benchmarks.csproj" Id="2c9cac3c-1eba-43e1-8a44-311f91f25e6c" />
     <Project Path="tests/Market.ConsoleApp/Market.ConsoleApp.csproj" />
+    <Project Path="tests/Market.Core.Tests/Market.Core.Tests.csproj" Id="d5820a11-7300-4b10-a60a-375db27e7967" />
     <Project Path="tests/Market.PythonApp/Market.PythonApp.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="ab834bed-067d-4788-b3e4-e3ca7ace155e">
       <Build Project="false" />
     </Project>

@@ -1,4 +1,4 @@
-﻿namespace Market.Core.PairTrading;
+﻿namespace Market.Core.Algos.PairTrading;
 
 /// <summary>
 /// Движок парного трейдинга на базе Фильтра Калмана с расчетом Z-Score

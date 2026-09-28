@@ -1,4 +1,5 @@
 ﻿using Market.ConsoleApp.BackgroundServices;
+using Market.Core.Algos.PairTrading;
 using Market.Core.Models;
 using Market.Core.PairTrading;
 using Microsoft.Extensions.Configuration;
@@ -58,55 +59,6 @@ internal static class Program
         finally
         {
             await Log.CloseAndFlushAsync();
-        }
-    }
-
-    static void KalmanFilterEstimatrSample()
-    {
-        // Симулируем цены двух коинтегрированных активов (например, BTC и ETH)
-        // АssetY в среднем в 1.5 раза дороже AssetX + шум
-        double[] assetX = { 100, 101, 100, 102, 104, 103, 105, 106, 104, 105 };
-        double[] assetY = { 150, 152, 149, 153, 155, 156, 158, 159, 155, 157 };
-
-        // Инициализация фильтра Калмана для оценки беты
-        // Начальное предположение: Beta = 1.0, Ковариация ошибки = 1.0
-        KalmanFilterEstimator kalman = new KalmanFilterEstimator(initialState: 1.0, initialErrorCovariance: 1.0);
-
-        Console.WriteLine("Шаг\tЦена X\tЦена Y\tДинамическая Beta\tСпред (Spread)");
-        Console.WriteLine("----------------------------------------------------------------------");
-
-        for (int i = 0; i < assetX.Length; i++)
-        {
-            double x = assetX[i];
-            double y = assetY[i];
-
-            // Обновляем фильтр текущими ценами и получаем новую бету
-            double currentBeta = kalman.Update(x, y);
-
-            // Расчет текущего спреда: Y - Beta * X
-            double spread = y - (currentBeta * x);
-
-            Console.WriteLine($"{i + 1}\t{x:F1}\t{y:F1}\t{currentBeta:F4}\t\t{spread:F4}");
-        }
-    }
-
-    static void KalmanPairsEngineSample()
-    {
-        // Симулируем цены: в середине массив содержит аномальное расширение спреда
-        double[] assetX = { 100, 101, 100, 102, 101, 102, 103, 104, 103, 102 };
-        double[] assetY = { 150, 152, 149, 153, 162, 164, 155, 156, 154, 153 }; // На шагах 5 и 6 искусственный выброс вверх
-
-        // Инициализируем робота
-        var tradingEngine = new KalmanPairsEngine(initialBeta: 1.5);
-
-        Console.WriteLine("Шаг\tЦена X\tЦена Y\tBeta\tСпред\tZ-Score\tСигнал");
-        Console.WriteLine("----------------------------------------------------------------------");
-
-        for (int i = 0; i < assetX.Length; i++)
-        {
-            var result = tradingEngine.ProcessTick(assetX[i], assetY[i]);
-
-            Console.WriteLine($"{i + 1}\t{assetX[i]:F1}\t{assetY[i]:F1}\t{result.Beta:F3}\t{result.Spread:F2}\t{result.ZScore:F2}\t{result.Signal}");
         }
     }
 
