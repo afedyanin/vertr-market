@@ -1,4 +1,5 @@
-﻿using System.Threading.Channels;
+﻿using System.Text.Json;
+using System.Threading.Channels;
 using Market.Core.Models;
 using Market.Core.PairTrading;
 using MessagePack;
@@ -120,7 +121,7 @@ public class PairTradingStrategy
 #pragma warning disable MA0042 // Do not use blocking calls when the calling method is async
                 _ = _redisDb.Publish(
                     _signalsChannel,
-                    MessagePackSerializer.Serialize(signal),
+                    JsonSerializer.Serialize(signal),
                     CommandFlags.FireAndForget);
 #pragma warning restore MA0042 // Do not use blocking calls when the calling method is async
 #pragma warning restore CA1849 // Call async methods when in an async method

@@ -1,5 +1,4 @@
 ﻿using Market.ConsoleApp.BackgroundServices;
-using Market.Core.Algos.PairTrading;
 using Market.Core.Models;
 using Market.Core.PairTrading;
 using Microsoft.Extensions.Configuration;
