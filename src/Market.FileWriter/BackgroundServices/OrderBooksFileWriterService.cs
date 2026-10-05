@@ -93,11 +93,11 @@ public class OrderBooksFileWriterService : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Запись файлов остановлена по токену отмены.");
+            _logger.LogInformation("Order book file writer service cancelled.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Критическая ошибка в процессе записи OrderBook в файлы.");
+            _logger.LogError(ex, "OrderBook file writing error. Message={Message}", ex.Message);
         }
         finally
         {
@@ -110,7 +110,7 @@ public class OrderBooksFileWriterService : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Не удалось сбросить финальный батч при закрытии.");
+                    _logger.LogError(ex, "Flash batch error. Message={Message}", ex.Message);
                 }
             }
 
@@ -134,7 +134,7 @@ public class OrderBooksFileWriterService : BackgroundService
             // Формируем имя файла вида: logs/books_2026-10-05.bin.gz
             string filePath = Path.Combine(BaseDirectory, $"books_{today:yyyy-MM-dd}.bin.gz");
 
-            _logger.LogInformation("Открытие нового файла для записи: {FilePath}", filePath);
+            _logger.LogInformation("Open file to write: {FilePath}", filePath);
 
             // Открываем потоки для нового дня
             _fileStream = new FileStream(
@@ -163,7 +163,7 @@ public class OrderBooksFileWriterService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при асинхронном закрытии GZipStream.");
+                _logger.LogError(ex, "GZipStream error. Message={Message}", ex.Message);
             }
             finally
             {
@@ -180,7 +180,7 @@ public class OrderBooksFileWriterService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при асинхронном закрытии FileStream.");
+                _logger.LogError(ex, "FileStream error. Message={Message}", ex.Message);
             }
             finally
             {

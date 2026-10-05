@@ -5,6 +5,7 @@ using Market.Core.Models;
 using Market.Core.PairTrading;
 using Market.Core.Strategies;
 using Market.Host.BackgroundServices;
+using Market.Infrastructure.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -79,8 +80,10 @@ public static class Program
             return strategy;
         });
 
-        // Strategies
+        // Hosted services
         builder.Services.AddHostedService<PairTradingStrategyService>();
+        builder.Services.AddHostedService<RedisOrderBooksSubscriberService>();
+        builder.Services.AddHostedService<RedisTradingSignalsPublisherService>();
 
         var app = builder.Build();
 

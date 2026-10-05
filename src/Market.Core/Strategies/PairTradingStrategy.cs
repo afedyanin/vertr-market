@@ -54,7 +54,7 @@ public class PairTradingStrategy
                         continue;
                     }
 
-                    _logger.LogDebug("Sending signal: {Signal}.", signal);
+                    _logger.LogInformation("Sending signal: {Signal}.", signal);
                     _writer.TryWrite(signal);
                 }
             }
