@@ -1,4 +1,6 @@
-﻿using Market.FileWriter.BackgroundServices;
+﻿using System.Threading.Channels;
+using Market.Core.Models;
+using Market.FileWriter.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,6 +39,21 @@ public static class Program
                 var redisConnectionString = configuration.GetConnectionString("Redis");
                 services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
                 services.AddHostedService<RedisOrderBooksSubscriberService>();
+
+
+                // Order Book Channel
+                var channelOptions = new BoundedChannelOptions(capacity: 10000)
+                {
+                    FullMode = BoundedChannelFullMode.DropOldest, // Или Wait, если нельзя терять данные
+                    SingleWriter = true,  // Подписка Redis работает в один поток на обработчик
+                    SingleReader = true   // Наш фоновый метод чтения файла тоже один
+                };
+
+                var channel = Channel.CreateBounded<OrderBookDepth>(channelOptions);
+                services.AddSingleton<Channel<OrderBookDepth>>();
+
+                services.AddHostedService<OrderBookFileWriterService>();
+
             });
 
             builder.UseEnvironment(environment);
