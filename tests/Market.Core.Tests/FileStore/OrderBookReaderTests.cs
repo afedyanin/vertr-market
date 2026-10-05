@@ -7,7 +7,7 @@ namespace Market.Core.Tests.FileStore;
 [TestFixture(Category = "Integration")]
 internal sealed class OrderBookReaderTests
 {
-    [TestCase("Data\\1_2026-10-05_books.bin.gz")]
+    [TestCase("Data\\books_2026-10-05.bin.gz")]
     public async Task CanReadMarketDepthBatchFromFile(string filePath)
     {
         using var cts = new CancellationTokenSource();

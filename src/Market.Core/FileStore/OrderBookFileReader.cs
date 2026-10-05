@@ -18,8 +18,17 @@ public static class OrderBookFileReader
 
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false) is ReadOnlySequence<byte> sequence)
         {
-            var book = MessagePackSerializer.Deserialize<OrderBookDepth>(sequence, cancellationToken: cancellationToken);
-            yield return book;
+            var batch = MessagePackSerializer.Deserialize<List<OrderBookDepth>>(sequence, cancellationToken: cancellationToken);
+
+            foreach (var book in batch)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    yield break;
+                }
+
+                yield return book;
+            }
         }
     }
 }
