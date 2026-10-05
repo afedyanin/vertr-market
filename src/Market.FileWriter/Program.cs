@@ -49,11 +49,8 @@ public static class Program
                     SingleReader = true   // Наш фоновый метод чтения файла тоже один
                 };
 
-                var channel = Channel.CreateBounded<OrderBookDepth>(channelOptions);
-                services.AddSingleton<Channel<OrderBookDepth>>();
-
-                services.AddHostedService<OrderBookFileWriterService>();
-
+                services.AddSingleton(sp => Channel.CreateBounded<OrderBookDepth>(channelOptions));
+                services.AddHostedService<OrderBooksFileWriterService>();
             });
 
             builder.UseEnvironment(environment);
