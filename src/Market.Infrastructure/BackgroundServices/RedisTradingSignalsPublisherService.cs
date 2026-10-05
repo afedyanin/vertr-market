@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Threading.Channels;
 using Market.Core.Models;
-using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -39,7 +39,7 @@ public class RedisTradingSignalsPublisherService : BackgroundService
 
                 await _redisDb.PublishAsync(
                     redisChannel,
-                    MessagePackSerializer.Serialize(signal, cancellationToken: stoppingToken),
+                    JsonSerializer.Serialize(signal),
                     CommandFlags.FireAndForget);
             }
         }

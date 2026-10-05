@@ -39,6 +39,8 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
     private DateTime _lastEventTime = DateTime.MinValue;
     private DateTime _lastUpdateXTime = DateTime.MinValue;
     private DateTime _lastUpdateYTime = DateTime.MinValue;
+    private ushort _assetX;
+    private ushort _assetY;
 
     public HftVwapEngineDeltaTime(double initialBeta = 1.0, double tradeVolumeY = 1.0)
     {
@@ -51,6 +53,7 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
     /// </summary>
     public PairTradingSignal? ProcessTickX(OrderBookDepth depthX)
     {
+        _assetX = depthX.AssetId;
         _lastDepthX = depthX;
         _lastUpdateXTime = depthX.Timestamp;
         return ProcessTick(depthX.Timestamp);
@@ -61,6 +64,7 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
     /// </summary>
     public PairTradingSignal? ProcessTickY(OrderBookDepth depthY)
     {
+        _assetY = depthY.AssetId;
         _lastDepthY = depthY;
         _lastUpdateYTime = depthY.Timestamp;
         return ProcessTick(depthY.Timestamp);
@@ -85,9 +89,9 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
         _lastEventTime = timestamp;
 
         // Защита от одновременных или сетевых пакетов из одной микросекунды
-        if (dt < 0.001)
+        if (dt < 0.000001)
         {
-            dt = 0.001;
+            dt = 0.000001;
         }
 
         // 2. Считаем VWAP для Актива Y на основе жестко заданного объема лота
@@ -135,15 +139,20 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
 
         if (_currentPosition == PositionState.None)
         {
-            if (zScoreSell > 2.0)
+            if (zScoreBuy > 1.0)
             {
                 signal = $"EXECUTE SHORT Y (VWAP: {vwapBidY:F2}) / LONG X (VWAP: {vwapAskX:F2})";
                 _currentPosition = PositionState.ShortY_LongX;
             }
-            else if (zScoreBuy < -2.0)
+            else if (zScoreSell < -1.0)
             {
                 signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
                 _currentPosition = PositionState.LongY_ShortX;
+            }
+            else
+            {
+                //signal = "HOLD";
+                signal = null;
             }
         }
         else if (_currentPosition == PositionState.ShortY_LongX && zScoreBuy <= 0.2)
@@ -173,7 +182,9 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
             VwapBidY = vwapBidY,
             VolumeX = requiredVolumeX,
             VolumeY = _tradeVolumeY,
-            Signal = signal
+            Signal = signal,
+            AssetX = _assetX,
+            AssetY = _assetY,
         };
     }
 }

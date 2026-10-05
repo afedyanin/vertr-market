@@ -1,6 +1,6 @@
-﻿using System.Threading.Channels;
+﻿using System.Text.Json;
+using System.Threading.Channels;
 using Market.Core.Models;
-using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -33,13 +33,13 @@ public class RedisTradingSignalsSubscriberService : BackgroundService
         {
             try
             {
-                if (value.IsNullOrEmpty)
+                if (!value.HasValue)
                 {
                     return;
                 }
 
-                var signal = MessagePackSerializer.Deserialize<PairTradingSignal>(value, cancellationToken: stoppingToken);
-                _writer.TryWrite(signal);
+                var signal = JsonSerializer.Deserialize<PairTradingSignal>((string)value!);
+                _writer.TryWrite(signal!);
             }
             catch (Exception ex)
             {

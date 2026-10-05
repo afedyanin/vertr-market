@@ -31,7 +31,7 @@ public class PairTradingStrategy
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Order Book Pair Trading Strategy started.");
+        _logger.LogInformation($"Order Book Pair Trading Strategy started. AssetX={_assetX} AssetY={_assetY}");
 
         try
         {
