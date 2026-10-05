@@ -1,6 +1,7 @@
 ﻿using System.Threading.Channels;
 using Market.Core.Models;
 using Market.FileWriter.BackgroundServices;
+using Market.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,8 +39,6 @@ public static class Program
                 // Redis consumers
                 var redisConnectionString = configuration.GetConnectionString("Redis");
                 services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
-                services.AddHostedService<RedisOrderBooksSubscriberService>();
-
 
                 // Order Book Channel
                 var channelOptions = new BoundedChannelOptions(capacity: 10000)
@@ -50,6 +49,9 @@ public static class Program
                 };
 
                 services.AddSingleton(sp => Channel.CreateBounded<OrderBookDepth>(channelOptions));
+
+                // Hosted services
+                services.AddHostedService<RedisOrderBooksSubscriberService>();
                 services.AddHostedService<OrderBooksFileWriterService>();
             });
 

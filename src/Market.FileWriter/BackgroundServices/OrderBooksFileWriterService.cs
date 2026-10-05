@@ -11,7 +11,7 @@ public class OrderBooksFileWriterService : BackgroundService
 {
     private const int BatchSize = 1000;
     private static readonly TimeSpan BatchTimeout = TimeSpan.FromSeconds(5);
-    private const string BaseDirectory = "books"; // Папка для логов
+    private const string BaseDirectory = "books";
 
     private readonly ChannelReader<OrderBookDepth> _reader;
     private readonly ILogger<OrderBooksFileWriterService> _logger;
@@ -23,10 +23,10 @@ public class OrderBooksFileWriterService : BackgroundService
 
     public OrderBooksFileWriterService(
         Channel<OrderBookDepth> channel,
-        ILogger<OrderBooksFileWriterService> logger)
+        ILoggerFactory loggerFacrtory)
     {
         _reader = channel.Reader;
-        _logger = logger;
+        _logger = loggerFacrtory.CreateLogger<OrderBooksFileWriterService>();
 
         // Создаем директорию, если её нет
         if (!Directory.Exists(BaseDirectory))

@@ -21,7 +21,7 @@ namespace Market.Core.PairTrading;
 и накладывает штраф за "устаревание" данных на RBeta.
 */
 
-public class HftVwapEngineDeltaTime
+public class HftVwapEngineDeltaTime : IPairTradingAlgo
 {
     private double _beta;
     private double _pBeta = 1.0;
@@ -49,21 +49,21 @@ public class HftVwapEngineDeltaTime
     /// <summary>
     /// Вызывается асинхронно при обновлении стакана инструмента X
     /// </summary>
-    public PairTradingSignal? ProcessTickX(OrderBookDepth depthX, DateTime timestamp)
+    public PairTradingSignal? ProcessTickX(OrderBookDepth depthX)
     {
         _lastDepthX = depthX;
-        _lastUpdateXTime = timestamp;
-        return ProcessTick(timestamp);
+        _lastUpdateXTime = depthX.Timestamp;
+        return ProcessTick(depthX.Timestamp);
     }
 
     /// <summary>
     /// Вызывается асинхронно при обновлении стакана инструмента Y
     /// </summary>
-    public PairTradingSignal? ProcessTickY(OrderBookDepth depthY, DateTime timestamp)
+    public PairTradingSignal? ProcessTickY(OrderBookDepth depthY)
     {
         _lastDepthY = depthY;
-        _lastUpdateYTime = timestamp;
-        return ProcessTick(timestamp);
+        _lastUpdateYTime = depthY.Timestamp;
+        return ProcessTick(depthY.Timestamp);
     }
 
     private PairTradingSignal? ProcessTick(DateTime timestamp)

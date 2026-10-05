@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using Market.Core.Models;
 using Market.Gateways.Tinvest.BackgroundServices;
+using Market.Infrastructure.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Serilog;

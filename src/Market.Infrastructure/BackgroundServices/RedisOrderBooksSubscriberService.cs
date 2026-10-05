@@ -5,25 +5,22 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace Market.FileWriter.BackgroundServices;
+namespace Market.Infrastructure.BackgroundServices;
 
 public class RedisOrderBooksSubscriberService : BackgroundService
 {
-    private readonly IConnectionMultiplexer _redis;
-    private readonly ILogger<RedisOrderBooksSubscriberService> _logger;
     private readonly ISubscriber _subscriber;
-
-    private readonly Channel<OrderBookDepth> _channel;
+    private readonly ChannelWriter<OrderBookDepth> _writer;
+    private readonly ILogger<RedisOrderBooksSubscriberService> _logger;
 
     public RedisOrderBooksSubscriberService(
         IConnectionMultiplexer redis,
         Channel<OrderBookDepth> channel,
-        ILogger<RedisOrderBooksSubscriberService> logger)
+        ILoggerFactory loggerFactory)
     {
-        _redis = redis;
-        _logger = logger;
-        _subscriber = _redis.GetSubscriber();
-        _channel = channel;
+        _subscriber = redis.GetSubscriber();
+        _writer = channel.Writer;
+        _logger = loggerFactory.CreateLogger<RedisOrderBooksSubscriberService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -32,7 +29,7 @@ public class RedisOrderBooksSubscriberService : BackgroundService
 
         _logger.LogInformation($"Subscribing to channel pattern: {patternChannel}");
 
-        await _redis.GetSubscriber().SubscribeAsync(patternChannel, (channel, value) =>
+        await _subscriber.SubscribeAsync(patternChannel, (channel, value) =>
         {
             try
             {
@@ -42,11 +39,11 @@ public class RedisOrderBooksSubscriberService : BackgroundService
                 }
 
                 var orderBook = MessagePackSerializer.Deserialize<OrderBookDepth>(value, cancellationToken: stoppingToken);
-                _channel.Writer.TryWrite(orderBook);
+                _writer.TryWrite(orderBook);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[Redis Subscriber Error parsing message]: {ex.Message}");
+                _logger.LogError(ex, "Redis order books subscriber error. Message={Message}", ex.Message);
             }
         });
 
@@ -56,7 +53,7 @@ public class RedisOrderBooksSubscriberService : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Unsubscribing from Redis channels...");
+            _logger.LogInformation("Unsubscribing from order books redis channel...");
             await _subscriber.UnsubscribeAsync(patternChannel);
         }
     }

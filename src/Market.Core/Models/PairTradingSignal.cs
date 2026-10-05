@@ -34,4 +34,10 @@ public record PairTradingSignal
 
     [Key(9)]
     public string Signal { get; set; } = string.Empty;
+
+    [Key(10)]
+    public ushort AssetX { get; set; }
+
+    [Key(11)]
+    public ushort AssetY { get; set; }
 }

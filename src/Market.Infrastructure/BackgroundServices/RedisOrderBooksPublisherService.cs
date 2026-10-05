@@ -2,32 +2,36 @@
 using System.Threading.Channels;
 using Market.Core.Models;
 using MessagePack;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace Market.Gateways.Tinvest.BackgroundServices;
+namespace Market.Infrastructure.BackgroundServices;
 
 public class RedisOrderBooksPublisherService : BackgroundService
 {
-    private readonly ChannelReader<OrderBookDepth> _marketDepthChannel;
+    private readonly ChannelReader<OrderBookDepth> _reader;
     private readonly ILogger<RedisOrderBooksPublisherService> _logger;
     private readonly IDatabase _redisDb;
     private readonly ConcurrentDictionary<ushort, RedisChannel> _channelCache = new();
 
     public RedisOrderBooksPublisherService(
-        IServiceProvider serviceProvider,
         IConnectionMultiplexer redis,
-        ILogger<RedisOrderBooksPublisherService> logger)
+        Channel<OrderBookDepth> channel,
+        ILoggerFactory loggerFactory)
     {
-        _marketDepthChannel = serviceProvider.GetRequiredService<Channel<OrderBookDepth>>();
+        _reader = channel.Reader;
         _redisDb = redis.GetDatabase();
-        _logger = logger;
+        _logger = loggerFactory.CreateLogger<RedisOrderBooksPublisherService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("Starting order books redis publisher...");
+
         try
         {
-            await foreach (var book in _marketDepthChannel.ReadAllAsync(stoppingToken))
+            await foreach (var book in _reader.ReadAllAsync(stoppingToken))
             {
                 var redisChannel = _channelCache.GetOrAdd(
                     book.AssetId,
@@ -36,8 +40,7 @@ public class RedisOrderBooksPublisherService : BackgroundService
                 await _redisDb.PublishAsync(
                     redisChannel,
                     MessagePackSerializer.Serialize(book, cancellationToken: stoppingToken),
-                    CommandFlags.FireAndForget
-                );
+                    CommandFlags.FireAndForget);
             }
         }
         catch (OperationCanceledException)
@@ -45,7 +48,9 @@ public class RedisOrderBooksPublisherService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"[Redis Publisher Error]: {ex.Message}");
+            _logger.LogError(ex, "Order books redis publisher error. Message={Message}", ex.Message);
         }
+
+        _logger.LogInformation("Order books redis publisher stopped.");
     }
 }

@@ -14,6 +14,7 @@
     <Project Path="src/Market.FileWriter/Market.FileWriter.csproj" Id="612a2849-9549-4137-aed0-bade6a27f57d" />
     <Project Path="src/Market.Gateways.Tinvest/Market.Gateways.Tinvest.csproj" Id="cfb503f7-4d8a-4a0a-9e06-9dffc24fad02" />
     <Project Path="src/Market.Host/Market.Host.csproj" />
+    <Project Path="src/Market.Infrastructure/Market.Infrastructure.csproj" Id="6372b09d-f724-404b-a277-6b8e9da0b388" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Market.Benchmarks/Market.Benchmarks.csproj" Id="2c9cac3c-1eba-43e1-8a44-311f91f25e6c" />

@@ -1,24 +1,26 @@
-﻿using MessagePack;
+﻿using System.Threading.Channels;
+using Market.Core.Models;
+using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using Market.Core.Models;
 
-namespace Market.ConsoleApp.BackgroundServices;
+namespace Market.Infrastructure.BackgroundServices;
 
 public class RedisTradingSignalsSubscriberService : BackgroundService
 {
-    private readonly IConnectionMultiplexer _redis;
-    private readonly ILogger<RedisTradingSignalsSubscriberService> _logger;
     private readonly ISubscriber _subscriber;
+    private readonly ChannelWriter<PairTradingSignal> _writer;
+    private readonly ILogger<RedisTradingSignalsSubscriberService> _logger;
 
     public RedisTradingSignalsSubscriberService(
         IConnectionMultiplexer redis,
-        ILogger<RedisTradingSignalsSubscriberService> logger)
+        Channel<PairTradingSignal> channel,
+        ILoggerFactory loggerFactory)
     {
-        _redis = redis;
-        _logger = logger;
-        _subscriber = _redis.GetSubscriber();
+        _subscriber = redis.GetSubscriber();
+        _writer = channel.Writer;
+        _logger = loggerFactory.CreateLogger<RedisTradingSignalsSubscriberService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -37,11 +39,11 @@ public class RedisTradingSignalsSubscriberService : BackgroundService
                 }
 
                 var signal = MessagePackSerializer.Deserialize<PairTradingSignal>(value, cancellationToken: stoppingToken);
-                ProcessSignal(channel, signal);
+                _writer.TryWrite(signal);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[Redis Subscriber Error parsing message]: {ex.Message}");
+                _logger.LogError(ex, "Redis trading signals subscriber error. Message={Message}", ex.Message);
             }
         });
 
@@ -54,17 +56,5 @@ public class RedisTradingSignalsSubscriberService : BackgroundService
             _logger.LogInformation("Unsubscribing from Redis channels...");
             await _subscriber.UnsubscribeAsync(patternChannel);
         }
-    }
-
-    private void ProcessSignal(RedisChannel channel, PairTradingSignal signal)
-    {
-        _logger.LogDebug($"Received trading signal: {signal.Signal} from channel: {channel}");
-
-        if (signal.Signal.Equals("HOLD", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        _logger.LogInformation($"Signal details: {signal}");
     }
 }

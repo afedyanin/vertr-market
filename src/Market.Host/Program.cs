@@ -1,5 +1,9 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Threading.Channels;
+using Market.Core.Models;
+using Market.Core.PairTrading;
+using Market.Core.Strategies;
 using Market.Host.BackgroundServices;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -56,12 +60,27 @@ public static class Program
             .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
             .Enrich.WithThreadId());
 
-        // Redis publishers
+        // Redis
         var redisConnectionString = configuration.GetConnectionString("Redis");
         builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
 
+        // Channels
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>());
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<PairTradingSignal>());
+
+        // Strategy
+        builder.Services.AddTransient(sp =>
+        {
+            var algo = new HftVwapEngineDeltaTime();
+            var strategy = new PairTradingStrategy(algo, 1, 5,
+                sp.GetRequiredService<Channel<OrderBookDepth>>(),
+                sp.GetRequiredService<Channel<PairTradingSignal>>(),
+                sp.GetRequiredService<ILoggerFactory>());
+            return strategy;
+        });
+
         // Strategies
-        builder.Services.AddHostedService<PairTradingService>();
+        builder.Services.AddHostedService<PairTradingStrategyService>();
 
         var app = builder.Build();
 

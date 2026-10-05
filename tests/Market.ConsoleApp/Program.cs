@@ -1,6 +1,8 @@
-﻿using Market.ConsoleApp.BackgroundServices;
+﻿using System.Threading.Channels;
+using Market.ConsoleApp.BackgroundServices;
 using Market.Core.Models;
 using Market.Core.PairTrading;
+using Market.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,8 +40,15 @@ internal static class Program
                 // Redis consumers
                 var redisConnectionString = configuration.GetConnectionString("Redis");
                 services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
-                // services.AddHostedService<RedisOrderBooksSubscriberService>();
-                services.AddHostedService<RedisTradingSignalsSubscriberService>();
+
+                // Hosted Service
+                services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>());
+                services.AddHostedService<RedisOrderBooksSubscriberService>();
+                services.AddHostedService<DumpOrderBooksService>();
+
+                //services.AddSingleton(sp => Channel.CreateUnbounded<PairTradingSignal>());
+                //services.AddHostedService<RedisTradingSignalsPublisherService>();
+                //services.AddHostedService<DumpTradingSignalsService>();
             });
 
             builder.UseEnvironment(environment);
