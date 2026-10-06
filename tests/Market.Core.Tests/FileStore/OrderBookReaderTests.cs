@@ -27,6 +27,9 @@ internal sealed class OrderBookReaderTests
 
     private void ProcessDepth(OrderBookDepth marketDepth)
     {
-        Console.WriteLine(marketDepth.Dump());
+        if (marketDepth.AssetId == 6)
+        {
+            Console.WriteLine(marketDepth.Dump());
+        }
     }
 }

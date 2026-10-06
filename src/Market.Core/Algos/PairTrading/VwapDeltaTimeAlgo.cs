@@ -23,17 +23,15 @@ namespace Market.Core.Algos.PairTrading;
 
 public class VwapDeltaTimeAlgo : PairTradingAlgoBase
 {
+    // Калман 1: Оценка беты активов
     private double _beta;
     private double _pBeta = 1.0;
 
-    // В HFT-моделях Q и R задаются на единицу времени (в секунду), а не на шаг!
-    private const double QBetaPerSecond = 0.00005;
-    private const double RBetaBase = 0.01;
+    private const double QBeta = 0.00005;
+    private const double RBeta = 0.01;
 
     private readonly double _tradeVolumeY;
-    private PositionState _currentPosition = PositionState.None;
 
-    // Переменные для реализации Last Available Value и динамического dt
     private DateTime _lastEventTime = DateTime.MinValue;
 
     public VwapDeltaTimeAlgo(
@@ -56,18 +54,13 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
         }
 
         // 1. Расчет динамического шага времени (dt)
-        double dt = 0;
-        if (_lastEventTime != DateTime.MinValue)
-        {
-            dt = (timestamp - _lastEventTime).TotalMilliseconds;
-        }
-
+        var dt = _lastEventTime == DateTime.MinValue ? 0 : (timestamp - _lastEventTime).TotalSeconds;
         _lastEventTime = timestamp;
 
         // Защита от одновременных или сетевых пакетов из одной микросекунды
-        if (dt < 0.000001)
+        if (dt < 0.000_001)
         {
-            dt = 0.000001;
+            dt = 0.000_001;
         }
 
         // 2. Считаем VWAP для Актива Y на основе жестко заданного объема лота
@@ -84,16 +77,16 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
 
         // --- ШАГ ПРЕДСКАЗАНИЯ КАЛМАНА (Predict) с учетом dt ---
         // Шум процесса Q масштабируется по времени
-        _pBeta += QBetaPerSecond * dt;
+        _pBeta += QBeta * dt;
 
         // --- ДИНАМИЧЕСКИЙ ШТРАФ STALE DATA (Корректировка R) ---
         // Считаем, как давно обновлялся каждый из стаканов относительно текущего события
-        double timeSinceLastX = (timestamp - _lastUpdateXTime).TotalMilliseconds;
-        double timeSinceLastY = (timestamp - _lastUpdateYTime).TotalMilliseconds;
+        double timeSinceLastX = (timestamp - _lastUpdateXTime).TotalSeconds;
+        double timeSinceLastY = (timestamp - _lastUpdateYTime).TotalSeconds;
         double maxStaleTime = Math.Max(timeSinceLastX, timeSinceLastY);
 
         // Чем старее данные одного из стаканов, тем сильнее мы раздуваем RBeta для текущего шага
-        double rBetaDynamic = RBetaBase + (maxStaleTime * 0.05);
+        double rBetaDynamic = RBeta + (maxStaleTime * 0.05);
 
         // --- ШАГ ОБНОВЛЕНИЯ КАЛМАНА (Update) ---
         double sBeta = midVwapX * _pBeta * midVwapX + rBetaDynamic;
@@ -111,24 +104,19 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
         double zScoreSell = spreadSellY_BuyX / sigma;
 
         // 5. Логика генерации сигналов
-        string? signal = null;
+        string signal = "HOLD";
 
         if (_currentPosition == PositionState.None)
         {
-            if (zScoreBuy > 1.0)
+            if (zScoreBuy > 2.0)
             {
                 signal = $"EXECUTE SHORT Y (VWAP: {vwapBidY:F2}) / LONG X (VWAP: {vwapAskX:F2})";
                 _currentPosition = PositionState.ShortY_LongX;
             }
-            else if (zScoreSell < -1.0)
+            else if (zScoreSell < -2.0)
             {
                 signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
                 _currentPosition = PositionState.LongY_ShortX;
-            }
-            else
-            {
-                //signal = "HOLD";
-                signal = null;
             }
         }
         else if (_currentPosition == PositionState.ShortY_LongX && zScoreBuy <= 0.2)
@@ -140,11 +128,6 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
         {
             signal = $"EXIT POSITION (TAKE PROFIT)";
             _currentPosition = PositionState.None;
-        }
-
-        if (signal == null)
-        {
-            return null;
         }
 
         return new PairTradingSignal

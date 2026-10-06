@@ -64,14 +64,17 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
         if (zScore > EntryThreshold)
         {
             signal = "SHORT Y / LONG X"; // Спред слишком большой, ставим на сужение
+            _currentPosition = PositionState.ShortY_LongX;
         }
         else if (zScore < -EntryThreshold)
         {
             signal = "LONG Y / SHORT X"; // Спред слишком маленький, ставим на расширение
+            _currentPosition = PositionState.LongY_ShortX;
         }
-        else if (Math.Abs(zScore) < ExitThreshold)
+        else if (Math.Abs(zScore) < ExitThreshold && _currentPosition != PositionState.None)
         {
             signal = "EXIT POSITIONS";   // Спред вернулся в норму, фиксируем прибыль
+            _currentPosition = PositionState.None;
         }
 
         return new KalmanPairsAlgoSignal
@@ -82,6 +85,8 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
             Signal = signal,
             AssetX = AssetX,
             AssetY = AssetY,
+            PriceX = priceX,
+            PriceY = priceY,
         };
     }
 }
@@ -94,4 +99,6 @@ public record KalmanPairsAlgoSignal : ITradingSignal
     public string Signal { get; set; } = "HOLD";
     public ushort AssetX { get; set; }
     public ushort AssetY { get; set; }
+    public double PriceX { get; set; }
+    public double PriceY { get; set; }
 }

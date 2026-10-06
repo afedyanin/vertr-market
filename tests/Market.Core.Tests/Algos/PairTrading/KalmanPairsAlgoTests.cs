@@ -1,4 +1,5 @@
 ﻿using Market.Core.Algos.PairTrading;
+using Market.Core.FileStore;
 using Market.Core.Tests.Stubs;
 
 namespace Market.Core.Tests.Algos.PairTrading;
@@ -36,6 +37,47 @@ public class KalmanPairsAlgoTests
             {
                 Console.WriteLine($"{i + 1}\t{bookX.MidPrice:F1}\t{bookY.MidPrice:F1}\t{result.Beta:F3}\t{result.Spread:F2}\t{result.ZScore:F2}\t{result.Signal}");
             }
+        }
+    }
+
+    [TestCase("Data\\books_2026-10-05.bin.gz")]
+    [TestCase("Data\\books_2026-10-06.bin.gz")]
+    public async Task KalmanPairsAlgoBtSignals(string filePath)
+    {
+        using var cts = new CancellationTokenSource();
+
+        try
+        {
+            const string rowTemplate = "{0,-6} {1,12} {2,12} {3,12} {4,10} {5,10} {6,-8}";
+            Console.WriteLine(rowTemplate, "Шаг", "Цена X", "Цена Y", "Beta", "Спред", "Z-Score", "Сигнал");
+            Console.WriteLine(new string('-', 85));
+
+            var algo = new KalmanPairsAlgo(1, 6, initialBeta: 100);
+            //var algo = new KalmanPairsAlgo(5, 6);
+            var i = 0;
+
+            await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
+            {
+                var signal = algo.ProcessTick(book) as KalmanPairsAlgoSignal;
+
+                if (signal != null && signal.Signal != "HOLD")
+                {
+                    Console.WriteLine(rowTemplate,
+                        i + 1,
+                        signal.PriceX.ToString("F4"),
+                        signal.PriceY.ToString("F4"),
+                        signal.Beta.ToString("F3"),
+                        signal.Spread.ToString("F2"),
+                        signal.ZScore.ToString("F2"),
+                        signal.Signal);
+                }
+
+                i++;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Чтение было отменено.");
         }
     }
 }

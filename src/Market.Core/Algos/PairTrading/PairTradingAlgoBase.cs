@@ -12,6 +12,8 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
     protected DateTime _lastUpdateXTime = DateTime.MinValue;
     protected DateTime _lastUpdateYTime = DateTime.MinValue;
 
+    protected PositionState _currentPosition = PositionState.None;
+
     protected PairTradingAlgoBase(ushort assetX, ushort assetY)
     {
         AssetX = assetX;

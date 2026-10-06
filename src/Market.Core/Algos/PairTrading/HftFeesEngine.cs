@@ -1,7 +1,7 @@
 ﻿using Market.Core.Extensions;
 using Market.Core.Models;
 
-namespace Market.Core.PairTrading;
+namespace Market.Core.Algos.PairTrading;
 
 
 /*

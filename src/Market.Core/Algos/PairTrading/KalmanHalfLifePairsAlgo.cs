@@ -16,11 +16,7 @@ public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
     private double _pPhi = 0.1;
     private const double QPhi = 0.001;  // Чувствительность к изменению скорости возврата
     private const double RPhi = 0.05;
-
-    private PositionState _currentPosition = PositionState.None;
-
     private int _secondsInTrade = 0;
-
 
     public KalmanHalfLifePairsAlgo(
         ushort assetX,
