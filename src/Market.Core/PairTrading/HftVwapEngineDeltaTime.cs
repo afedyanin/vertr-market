@@ -51,7 +51,7 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
     /// <summary>
     /// Вызывается асинхронно при обновлении стакана инструмента X
     /// </summary>
-    public PairTradingSignal? ProcessTickX(OrderBookDepth depthX)
+    public ITradingSignal? ProcessTickX(OrderBookDepth depthX)
     {
         _assetX = depthX.AssetId;
         _lastDepthX = depthX;
@@ -62,7 +62,7 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
     /// <summary>
     /// Вызывается асинхронно при обновлении стакана инструмента Y
     /// </summary>
-    public PairTradingSignal? ProcessTickY(OrderBookDepth depthY)
+    public ITradingSignal? ProcessTickY(OrderBookDepth depthY)
     {
         _assetY = depthY.AssetId;
         _lastDepthY = depthY;
@@ -174,6 +174,9 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
         return new PairTradingSignal
         {
             Beta = _beta,
+            Signal = signal,
+            AssetX = _assetX,
+            AssetY = _assetY,
             ZScoreBuy = zScoreBuy,
             ZScoreSell = zScoreSell,
             VwapAskX = vwapAskX,
@@ -182,9 +185,6 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
             VwapBidY = vwapBidY,
             VolumeX = requiredVolumeX,
             VolumeY = _tradeVolumeY,
-            Signal = signal,
-            AssetX = _assetX,
-            AssetY = _assetY,
         };
     }
 }

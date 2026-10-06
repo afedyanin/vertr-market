@@ -10,7 +10,7 @@ public class PairTradingStrategy
     private readonly ushort _assetY;
     private readonly IPairTradingAlgo _algo;
     private readonly ChannelReader<OrderBookDepth> _reader;
-    private readonly ChannelWriter<PairTradingSignal> _writer;
+    private readonly ChannelWriter<ITradingSignal> _writer;
     private readonly ILogger<PairTradingStrategy> _logger;
 
     public PairTradingStrategy(
@@ -18,7 +18,7 @@ public class PairTradingStrategy
         ushort assetX,
         ushort assetY,
         Channel<OrderBookDepth> orderBooksChannel,
-        Channel<PairTradingSignal> signalsChannel,
+        Channel<ITradingSignal> signalsChannel,
         ILoggerFactory loggerFactory)
     {
         _assetX = assetX;

@@ -3,7 +3,7 @@
 namespace Market.Core.Models;
 
 [MessagePackObject]
-public record PairTradingSignal
+public record PairTradingSignal : ITradingSignal
 {
     [Key(0)]
     public double Beta { get; set; }

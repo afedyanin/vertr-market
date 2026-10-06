@@ -1,6 +1,8 @@
-﻿namespace Market.Core.PairTrading;
+﻿using Market.Core.Models;
 
-public class HftPairsEngine
+namespace Market.Core.Algos.PairTrading;
+
+public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
 {
 #pragma warning disable CA1805 // Do not initialize unnecessarily
     // Калман 1: Оценка беты активов
@@ -21,13 +23,22 @@ public class HftPairsEngine
 
 #pragma warning restore CA1805 // Do not initialize unnecessarily
 
-    public HftPairsEngine(double initialBeta = 1.0)
+    public KalmanHalfLifePairsAlgo(double initialBeta = 1.0)
     {
         _beta = initialBeta;
     }
 
-    public TickResult ProcessSecond(double priceX, double priceY)
+    protected override ITradingSignal? ProcessTick(DateTime timestamp)
     {
+        // Пока не получили данные по обоим инструментам — расчет невозможен
+        if (_lastDepthX == null || _lastDepthY == null)
+        {
+            return null;
+        }
+
+        var priceX = _lastDepthX.MidPrice!.Value;
+        var priceY = _lastDepthY.MidPrice!.Value;
+
         // 1. Обновляем Бету и вычисляем текущий Спред
         _pBeta += QBeta;
         double sBeta = priceX * _pBeta * priceX + RBeta;
@@ -112,24 +123,30 @@ public class HftPairsEngine
 
         _prevSpread = spread;
 
-        return new TickResult
+        return new KalmanHalfLifePairsSignal
         {
+            Beta = _beta,
             Spread = spread,
             ZScore = zScore,
+            Signal = signal,
+            AssetX = _assetX,
+            AssetY = _assetY,
             Kappa = kappa,
             HalfLifeSeconds = halfLife,
             IsCointegrated = isCointegrated,
-            Signal = signal
         };
     }
 }
 
-public struct TickResult
+public record KalmanHalfLifePairsSignal : ITradingSignal
 {
+    public double Beta { get; set; }
     public double Spread { get; set; }
     public double ZScore { get; set; }
+    public string Signal { get; set; } = "HOLD";
+    public ushort AssetX { get; set; }
+    public ushort AssetY { get; set; }
     public double Kappa { get; set; }
     public double HalfLifeSeconds { get; set; }
     public bool IsCointegrated { get; set; }
-    public string Signal { get; set; }
 }

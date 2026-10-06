@@ -17,6 +17,17 @@ public class OrderBookDepth
     [Key(3)]
     public OrderBookLevel[] Asks { get; } // Продавцы (сортировка от лучшей/низшей к худшей)
 
+    [IgnoreMember]
+    public double? BestBid => Bids is { Length: > 0 } ? Bids[0].Price : null;
+
+    [IgnoreMember]
+    public double? BestAsk => Asks is { Length: > 0 } ? Asks[0].Price : null;
+
+    [IgnoreMember]
+    public double? MidPrice => (BestBid.HasValue && BestAsk.HasValue)
+        ? (BestBid.Value + BestAsk.Value) / 2.0
+        : null;
+
     public OrderBookDepth(
         DateTime timestamp,
         ushort assetId,

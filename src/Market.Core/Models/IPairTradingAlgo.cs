@@ -2,7 +2,7 @@
 
 public interface IPairTradingAlgo
 {
-    public PairTradingSignal? ProcessTickX(OrderBookDepth depthX);
+    public ITradingSignal? ProcessTickX(OrderBookDepth depthX);
 
-    public PairTradingSignal? ProcessTickY(OrderBookDepth depthY);
+    public ITradingSignal? ProcessTickY(OrderBookDepth depthY);
 }

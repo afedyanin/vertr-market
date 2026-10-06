@@ -67,7 +67,7 @@ public static class Program
 
         // Channels
         builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>());
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<PairTradingSignal>());
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<ITradingSignal>());
 
         // Strategy
         builder.Services.AddTransient(sp =>
@@ -75,7 +75,7 @@ public static class Program
             var algo = new HftVwapEngineDeltaTime();
             var strategy = new PairTradingStrategy(algo, 1, 5,
                 sp.GetRequiredService<Channel<OrderBookDepth>>(),
-                sp.GetRequiredService<Channel<PairTradingSignal>>(),
+                sp.GetRequiredService<Channel<ITradingSignal>>(),
                 sp.GetRequiredService<ILoggerFactory>());
             return strategy;
         });
