@@ -16,7 +16,12 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
     private const double EntryThreshold = 2.0;  // Вход при Z-Score > 2.0 или < -2.0
     private const double ExitThreshold = 0.5;   // Выход (тейк-профит) при приближении к 0
 
-    public KalmanPairsAlgo(double initialBeta = 1.0, double q = 0.0001, double r = 1.0)
+    public KalmanPairsAlgo(
+        ushort assetX,
+        ushort assetY,
+        double initialBeta = 1.0,
+        double q = 0.0001,
+        double r = 1.0) : base(assetX, assetY)
     {
         _beta = initialBeta;
         _p = 1.0;
@@ -75,8 +80,8 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
             Spread = innovation,
             ZScore = zScore,
             Signal = signal,
-            AssetX = _assetX,
-            AssetY = _assetY,
+            AssetX = AssetX,
+            AssetY = AssetY,
         };
     }
 }

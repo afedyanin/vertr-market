@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Threading.Channels;
+using Market.Core.Algos.PairTrading;
 using Market.Core.Models;
-using Market.Core.PairTrading;
 using Market.Core.Strategies;
 using Market.Host.BackgroundServices;
 using Market.Infrastructure.BackgroundServices;
@@ -72,8 +72,8 @@ public static class Program
         // Strategy
         builder.Services.AddTransient(sp =>
         {
-            var algo = new HftVwapEngineDeltaTime();
-            var strategy = new PairTradingStrategy(algo, 1, 5,
+            var algo = new VwapDeltaTimeAlgo(1, 5);
+            var strategy = new PairTradingStrategy(algo,
                 sp.GetRequiredService<Channel<OrderBookDepth>>(),
                 sp.GetRequiredService<Channel<ITradingSignal>>(),
                 sp.GetRequiredService<ILoggerFactory>());

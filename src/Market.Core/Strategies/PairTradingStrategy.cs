@@ -15,14 +15,12 @@ public class PairTradingStrategy
 
     public PairTradingStrategy(
         IPairTradingAlgo algo,
-        ushort assetX,
-        ushort assetY,
         Channel<OrderBookDepth> orderBooksChannel,
         Channel<ITradingSignal> signalsChannel,
         ILoggerFactory loggerFactory)
     {
-        _assetX = assetX;
-        _assetY = assetY;
+        _assetX = algo.AssetX;
+        _assetY = algo.AssetY;
         _algo = algo;
         _reader = orderBooksChannel.Reader;
         _writer = signalsChannel.Writer;
@@ -45,9 +43,7 @@ public class PairTradingStrategy
                         continue;
                     }
 
-                    var signal = orderBook.AssetId == _assetX
-                            ? _algo.ProcessTickX(orderBook)
-                            : _algo.ProcessTickY(orderBook);
+                    var signal = _algo.ProcessTick(orderBook);
 
                     if (signal is null)
                     {

@@ -13,10 +13,10 @@ public class KalmanHalfLifePairsAlgoTests
         double[] assetY = { 150.0, 150.1, 150.3, 150.2, 150.8, 153.0, 156.0, 159.0, 162.0, 165.0 };
 
         // Инициализируем робота
-        var tradingEngine = new KalmanHalfLifePairsAlgo(initialBeta: 1.5);
+        var algo = new KalmanHalfLifePairsAlgo(1, 5, initialBeta: 1.5);
 
-        Console.WriteLine("Sec\tSpread\tZ-Score\tIsCointegrated\tKappa (Speed)\tHalf-Life(sec)\tSignal");
-        Console.WriteLine("---------------------------------------------------------------------------------");
+        Console.WriteLine("Sec\tSpread\tZ-ScoreBuy\tZ-ScoreSell\tIsCointegrated\tKappa (Speed)\tHalf-Life(sec)\tSignal");
+        Console.WriteLine("-------------------------------------------------------------------------------------------");
 
         var time = new DateTime(2026, 10, 06, 10, 10, 10);
 
@@ -24,18 +24,18 @@ public class KalmanHalfLifePairsAlgoTests
         {
             time = time.AddMilliseconds(i);
 
-            var bookX = OrderBookStub.Create(time, 1, assetX[i], assetX[i]);
-            var bookY = OrderBookStub.Create(time, 5, assetY[i], assetY[i]);
+            var bookX = OrderBookStub.Create(time, algo.AssetX, assetX[i], assetX[i]);
+            var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
-            _ = tradingEngine.ProcessTickX(bookX);
-            var resultY = tradingEngine.ProcessTickY(bookY);
+            _ = algo.ProcessTick(bookX);
+            var resultY = algo.ProcessTick(bookY);
 
             var result = resultY as KalmanHalfLifePairsSignal;
 
             if (result != null)
             {
                 string halfLifeStr = result.IsCointegrated ? $"{result.HalfLifeSeconds:F1}s" : "INF ";
-                Console.WriteLine($"{i + 1}\t{result.Spread:F2}\t{result.ZScore:F2}\t{result.IsCointegrated}\t\t\t{result.Kappa:F4}\t\t\t{halfLifeStr}\t\t\t{result.Signal}");
+                Console.WriteLine($"{i + 1}\t{result.Spread:F2}\t{result.ZScoreBuy:F2}\t\t{result.ZScoreSell:F2}\t\t{result.IsCointegrated}\t\t\t{result.Kappa:F4}\t\t\t{halfLifeStr}\t\t\t{result.Signal}");
             }
         }
     }

@@ -4,7 +4,6 @@ namespace Market.Core.Algos.PairTrading;
 
 public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
 {
-#pragma warning disable CA1805 // Do not initialize unnecessarily
     // Калман 1: Оценка беты активов
     private double _beta;
     private double _pBeta = 1.0;
@@ -18,12 +17,15 @@ public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
     private const double QPhi = 0.001;  // Чувствительность к изменению скорости возврата
     private const double RPhi = 0.05;
 
-    private bool _hasPosition = false;
+    private PositionState _currentPosition = PositionState.None;
+
     private int _secondsInTrade = 0;
 
-#pragma warning restore CA1805 // Do not initialize unnecessarily
 
-    public KalmanHalfLifePairsAlgo(double initialBeta = 1.0)
+    public KalmanHalfLifePairsAlgo(
+        ushort assetX,
+        ushort assetY,
+        double initialBeta = 1.0) : base(assetX, assetY)
     {
         _beta = initialBeta;
     }
@@ -75,62 +77,79 @@ public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
             }
         }
 
-        double sigma = Math.Sqrt(sBeta);
-        double zScore = spread / sigma;
+        _prevSpread = spread;
+
+        // 3. РАСЧЕТ РЕАЛЬНЫХ ТОРГОВЫХ СПРЕДОВ С УЧЕТОМ BID/ASK
+        // Спред, если мы заходим в LONG Y и SHORT X (Покупаем Y по Ask, продаем X по Bid)
+        var spreadBuyY_SellX = _lastDepthY.BestAsk - (_beta * _lastDepthX.BestBid);
+
+        // Спред, если мы заходим в SHORT Y и LONG X (Продаем Y по Bid, покупаем X по Ask)
+        var spreadSellY_BuyX = _lastDepthY.BestBid - (_beta * _lastDepthX.BestAsk);
+
+        // Переводим в Z-Score, используя общую сигму фильтра Калмана
+        var sigma = Math.Sqrt(sBeta);
+        var zScoreBuy = spreadBuyY_SellX / sigma;
+        var zScoreSell = spreadSellY_BuyX / sigma;
 
         // 3. Логика сигналов с контролем полураспада
         string signal = "HOLD";
 
-        if (_hasPosition)
+        if (_currentPosition == PositionState.None && isCointegrated && halfLife > 1.0 && halfLife < 60.0)
+        {
+            // Вход в Short Y / Long X имеет смысл, только если спред ПРОДАЖИ (Sell) превысил верхний порог.
+            // Мы будем бить по стакану: продавать Y по Bid и покупать X по Ask.
+            if (zScoreSell > 2.0)
+            {
+                signal = $"EXECUTE: SHORT Y @ {_lastDepthY.BestBid} / LONG X @ {_lastDepthX.BestAsk}";
+                _currentPosition = PositionState.ShortY_LongX;
+                _secondsInTrade = 0;
+            }
+            // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
+            else if (zScoreBuy < -2.0)
+            {
+                signal = $"EXECUTE: LONG Y @ {_lastDepthY.BestAsk} / SHORT X @ {_lastDepthX.BestBid}";
+                _currentPosition = PositionState.LongY_ShortX;
+                _secondsInTrade = 0;
+            }
+        }
+        else if (_currentPosition == PositionState.ShortY_LongX)
         {
             _secondsInTrade++;
 
             // СИГНАЛ ВЫХОДА ПО ПОЛУРАСПАДУ (Time Stop): 
             // Если позиция висит дольше, чем 2-3 периода полураспада, математическое ожидание прибыли исчезает.
             // Либо если коинтеграция полностью исчезла (isCointegrated == false)
-            if (!isCointegrated || _secondsInTrade > (halfLife * 2.5))
+            // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
+            // Поэтому мы отслеживаем zScoreBuy для выхода.
+            if (zScoreBuy <= 0.2 || !isCointegrated || _secondsInTrade > (halfLife * 2.5))
             {
-                signal = "FORCE EXIT (BREAKDOWN/TIMEOUT)";
-                _hasPosition = false;
-                _secondsInTrade = 0;
-            }
-            else if (Math.Abs(zScore) < 0.5)
-            {
-                signal = "EXIT (TAKE PROFIT)";
-                _hasPosition = false;
+                signal = $"EXIT: BUY Y @ {_lastDepthY.BestAsk} / SELL X @ {_lastDepthX.BestBid} (TAKE PROFIT)";
+                _currentPosition = PositionState.None;
                 _secondsInTrade = 0;
             }
         }
-        else
+        else if (_currentPosition == PositionState.LongY_ShortX)
         {
-            // ВХОД: Входим ТОЛЬКО если есть подтвержденная коинтеграция
-            if (isCointegrated && halfLife > 1.0 && halfLife < 60.0) // Полураспад должен быть адекватным (например, от 1 до 60 сек)
+            _secondsInTrade++;
+
+            // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
+            if (zScoreSell >= -0.2 || !isCointegrated || _secondsInTrade > (halfLife * 2.5))
             {
-                if (zScore > 2.0)
-                {
-                    signal = "ENTER SHORT Y / LONG X";
-                    _hasPosition = true;
-                    _secondsInTrade = 0;
-                }
-                else if (zScore < -2.0)
-                {
-                    signal = "ENTER LONG Y / SHORT X";
-                    _hasPosition = true;
-                    _secondsInTrade = 0;
-                }
+                signal = $"EXIT: SELL Y @ {_lastDepthY.BestBid} / BUY X @ {_lastDepthX.BestAsk} (TAKE PROFIT)";
+                _currentPosition = PositionState.None;
+                _secondsInTrade = 0;
             }
         }
-
-        _prevSpread = spread;
 
         return new KalmanHalfLifePairsSignal
         {
             Beta = _beta,
             Spread = spread,
-            ZScore = zScore,
+            ZScoreBuy = zScoreBuy,
+            ZScoreSell = zScoreSell,
             Signal = signal,
-            AssetX = _assetX,
-            AssetY = _assetY,
+            AssetX = AssetX,
+            AssetY = AssetY,
             Kappa = kappa,
             HalfLifeSeconds = halfLife,
             IsCointegrated = isCointegrated,
@@ -142,7 +161,8 @@ public record KalmanHalfLifePairsSignal : ITradingSignal
 {
     public double Beta { get; set; }
     public double Spread { get; set; }
-    public double ZScore { get; set; }
+    public double? ZScoreBuy { get; set; }
+    public double? ZScoreSell { get; set; }
     public string Signal { get; set; } = "HOLD";
     public ushort AssetX { get; set; }
     public ushort AssetY { get; set; }

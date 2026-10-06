@@ -13,7 +13,7 @@ public class KalmanPairsAlgoTests
         double[] assetY = { 150, 152, 149, 153, 162, 164, 155, 156, 154, 153 }; // На шагах 5 и 6 искусственный выброс вверх
 
         // Инициализируем робота
-        var tradingEngine = new KalmanPairsAlgo(initialBeta: 1.5);
+        var algo = new KalmanPairsAlgo(1, 5, initialBeta: 1.5);
 
         Console.WriteLine("Шаг\tЦена X\tЦена Y\tBeta\tСпред\tZ-Score\tСигнал");
         Console.WriteLine("----------------------------------------------------------------------");
@@ -24,11 +24,11 @@ public class KalmanPairsAlgoTests
         {
             time = time.AddMilliseconds(i);
 
-            var bookX = OrderBookStub.Create(time, 1, assetX[i], assetX[i]);
-            var bookY = OrderBookStub.Create(time, 5, assetY[i], assetY[i]);
+            var bookX = OrderBookStub.Create(time, algo.AssetX, assetX[i], assetX[i]);
+            var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
-            _ = tradingEngine.ProcessTickX(bookX);
-            var resultY = tradingEngine.ProcessTickY(bookY);
+            _ = algo.ProcessTick(bookX);
+            var resultY = algo.ProcessTick(bookY);
 
             var result = resultY as KalmanPairsAlgoSignal;
 

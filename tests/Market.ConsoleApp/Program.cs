@@ -70,23 +70,6 @@ internal static class Program
         }
     }
 
-    static void HftOrderBookEngineample()
-    {
-        var engine = new HftOrderBookEngine(initialBeta: 1.5);
-
-        // Имитируем тики со стаканом: { Bid, Ask }
-        var assetX = new[] { new OrderBookTop(100.0, 100.1), new OrderBookTop(100.2, 100.3), new OrderBookTop(100.1, 100.2) };
-        var assetY = new[] { new OrderBookTop(150.0, 150.2), new OrderBookTop(152.0, 152.3), new OrderBookTop(149.8, 150.0) };
-
-        Console.WriteLine("Sec\tMid_X\tMid_Y\tBeta\tZ-Score Buy\tZ-Score Sell\tSignal");
-        Console.WriteLine("-----------------------------------------------------------------------------------------");
-
-        for (int i = 0; i < assetX.Length; i++)
-        {
-            var r = engine.ProcessSecond(assetX[i], assetY[i]);
-            Console.WriteLine($"{i + 1}\t{assetX[i].Mid:F1}\t{assetY[i].Mid:F1}\t{r.Beta:F3}\t{r.ZScoreBuy:F2}\t\t{r.ZScoreSell:F2}\t\t{r.Signal}");
-        }
-    }
     static void HftVwapEngineSample()
     {
         // Инициализируем робота. Задаем объем, который мы хотим торговать по каждому активу

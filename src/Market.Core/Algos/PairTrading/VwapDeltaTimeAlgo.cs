@@ -1,7 +1,7 @@
 using Market.Core.Extensions;
 using Market.Core.Models;
 
-namespace Market.Core.PairTrading;
+namespace Market.Core.Algos.PairTrading;
 
 /*
 1. Динамический пересчет объема X: Так как соотношение цен меняется, 
@@ -21,7 +21,7 @@ namespace Market.Core.PairTrading;
 и накладывает штраф за "устаревание" данных на RBeta.
 */
 
-public class HftVwapEngineDeltaTime : IPairTradingAlgo
+public class VwapDeltaTimeAlgo : PairTradingAlgoBase
 {
     private double _beta;
     private double _pBeta = 1.0;
@@ -34,43 +34,19 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
     private PositionState _currentPosition = PositionState.None;
 
     // Переменные для реализации Last Available Value и динамического dt
-    private OrderBookDepth? _lastDepthX;
-    private OrderBookDepth? _lastDepthY;
     private DateTime _lastEventTime = DateTime.MinValue;
-    private DateTime _lastUpdateXTime = DateTime.MinValue;
-    private DateTime _lastUpdateYTime = DateTime.MinValue;
-    private ushort _assetX;
-    private ushort _assetY;
 
-    public HftVwapEngineDeltaTime(double initialBeta = 1.0, double tradeVolumeY = 1.0)
+    public VwapDeltaTimeAlgo(
+        ushort assetX,
+        ushort assetY,
+        double initialBeta = 1.0,
+        double tradeVolumeY = 1.0) : base(assetX, assetY)
     {
         _beta = initialBeta;
         _tradeVolumeY = tradeVolumeY;
     }
 
-    /// <summary>
-    /// Вызывается асинхронно при обновлении стакана инструмента X
-    /// </summary>
-    public ITradingSignal? ProcessTickX(OrderBookDepth depthX)
-    {
-        _assetX = depthX.AssetId;
-        _lastDepthX = depthX;
-        _lastUpdateXTime = depthX.Timestamp;
-        return ProcessTick(depthX.Timestamp);
-    }
-
-    /// <summary>
-    /// Вызывается асинхронно при обновлении стакана инструмента Y
-    /// </summary>
-    public ITradingSignal? ProcessTickY(OrderBookDepth depthY)
-    {
-        _assetY = depthY.AssetId;
-        _lastDepthY = depthY;
-        _lastUpdateYTime = depthY.Timestamp;
-        return ProcessTick(depthY.Timestamp);
-    }
-
-    private PairTradingSignal? ProcessTick(DateTime timestamp)
+    protected override ITradingSignal? ProcessTick(DateTime timestamp)
     {
         // Пока не получили данные по обоим инструментам — расчет невозможен
         if (_lastDepthX == null || _lastDepthY == null)
@@ -175,8 +151,8 @@ public class HftVwapEngineDeltaTime : IPairTradingAlgo
         {
             Beta = _beta,
             Signal = signal,
-            AssetX = _assetX,
-            AssetY = _assetY,
+            AssetX = AssetX,
+            AssetY = AssetY,
             ZScoreBuy = zScoreBuy,
             ZScoreSell = zScoreSell,
             VwapAskX = vwapAskX,
