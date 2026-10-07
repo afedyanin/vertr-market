@@ -3,7 +3,7 @@ using Market.Core.Models;
 
 namespace Market.Core.Algos.PairTrading;
 
-public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
+public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 {
     // Калман 2: Онлайн-оценка AR(1) для спреда (Модель Орнштейна-Уленбека)
     private int _secondsInTrade = 0;
@@ -11,7 +11,7 @@ public class KalmanHalfLifePairsAlgo : PairTradingAlgoBase
     private readonly KalmanFilterEstimator _kalmanFilter;
     private readonly CointegrationEstimator _cointegration;
 
-    public KalmanHalfLifePairsAlgo(
+    public KalmanHalfLifeMidPriceAlgo(
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0) : base(assetX, assetY)

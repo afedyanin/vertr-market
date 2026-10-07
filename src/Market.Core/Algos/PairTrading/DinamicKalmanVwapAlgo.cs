@@ -22,21 +22,21 @@ namespace Market.Core.Algos.PairTrading;
 и накладывает штраф за "устаревание" данных на RBeta.
 */
 
-public class VwapDeltaTimeAlgo : PairTradingAlgoBase
+public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 {
-    private readonly KalmanFilterDynamicEstimator _kalmanFilter;
+    private readonly DynamicKalmanFilterEstimator _kalmanFilter;
     private readonly double _tradeVolumeY;
 
     private Quote? _quoteX;
     private Quote? _quoteY;
 
-    public VwapDeltaTimeAlgo(
+    public DinamicKalmanVwapAlgo(
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0,
         double tradeVolumeY = 1.0) : base(assetX, assetY)
     {
-        _kalmanFilter = new KalmanFilterDynamicEstimator(initialBeta);
+        _kalmanFilter = new DynamicKalmanFilterEstimator(initialBeta);
         _tradeVolumeY = tradeVolumeY;
     }
 

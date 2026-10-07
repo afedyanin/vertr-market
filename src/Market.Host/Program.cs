@@ -72,7 +72,7 @@ public static class Program
         // Strategy
         builder.Services.AddTransient(sp =>
         {
-            var algo = new VwapDeltaTimeAlgo(1, 5);
+            var algo = new DinamicKalmanVwapAlgo(1, 5);
             var strategy = new PairTradingStrategy(algo,
                 sp.GetRequiredService<Channel<OrderBookDepth>>(),
                 sp.GetRequiredService<Channel<ITradingSignal>>(),

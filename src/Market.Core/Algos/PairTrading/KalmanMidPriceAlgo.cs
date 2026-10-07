@@ -6,14 +6,14 @@ namespace Market.Core.Algos.PairTrading;
 /// <summary>
 /// Движок парного трейдинга на базе Фильтра Калмана с расчетом Z-Score
 /// </summary>
-public class KalmanPairsAlgo : PairTradingAlgoBase
+public class KalmanMidPriceAlgo : PairTradingAlgoBase
 {
     // Пороговые значения для генерации сигналов
     private const double EntryThreshold = 2.0;  // Вход при Z-Score > 2.0 или < -2.0
     private const double ExitThreshold = 0.5;   // Выход (тейк-профит) при приближении к 0
     private readonly KalmanFilterEstimator _kalmanFilter;
 
-    public KalmanPairsAlgo(
+    public KalmanMidPriceAlgo(
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0,

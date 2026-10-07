@@ -4,7 +4,7 @@ using Market.Core.Tests.Stubs;
 
 namespace Market.Core.Tests.Algos.PairTrading;
 
-public class KalmanPairsAlgoTests
+public class KalmanMidPriceAlgoTests
 {
     [Test]
     public void KalmanPairsAlgoSample()
@@ -14,7 +14,7 @@ public class KalmanPairsAlgoTests
         double[] assetY = { 150, 152, 149, 153, 162, 164, 155, 156, 154, 153 }; // На шагах 5 и 6 искусственный выброс вверх
 
         // Инициализируем робота
-        var algo = new KalmanPairsAlgo(1, 5, initialBeta: 1.5);
+        var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 1.5);
 
         const string rowTemplate = "{0,-6} {1, 12} {2,10} {3,-8}";
         Console.WriteLine(rowTemplate, "Шаг", "Beta", "Z-Score", "Сигнал");
@@ -55,7 +55,7 @@ public class KalmanPairsAlgoTests
             Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "Сигнал");
             Console.WriteLine(new string('-', 85));
 
-            var algo = new KalmanPairsAlgo(1, 5, initialBeta: 100);
+            var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 100);
             //var algo = new KalmanPairsAlgo(5, 6);
             var i = 0;
 

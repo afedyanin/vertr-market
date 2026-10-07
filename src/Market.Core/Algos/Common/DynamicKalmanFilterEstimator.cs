@@ -6,7 +6,7 @@
 и накладывает штраф за "устаревание" данных на RBeta.
 */
 
-public class KalmanFilterDynamicEstimator
+public class DynamicKalmanFilterEstimator
 {
     private readonly double _q; // Волатильность процесса (насколько быстро бета может меняться)
     private readonly double _r; // Волатильность измерения (рыночный шум в спреде)
@@ -28,7 +28,7 @@ public class KalmanFilterDynamicEstimator
     private DateTime _lastUpdateYTime = DateTime.MinValue;
 
 
-    public KalmanFilterDynamicEstimator(
+    public DynamicKalmanFilterEstimator(
         double initialBeta = 1.0,
         double initialErrorCovariance = 1.0,
         double q = 0.00005,
