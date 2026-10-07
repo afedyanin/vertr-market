@@ -72,7 +72,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         var spreadSellY_BuyX = _lastDepthY.BestBid - (beta * _lastDepthX.BestAsk);
 
         // Переводим в Z-Score, используя общую сигму фильтра Калмана
-        var sigma = Math.Sqrt(spread);
+        var sigma = _kalmanFilter.Sigma;
         var zScoreBuy = spreadBuyY_SellX / sigma;
         var zScoreSell = spreadSellY_BuyX / sigma;
 

@@ -10,6 +10,19 @@ public static class OrderBookDepthExtensions
     public static double GetVwap(this OrderBookDepth book, double requiredVolume, bool isBuy)
     {
         var levels = isBuy ? book.Asks : book.Bids; // Если покупаем, бьем в лимиты продавцов (Asks), если продаем — в Bids
+
+        // Пустой стакан — ликвидности нет, VWAP не определен
+        if (levels.Length == 0)
+        {
+            return double.NaN;
+        }
+
+        // Нулевой объем — берем лучшую цену
+        if (requiredVolume <= 0)
+        {
+            return levels[0].Price;
+        }
+
         double accumulatedVolume = 0;
         double accumulatedCash = 0;
 

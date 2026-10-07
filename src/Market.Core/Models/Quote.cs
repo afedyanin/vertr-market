@@ -13,7 +13,7 @@ public record Quote
     public double Ask { get; init; }
 
     [IgnoreMember]
-    public double Mid => Bid + Ask / 2.0;
+    public double Mid => (Bid + Ask) / 2.0;
 
     public Quote(double bid, double ask)
     {

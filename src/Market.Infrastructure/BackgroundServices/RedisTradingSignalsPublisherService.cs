@@ -10,14 +10,14 @@ namespace Market.Infrastructure.BackgroundServices;
 
 public class RedisTradingSignalsPublisherService : BackgroundService
 {
-    private readonly ChannelReader<PairTradingSignal> _reader;
+    private readonly ChannelReader<ITradingSignal> _reader;
     private readonly ILogger<RedisTradingSignalsPublisherService> _logger;
     private readonly IDatabase _redisDb;
     private readonly ConcurrentDictionary<uint, RedisChannel> _channelCache = new();
 
     public RedisTradingSignalsPublisherService(
         IConnectionMultiplexer redis,
-        Channel<PairTradingSignal> channel,
+        Channel<ITradingSignal> channel,
         ILoggerFactory loggerFactory)
     {
         _reader = channel.Reader;
@@ -39,7 +39,7 @@ public class RedisTradingSignalsPublisherService : BackgroundService
 
                 await _redisDb.PublishAsync(
                     redisChannel,
-                    JsonSerializer.Serialize(signal),
+                    JsonSerializer.Serialize(signal, signal.GetType()),
                     CommandFlags.FireAndForget);
             }
         }

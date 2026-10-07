@@ -79,14 +79,32 @@ public class OrderBooksFileWriterService : BackgroundService
                 // Проверяем смену даты по таймеру, даже если канал пуст (чтобы закрыть старый файл)
                 await EnsureCorrectFileAsync(DateTime.UtcNow).ConfigureAwait(false);
 
-                // Асинхронно ждем либо закрытия канала, либо следующего тика таймера
+                // Асинхронно ждем либо появления данных, либо следующего тика таймера
                 if (!hasData)
                 {
-                    // Если канал пуст и закрыт (Writer.Complete()), WaitToReadAsync вернет false
-                    if (!await _reader.WaitToReadAsync(stoppingToken).ConfigureAwait(false))
+                    using var waitCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+
+                    var dataTask = _reader.WaitToReadAsync(waitCts.Token).AsTask();
+                    var tickTask = timer.WaitForNextTickAsync(waitCts.Token).AsTask();
+
+                    var completed = await Task.WhenAny(dataTask, tickTask).ConfigureAwait(false);
+
+                    // Отменяем проигравшее ожидание, чтобы не оставлять висящие задачи
+                    await waitCts.CancelAsync().ConfigureAwait(false);
+
+                    if (completed == dataTask)
                     {
-                        // Канал закрылся, выходим из цикла для финального сброса
-                        break;
+                        // Если канал пуст и закрыт (Writer.Complete()), WaitToReadAsync вернет false
+                        if (!await dataTask.ConfigureAwait(false))
+                        {
+                            // Канал закрылся, выходим из цикла для финального сброса
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // Тик таймера: цикл выполнит таймаутный флаш и смену файла
+                        await tickTask.ConfigureAwait(false);
                     }
                 }
             }

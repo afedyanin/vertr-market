@@ -189,7 +189,12 @@ internal sealed class TinvestBackgroundService : BackgroundService
             {
                 if (response.Orderbook != null && response.Orderbook.IsConsistent)
                 {
-                    var assetId = GetAssetId(response.Orderbook.InstrumentUid);
+                    if (!_instruments.TryGetValue(response.Orderbook.InstrumentUid, out var assetId))
+                    {
+                        _logger.LogWarning("Skipping order book for unknown instrument: {InstrumentUid}", response.Orderbook.InstrumentUid);
+                        continue;
+                    }
+
                     var book = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
 
                     _marketDepthChannel.Writer.TryWrite(book);
@@ -213,11 +218,5 @@ internal sealed class TinvestBackgroundService : BackgroundService
                 continue;
             }
         }
-    }
-
-    private ushort GetAssetId(string instrumentId)
-    {
-        _instruments.TryGetValue(instrumentId, out var assetId);
-        return assetId;
     }
 }

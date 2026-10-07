@@ -9,10 +9,12 @@ internal static class TinvestMapper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static OrderBookDepth ToMarketDepth(OrderBook orderBook, ushort assetId)
     {
-        var bidsBuffer = new OrderBookLevel[10];
-        var asksBuffer = new OrderBookLevel[10];
-
         var bidsCount = Math.Min(orderBook.Bids.Count, 10);
+        var asksCount = Math.Min(orderBook.Asks.Count, 10);
+
+        var bidsBuffer = new OrderBookLevel[bidsCount];
+        var asksBuffer = new OrderBookLevel[asksCount];
+
         for (var i = 0; i < bidsCount; i++)
         {
             var protoBid = orderBook.Bids[i];
@@ -23,7 +25,6 @@ internal static class TinvestMapper
             );
         }
 
-        var asksCount = Math.Min(orderBook.Asks.Count, 10);
         for (var i = 0; i < asksCount; i++)
         {
             var protoAsk = orderBook.Asks[i];
