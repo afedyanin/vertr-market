@@ -1,4 +1,5 @@
-﻿using Market.Core.Models;
+﻿using Market.Core.Algos.Common;
+using Market.Core.Models;
 
 namespace Market.Core.Algos.PairTrading;
 
@@ -7,26 +8,24 @@ namespace Market.Core.Algos.PairTrading;
 /// </summary>
 public class KalmanPairsAlgo : PairTradingAlgoBase
 {
-    private double _beta;      // Текущая Beta (соотношение активов)
-    private double _p;         // Ковариация ошибки оценки беты
-    private readonly double _q;// Волатильность изменения беты (системный шум)
-    private readonly double _r;// Волатильность цен (рыночный шум)
-
     // Пороговые значения для генерации сигналов
     private const double EntryThreshold = 2.0;  // Вход при Z-Score > 2.0 или < -2.0
     private const double ExitThreshold = 0.5;   // Выход (тейк-профит) при приближении к 0
+    private readonly KalmanFilterEstimator _kalmanFilter;
 
     public KalmanPairsAlgo(
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0,
+        double initialErrorCovariance = 1.0,
         double q = 0.0001,
         double r = 1.0) : base(assetX, assetY)
     {
-        _beta = initialBeta;
-        _p = 1.0;
-        _q = q;
-        _r = r;
+        _kalmanFilter = new KalmanFilterEstimator(
+            initialBeta: initialBeta,
+            initialErrorCovariance: initialErrorCovariance,
+            q: q,
+            r: r);
     }
 
     protected override ITradingSignal? ProcessTick(DateTime timestamp)
@@ -37,28 +36,12 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
             return null;
         }
 
-        // --- 1. КЛАССИЧЕСКИЙ ШАГ КАЛМАНА ---
-        _p += _q; // Прогноз ковариации
-
         var priceX = _lastDepthX.MidPrice!.Value;
         var priceY = _lastDepthY.MidPrice!.Value;
+        _kalmanFilter.Update(priceX, priceY);
 
-        double h = priceX;
-        double s = h * _p * h + _r; // Ковариация инновации (по сути, дисперсия текущего спреда)
-        double k = (_p * h) / s;    // Коэффициент Калмана
+        var zScore = _kalmanFilter.ZScore;
 
-        double innovation = priceY - (_beta * priceX); // Текущая ошибка (сырой спред)
-
-        _beta += k * innovation; // Коррекция беты
-        _p = (1.0 - k * h) * _p;        // Коррекция ковариации ошибки
-
-        // --- 2. РАСЧЕТ Z-SCORE ---
-        // Корень из S (ковариации инновации) дает нам текущее стандартное отклонение спреда (сигму)
-        // с учетом рыночного шума R. Это избавляет от необходимости считать скользящее окно.
-        double sigma = Math.Sqrt(s);
-        double zScore = innovation / sigma;
-
-        // --- 3. ГЕНЕРАЦИЯ СИГНАЛОВ ---
         string signal = "HOLD";
 
         if (zScore > EntryThreshold)
@@ -79,14 +62,14 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
 
         return new KalmanPairsAlgoSignal
         {
-            Beta = _beta,
-            Spread = innovation,
-            ZScore = zScore,
+            PriceX = priceX,
+            PriceY = priceY,
+            Beta = _kalmanFilter.Beta,
+            Spread = _kalmanFilter.Spread,
+            ZScore = _kalmanFilter.ZScore,
             Signal = signal,
             AssetX = AssetX,
             AssetY = AssetY,
-            PriceX = priceX,
-            PriceY = priceY,
         };
     }
 }
@@ -94,11 +77,11 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
 public record KalmanPairsAlgoSignal : ITradingSignal
 {
     public double Beta { get; set; }
-    public double Spread { get; set; }
     public double ZScore { get; set; }
-    public string Signal { get; set; } = "HOLD";
+    public double Spread { get; set; }
     public ushort AssetX { get; set; }
     public ushort AssetY { get; set; }
+    public string Signal { get; set; } = "HOLD";
     public double PriceX { get; set; }
     public double PriceY { get; set; }
 }

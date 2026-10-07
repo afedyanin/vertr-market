@@ -16,8 +16,9 @@ public class KalmanPairsAlgoTests
         // Инициализируем робота
         var algo = new KalmanPairsAlgo(1, 5, initialBeta: 1.5);
 
-        Console.WriteLine("Шаг\tЦена X\tЦена Y\tBeta\tСпред\tZ-Score\tСигнал");
-        Console.WriteLine("----------------------------------------------------------------------");
+        const string rowTemplate = "{0,-6} {1, 12} {2,10} {3,-8}";
+        Console.WriteLine(rowTemplate, "Шаг", "Beta", "Z-Score", "Сигнал");
+        Console.WriteLine(new string('-', 50));
 
         var time = new DateTime(2026, 10, 06, 10, 10, 10);
 
@@ -29,13 +30,15 @@ public class KalmanPairsAlgoTests
             var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
             _ = algo.ProcessTick(bookX);
-            var resultY = algo.ProcessTick(bookY);
+            var signal = algo.ProcessTick(bookY) as KalmanPairsAlgoSignal;
 
-            var result = resultY as KalmanPairsAlgoSignal;
-
-            if (result != null)
+            if (signal != null)
             {
-                Console.WriteLine($"{i + 1}\t{bookX.MidPrice:F1}\t{bookY.MidPrice:F1}\t{result.Beta:F3}\t{result.Spread:F2}\t{result.ZScore:F2}\t{result.Signal}");
+                Console.WriteLine(rowTemplate,
+                    i + 1,
+                        signal.Beta.ToString("F3"),
+                        signal.ZScore.ToString("F2"),
+                        signal.Signal);
             }
         }
     }
@@ -48,11 +51,11 @@ public class KalmanPairsAlgoTests
 
         try
         {
-            const string rowTemplate = "{0,-6} {1,12} {2,12} {3,12} {4,10} {5,10} {6,-8}";
-            Console.WriteLine(rowTemplate, "Шаг", "Цена X", "Цена Y", "Beta", "Спред", "Z-Score", "Сигнал");
+            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6,-8}";
+            Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "Сигнал");
             Console.WriteLine(new string('-', 85));
 
-            var algo = new KalmanPairsAlgo(1, 6, initialBeta: 100);
+            var algo = new KalmanPairsAlgo(1, 5, initialBeta: 100);
             //var algo = new KalmanPairsAlgo(5, 6);
             var i = 0;
 
@@ -64,11 +67,11 @@ public class KalmanPairsAlgoTests
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
-                        signal.PriceX.ToString("F4"),
-                        signal.PriceY.ToString("F4"),
-                        signal.Beta.ToString("F3"),
-                        signal.Spread.ToString("F2"),
-                        signal.ZScore.ToString("F2"),
+                        signal.PriceX.ToString("F5"),
+                        signal.PriceY.ToString("F5"),
+                        signal.Beta.ToString("F5"),
+                        signal.Spread.ToString("F5"),
+                        signal.ZScore.ToString("F5"),
                         signal.Signal);
                 }
 
