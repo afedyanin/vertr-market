@@ -1,5 +1,4 @@
-﻿using Market.Core.Extensions;
-using Market.Core.FileStore;
+﻿using Market.Core.FileStore;
 using Market.Core.Models;
 
 namespace Market.Core.Tests.FileStore;
@@ -29,7 +28,7 @@ internal sealed class OrderBookReaderTests
     {
         if (marketDepth.AssetId == 6)
         {
-            Console.WriteLine(marketDepth.Dump());
+            Console.WriteLine(marketDepth);
         }
     }
 }

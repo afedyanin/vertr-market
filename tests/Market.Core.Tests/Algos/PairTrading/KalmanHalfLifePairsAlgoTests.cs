@@ -15,7 +15,7 @@ public class KalmanHalfLifePairsAlgoTests
         // Инициализируем робота
         var algo = new KalmanHalfLifePairsAlgo(1, 5, initialBeta: 1.5);
 
-        Console.WriteLine("Sec\tSpread\tZ-ScoreBuy\tZ-ScoreSell\tIsCointegrated\tKappa (Speed)\tHalf-Life(sec)\tSignal");
+        Console.WriteLine("Sec\tSpread\tZ-ScoreBuy\tZ-ScoreSell\tIsCointegrated\tHalf-Life(sec)\tSignal");
         Console.WriteLine("-------------------------------------------------------------------------------------------");
 
         var time = new DateTime(2026, 10, 06, 10, 10, 10);
@@ -27,15 +27,15 @@ public class KalmanHalfLifePairsAlgoTests
             var bookX = OrderBookStub.Create(time, algo.AssetX, assetX[i], assetX[i]);
             var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
-            _ = algo.ProcessTick(bookX);
-            var resultY = algo.ProcessTick(bookY);
+            _ = algo.ProcessBook(bookX);
+            var resultY = algo.ProcessBook(bookY);
 
             var result = resultY as KalmanHalfLifePairsSignal;
 
             if (result != null)
             {
                 string halfLifeStr = result.IsCointegrated ? $"{result.HalfLifeSeconds:F1}s" : "INF ";
-                Console.WriteLine($"{i + 1}\t{result.Spread:F2}\t{result.ZScoreBuy:F2}\t\t{result.ZScoreSell:F2}\t\t{result.IsCointegrated}\t\t\t{result.Kappa:F4}\t\t\t{halfLifeStr}\t\t\t{result.Signal}");
+                Console.WriteLine($"{i + 1}\t{result.Spread:F2}\t{result.ZScoreBuy:F2}\t\t{result.ZScoreSell:F2}\t\t{result.IsCointegrated}\t\t\t{halfLifeStr}\t\t\t{result.Signal}");
             }
         }
     }

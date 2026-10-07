@@ -1,3 +1,4 @@
+using Market.Core.Algos.Common;
 using Market.Core.Extensions;
 using Market.Core.Models;
 
@@ -23,16 +24,11 @@ namespace Market.Core.Algos.PairTrading;
 
 public class VwapDeltaTimeAlgo : PairTradingAlgoBase
 {
-    // Калман 1: Оценка беты активов
-    private double _beta;
-    private double _pBeta = 1.0;
-
-    private const double QBeta = 0.00005;
-    private const double RBeta = 0.01;
-
+    private readonly KalmanFilterDynamicEstimator _kalmanFilter;
     private readonly double _tradeVolumeY;
 
-    private DateTime _lastEventTime = DateTime.MinValue;
+    private Quote? _quoteX;
+    private Quote? _quoteY;
 
     public VwapDeltaTimeAlgo(
         ushort assetX,
@@ -40,68 +36,51 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
         double initialBeta = 1.0,
         double tradeVolumeY = 1.0) : base(assetX, assetY)
     {
-        _beta = initialBeta;
+        _kalmanFilter = new KalmanFilterDynamicEstimator(initialBeta);
         _tradeVolumeY = tradeVolumeY;
     }
 
-    protected override ITradingSignal? ProcessTick(DateTime timestamp)
+    protected override ITradingSignal? ProcessTickX()
     {
-        // Пока не получили данные по обоим инструментам — расчет невозможен
-        if (_lastDepthX == null || _lastDepthY == null)
+        if (_lastDepthX is null)
         {
-            _lastEventTime = timestamp;
             return null;
         }
 
-        // 1. Расчет динамического шага времени (dt)
-        var dt = _lastEventTime == DateTime.MinValue ? 0 : (timestamp - _lastEventTime).TotalSeconds;
-        _lastEventTime = timestamp;
+        var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
+        _quoteX = _lastDepthX.GetVwapQuote(requiredVolumeX);
+        _kalmanFilter.UpdateX(_quoteX.Mid, _lastDepthX.Timestamp);
+        return ProcessTick();
+    }
 
-        // Защита от одновременных или сетевых пакетов из одной микросекунды
-        if (dt < 0.000_001)
+    protected override ITradingSignal? ProcessTickY()
+    {
+        if (_lastDepthY is null)
         {
-            dt = 0.000_001;
+            return null;
         }
 
-        // 2. Считаем VWAP для Актива Y на основе жестко заданного объема лота
-        double vwapAskY = _lastDepthY.GetVwap(_tradeVolumeY, isBuy: true);
-        double vwapBidY = _lastDepthY.GetVwap(_tradeVolumeY, isBuy: false);
-        double midVwapY = (vwapAskY + vwapBidY) / 2.0;
+        _quoteY = _lastDepthY.GetVwapQuote(_tradeVolumeY);
+        _kalmanFilter.UpdateY(_quoteY.Mid, _lastDepthY.Timestamp);
+        return ProcessTick();
+    }
 
-        // 3. Считаем объем для Актива X на основе текущей беты
-        double requiredVolumeX = _tradeVolumeY / _beta;
 
-        double vwapAskX = _lastDepthX.GetVwap(requiredVolumeX, isBuy: true);
-        double vwapBidX = _lastDepthX.GetVwap(requiredVolumeX, isBuy: false);
-        double midVwapX = (vwapAskX + vwapBidX) / 2.0;
+    private ITradingSignal? ProcessTick()
+    {
+        if (!_kalmanFilter.HasValidData)
+        {
+            return null;
+        }
 
-        // --- ШАГ ПРЕДСКАЗАНИЯ КАЛМАНА (Predict) с учетом dt ---
-        // Шум процесса Q масштабируется по времени
-        _pBeta += QBeta * dt;
+        var beta = _kalmanFilter.Beta;
+        var sigma = _kalmanFilter.Sigma;
 
-        // --- ДИНАМИЧЕСКИЙ ШТРАФ STALE DATA (Корректировка R) ---
-        // Считаем, как давно обновлялся каждый из стаканов относительно текущего события
-        double timeSinceLastX = (timestamp - _lastUpdateXTime).TotalSeconds;
-        double timeSinceLastY = (timestamp - _lastUpdateYTime).TotalSeconds;
-        double maxStaleTime = Math.Max(timeSinceLastX, timeSinceLastY);
-
-        // Чем старее данные одного из стаканов, тем сильнее мы раздуваем RBeta для текущего шага
-        double rBetaDynamic = RBeta + (maxStaleTime * 0.05);
-
-        // --- ШАГ ОБНОВЛЕНИЯ КАЛМАНА (Update) ---
-        double sBeta = midVwapX * _pBeta * midVwapX + rBetaDynamic;
-        double kBeta = (_pBeta * midVwapX) / sBeta;
-        double midSpread = midVwapY - (_beta * midVwapX);
-        _beta += kBeta * midSpread;
-        _pBeta = (1.0 - kBeta * midVwapX) * _pBeta;
-
-        // 4. Расчет торговых спредов по РЕАЛЬНЫМ ценам исполнения (VWAP)
-        double spreadBuyY_SellX = vwapAskY - (_beta * vwapBidX);
-        double spreadSellY_BuyX = vwapBidY - (_beta * vwapAskX);
-
-        double sigma = Math.Sqrt(sBeta);
-        double zScoreBuy = spreadBuyY_SellX / sigma;
-        double zScoreSell = spreadSellY_BuyX / sigma;
+        // Расчет торговых спредов по РЕАЛЬНЫМ ценам исполнения (VWAP)
+        var spreadBuyY_SellX = _quoteY!.Ask - (beta * _quoteX!.Bid);
+        var spreadSellY_BuyX = _quoteY!.Bid - (beta * _quoteX!.Ask);
+        var zScoreBuy = spreadBuyY_SellX / sigma;
+        var zScoreSell = spreadSellY_BuyX / sigma;
 
         // 5. Логика генерации сигналов
         string signal = "HOLD";
@@ -110,12 +89,14 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
         {
             if (zScoreBuy > 2.0)
             {
-                signal = $"EXECUTE SHORT Y (VWAP: {vwapBidY:F2}) / LONG X (VWAP: {vwapAskX:F2})";
+                //signal = $"EXECUTE SHORT Y (VWAP: {vwapBidY:F2}) / LONG X (VWAP: {vwapAskX:F2})";
+                signal = $"EXECUTE SHORT Y / LONG X";
                 _currentPosition = PositionState.ShortY_LongX;
             }
             else if (zScoreSell < -2.0)
             {
-                signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
+                // signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
+                signal = $"EXECUTE LONG Y / SHORT X";
                 _currentPosition = PositionState.LongY_ShortX;
             }
         }
@@ -130,20 +111,20 @@ public class VwapDeltaTimeAlgo : PairTradingAlgoBase
             _currentPosition = PositionState.None;
         }
 
+        var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
+
         return new PairTradingSignal
         {
-            Beta = _beta,
+            Beta = _kalmanFilter.Beta,
             Signal = signal,
             AssetX = AssetX,
             AssetY = AssetY,
             ZScoreBuy = zScoreBuy,
             ZScoreSell = zScoreSell,
-            VwapAskX = vwapAskX,
-            VwapBidX = vwapBidX,
-            VwapAskY = vwapAskY,
-            VwapBidY = vwapBidY,
             VolumeX = requiredVolumeX,
             VolumeY = _tradeVolumeY,
+            VwapX = _quoteX,
+            VwapY = _quoteY,
         };
     }
 }

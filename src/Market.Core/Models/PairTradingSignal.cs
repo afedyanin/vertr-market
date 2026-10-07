@@ -15,29 +15,23 @@ public record PairTradingSignal : ITradingSignal
     public double ZScoreSell { get; set; }
 
     [Key(3)]
-    public double VwapAskX { get; set; }
+    public Quote? VwapX { get; set; }
 
     [Key(4)]
-    public double VwapBidX { get; set; }
+    public Quote? VwapY { get; set; }
 
     [Key(5)]
-    public double VwapAskY { get; set; }
-
-    [Key(6)]
-    public double VwapBidY { get; set; }
-
-    [Key(7)]
     public double VolumeX { get; set; }
 
-    [Key(8)]
+    [Key(6)]
     public double VolumeY { get; set; }
 
-    [Key(9)]
+    [Key(7)]
     public string Signal { get; set; } = string.Empty;
 
-    [Key(10)]
+    [Key(8)]
     public ushort AssetX { get; set; }
 
-    [Key(11)]
+    [Key(9)]
     public ushort AssetY { get; set; }
 }

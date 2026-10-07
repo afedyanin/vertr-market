@@ -43,7 +43,7 @@ public class PairTradingStrategy
                         continue;
                     }
 
-                    var signal = _algo.ProcessTick(orderBook);
+                    var signal = _algo.ProcessBook(orderBook);
 
                     if (signal is null)
                     {

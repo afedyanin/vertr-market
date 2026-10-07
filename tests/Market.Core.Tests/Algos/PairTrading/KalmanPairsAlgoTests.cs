@@ -29,8 +29,8 @@ public class KalmanPairsAlgoTests
             var bookX = OrderBookStub.Create(time, algo.AssetX, assetX[i], assetX[i]);
             var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
-            _ = algo.ProcessTick(bookX);
-            var signal = algo.ProcessTick(bookY) as KalmanPairsAlgoSignal;
+            _ = algo.ProcessBook(bookX);
+            var signal = algo.ProcessBook(bookY) as KalmanPairsAlgoSignal;
 
             if (signal != null)
             {
@@ -61,7 +61,7 @@ public class KalmanPairsAlgoTests
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
             {
-                var signal = algo.ProcessTick(book) as KalmanPairsAlgoSignal;
+                var signal = algo.ProcessBook(book) as KalmanPairsAlgoSignal;
 
                 if (signal != null && signal.Signal != "HOLD")
                 {

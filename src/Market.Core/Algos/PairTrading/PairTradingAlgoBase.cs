@@ -9,9 +9,6 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
     public ushort AssetX { get; }
     public ushort AssetY { get; }
 
-    protected DateTime _lastUpdateXTime = DateTime.MinValue;
-    protected DateTime _lastUpdateYTime = DateTime.MinValue;
-
     protected PositionState _currentPosition = PositionState.None;
 
     protected PairTradingAlgoBase(ushort assetX, ushort assetY)
@@ -20,25 +17,24 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
         AssetY = assetY;
     }
 
-    public virtual ITradingSignal? ProcessTick(OrderBookDepth book)
+    public virtual ITradingSignal? ProcessBook(OrderBookDepth book)
     {
         if (book.AssetId == AssetX)
         {
             _lastDepthX = book;
-            _lastUpdateXTime = book.Timestamp;
+            return ProcessTickX();
         }
         else if (book.AssetId == AssetY)
         {
             _lastDepthY = book;
-            _lastUpdateYTime = book.Timestamp;
+            return ProcessTickY();
         }
         else
         {
             return null;
         }
-
-        return ProcessTick(book.Timestamp);
     }
 
-    protected abstract ITradingSignal? ProcessTick(DateTime timestamp);
+    protected abstract ITradingSignal? ProcessTickX();
+    protected abstract ITradingSignal? ProcessTickY();
 }

@@ -28,10 +28,30 @@ public class KalmanPairsAlgo : PairTradingAlgoBase
             r: r);
     }
 
-    protected override ITradingSignal? ProcessTick(DateTime timestamp)
+    protected override ITradingSignal? ProcessTickX()
+    {
+        if (_lastDepthX is null)
+        {
+            return null;
+        }
+
+        return ProcessTick();
+    }
+
+    protected override ITradingSignal? ProcessTickY()
+    {
+        if (_lastDepthY is null)
+        {
+            return null;
+        }
+
+        return ProcessTick();
+    }
+
+    private ITradingSignal? ProcessTick()
     {
         // Пока не получили данные по обоим инструментам — расчет невозможен
-        if (_lastDepthX == null || _lastDepthY == null)
+        if (_lastDepthX is null || _lastDepthY is null)
         {
             return null;
         }

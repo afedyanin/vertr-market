@@ -14,7 +14,8 @@ public class KalmanFilterEstimator
     public double S { get; private set; }
     public double K { get; private set; }
     public double Spread { get; private set; }
-    public double ZScore { get; private set; }
+    public double Sigma { get; private set; }
+    public double ZScore => Spread / Sigma;
 
     public KalmanFilterEstimator(
         double initialBeta = 1.0,
@@ -53,9 +54,6 @@ public class KalmanFilterEstimator
         // Обновляем ковариацию ошибки для следующего шага
         P = (1.0 - K * H) * P;
 
-        // --- РАСЧЕТ Z-SCORE ---
-        // Корень из S (ковариации инновации) дает нам текущее стандартное отклонение спреда (сигму)
-        // с учетом рыночного шума R. Это избавляет от необходимости считать скользящее окно.
-        ZScore = Spread / Math.Sqrt(S);
+        Sigma = Math.Sqrt(S);
     }
 }
