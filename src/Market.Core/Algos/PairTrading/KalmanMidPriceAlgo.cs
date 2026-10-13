@@ -80,31 +80,20 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             _currentState = StrategyState.None;
         }
 
-        return new KalmanPairsAlgoSignal
+        var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
-            PriceX = priceX,
-            PriceY = priceY,
-            Beta = _kalmanFilter.Beta,
-            Spread = _kalmanFilter.Spread,
-            ZScore = _kalmanFilter.ZScore,
             Action = action,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
         };
+
+        signal.Params["PriceX"] = priceX;
+        signal.Params["PriceY"] = priceY;
+        signal.Params["Beta"] = _kalmanFilter.Beta;
+        signal.Params["Spread"] = _kalmanFilter.Spread;
+        signal.Params["ZScore"] = _kalmanFilter.ZScore;
+
+        return signal;
     }
-}
-
-public record KalmanPairsAlgoSignal : ITradingSignal
-{
-    public required string SourceId { get; set; }
-    public required OrderBookDepth BookX { get; set; }
-    public required OrderBookDepth BookY { get; set; }
-
-    public double Beta { get; set; }
-    public double ZScore { get; set; }
-    public double Spread { get; set; }
-    public PairTradingAction Action { get; set; }
-    public double PriceX { get; set; }
-    public double PriceY { get; set; }
 }

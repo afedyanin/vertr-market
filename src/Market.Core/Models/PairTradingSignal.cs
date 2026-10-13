@@ -9,20 +9,14 @@ public record PairTradingSignal : ITradingSignal
     public required string SourceId { get; set; }
 
     [Key(1)]
-    public double Beta { get; set; }
-
-    [Key(2)]
-    public double ZScoreBuy { get; set; }
-
-    [Key(3)]
-    public double ZScoreSell { get; set; }
-
-    [Key(4)]
     public PairTradingAction Action { get; set; }
 
-    [Key(5)]
+    [Key(2)]
     public required OrderBookDepth BookX { get; set; }
 
-    [Key(6)]
+    [Key(3)]
     public required OrderBookDepth BookY { get; set; }
+
+    [Key(4)]
+    public Dictionary<string, double> Params { get; } = [];
 }

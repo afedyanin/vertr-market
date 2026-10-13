@@ -112,15 +112,19 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 
         // var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
 
-        return new PairTradingSignal
+        var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
-            Beta = _kalmanFilter.Beta,
             Action = action,
-            ZScoreBuy = zScoreBuy,
-            ZScoreSell = zScoreSell,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
         };
+
+        signal.Params["Beta"] = _kalmanFilter.Beta;
+        signal.Params["Spread"] = _kalmanFilter.Spread;
+        signal.Params["ZScoreBuy"] = zScoreBuy;
+        signal.Params["ZScoreSell"] = zScoreSell;
+
+        return signal;
     }
 }

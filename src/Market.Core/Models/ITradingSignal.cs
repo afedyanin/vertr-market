@@ -6,4 +6,5 @@ public interface ITradingSignal
     public PairTradingAction Action { get; }
     public OrderBookDepth BookX { get; }
     public OrderBookDepth BookY { get; }
+    public Dictionary<string, double> Params { get; }
 }

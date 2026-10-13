@@ -64,15 +64,18 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
             _currentState = StrategyState.None;
         }
 
-        return new KalmanPairsAlgoSignal
+        var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
-            Beta = _kalmanFilter.Beta,
-            Spread = _kalmanFilter.Spread,
-            ZScore = _kalmanFilter.ZScore,
             Action = action,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
         };
+
+        signal.Params["Beta"] = _kalmanFilter.Beta;
+        signal.Params["Spread"] = _kalmanFilter.Spread;
+        signal.Params["ZScore"] = _kalmanFilter.ZScore;
+
+        return signal;
     }
 }

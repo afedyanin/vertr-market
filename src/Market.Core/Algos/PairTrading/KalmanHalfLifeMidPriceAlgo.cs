@@ -126,32 +126,23 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             }
         }
 
-        return new KalmanHalfLifePairsSignal
+        var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(KalmanHalfLifeMidPriceAlgo)}:{AssetX}:{AssetY}",
-            Beta = beta,
-            Spread = spread,
-            ZScoreBuy = zScoreBuy,
-            ZScoreSell = zScoreSell,
+            SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
             Action = action,
-            HalfLifeSeconds = halfLife,
-            IsCointegrated = isCointegrated,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
         };
-    }
-}
 
-public record KalmanHalfLifePairsSignal : ITradingSignal
-{
-    public required string SourceId { get; set; }
-    public required OrderBookDepth BookX { get; set; }
-    public required OrderBookDepth BookY { get; set; }
-    public double Beta { get; set; }
-    public double Spread { get; set; }
-    public double? ZScoreBuy { get; set; }
-    public double? ZScoreSell { get; set; }
-    public PairTradingAction Action { get; set; }
-    public double HalfLifeSeconds { get; set; }
-    public bool IsCointegrated { get; set; }
+        signal.Params["PriceX"] = priceX;
+        signal.Params["PriceY"] = priceY;
+        signal.Params["Beta"] = beta;
+        signal.Params["Spread"] = spread;
+        signal.Params["ZScoreBuy"] = zScoreBuy!.Value;
+        signal.Params["ZScoreSell"] = zScoreSell!.Value;
+        signal.Params["HalfLifeSeconds"] = halfLife;
+        signal.Params["IsCointegrated"] = isCointegrated ? 1 : 0;
+
+        return signal;
+    }
 }
