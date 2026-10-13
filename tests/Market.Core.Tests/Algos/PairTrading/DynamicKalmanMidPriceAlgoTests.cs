@@ -29,7 +29,7 @@ public class DynamicKalmanMidPriceAlgoTests
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
             {
-                var signal = algo.ProcessBook(book) as KalmanPairsAlgoSignal;
+                var signal = algo.ProcessBook(book) as PairTradingSignal;
 
                 if (signal != null && signal.Action != PairTradingAction.Hold)
                 {
