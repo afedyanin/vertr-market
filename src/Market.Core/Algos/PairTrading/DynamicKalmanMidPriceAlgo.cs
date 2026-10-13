@@ -66,15 +66,13 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
 
         return new KalmanPairsAlgoSignal
         {
-
-            PriceX = _lastDepthX!.MidPrice!.Value,
-            PriceY = _lastDepthY!.MidPrice!.Value,
+            SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
             Beta = _kalmanFilter.Beta,
             Spread = _kalmanFilter.Spread,
             ZScore = _kalmanFilter.ZScore,
             Signal = signal,
-            BookX = _lastDepthX,
-            BookY = _lastDepthY,
+            BookX = _lastDepthX!,
+            BookY = _lastDepthY!,
         };
     }
 }

@@ -115,6 +115,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 
         return new PairTradingSignal
         {
+            SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
             Beta = _kalmanFilter.Beta,
             Signal = signal,
             ZScoreBuy = zScoreBuy,

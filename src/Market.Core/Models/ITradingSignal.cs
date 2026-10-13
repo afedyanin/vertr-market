@@ -2,7 +2,8 @@
 
 public interface ITradingSignal
 {
-    public string Signal { get; set; }
-    public OrderBookDepth BookX { get; set; }
-    public OrderBookDepth BookY { get; set; }
+    public string SourceId { get; }
+    public string Signal { get; }
+    public OrderBookDepth BookX { get; }
+    public OrderBookDepth BookY { get; }
 }

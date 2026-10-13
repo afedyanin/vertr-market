@@ -82,6 +82,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
 
         return new KalmanPairsAlgoSignal
         {
+            SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
             PriceX = priceX,
             PriceY = priceY,
             Beta = _kalmanFilter.Beta,
@@ -96,6 +97,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
 
 public record KalmanPairsAlgoSignal : ITradingSignal
 {
+    public required string SourceId { get; set; }
     public required OrderBookDepth BookX { get; set; }
     public required OrderBookDepth BookY { get; set; }
 

@@ -6,20 +6,23 @@ namespace Market.Core.Models;
 public record PairTradingSignal : ITradingSignal
 {
     [Key(0)]
-    public double Beta { get; set; }
+    public required string SourceId { get; set; }
 
     [Key(1)]
-    public double ZScoreBuy { get; set; }
+    public double Beta { get; set; }
 
     [Key(2)]
-    public double ZScoreSell { get; set; }
+    public double ZScoreBuy { get; set; }
 
     [Key(3)]
-    public string Signal { get; set; } = string.Empty;
+    public double ZScoreSell { get; set; }
 
     [Key(4)]
-    public required OrderBookDepth BookX { get; set; }
+    public string Signal { get; set; } = string.Empty;
 
     [Key(5)]
+    public required OrderBookDepth BookX { get; set; }
+
+    [Key(6)]
     public required OrderBookDepth BookY { get; set; }
 }

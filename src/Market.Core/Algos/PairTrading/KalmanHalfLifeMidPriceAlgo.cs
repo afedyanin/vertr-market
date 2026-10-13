@@ -128,6 +128,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 
         return new KalmanHalfLifePairsSignal
         {
+            SourceId = $"{nameof(KalmanHalfLifeMidPriceAlgo)}:{AssetX}:{AssetY}",
             Beta = beta,
             Spread = spread,
             ZScoreBuy = zScoreBuy,
@@ -143,6 +144,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 
 public record KalmanHalfLifePairsSignal : ITradingSignal
 {
+    public required string SourceId { get; set; }
     public required OrderBookDepth BookX { get; set; }
     public required OrderBookDepth BookY { get; set; }
     public double Beta { get; set; }
