@@ -34,8 +34,8 @@ public class RedisTradingSignalsPublisherService : BackgroundService
             await foreach (var signal in _reader.ReadAllAsync(stoppingToken))
             {
                 var redisChannel = _channelCache.GetOrAdd(
-                    ((uint)signal.AssetX << 16) | signal.AssetY,
-                    _ => new RedisChannel($"signals:{signal.AssetX}:{signal.AssetY}", RedisChannel.PatternMode.Auto));
+                    ((uint)signal.BookX.AssetId << 16) | signal.BookY.AssetId,
+                    _ => new RedisChannel($"signals:{signal.BookX.AssetId}:{signal.BookY.AssetId}", RedisChannel.PatternMode.Auto));
 
                 await _redisDb.PublishAsync(
                     redisChannel,

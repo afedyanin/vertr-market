@@ -9,7 +9,7 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
     public ushort AssetX { get; }
     public ushort AssetY { get; }
 
-    protected PositionState _currentPosition = PositionState.None;
+    protected StrategyState _currentState = StrategyState.None;
 
     protected PairTradingAlgoBase(ushort assetX, ushort assetY)
     {

@@ -85,46 +85,42 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         // 5. Логика генерации сигналов
         string signal = "HOLD";
 
-        if (_currentPosition == PositionState.None)
+        if (_currentState == StrategyState.None)
         {
             if (zScoreBuy > 2.0)
             {
                 //signal = $"EXECUTE SHORT Y (VWAP: {vwapBidY:F2}) / LONG X (VWAP: {vwapAskX:F2})";
                 signal = $"EXECUTE SHORT Y / LONG X";
-                _currentPosition = PositionState.ShortY_LongX;
+                _currentState = StrategyState.ShortY_LongX;
             }
             else if (zScoreSell < -2.0)
             {
                 // signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
                 signal = $"EXECUTE LONG Y / SHORT X";
-                _currentPosition = PositionState.LongY_ShortX;
+                _currentState = StrategyState.LongY_ShortX;
             }
         }
-        else if (_currentPosition == PositionState.ShortY_LongX && zScoreBuy <= 0.2)
+        else if (_currentState == StrategyState.ShortY_LongX && zScoreBuy <= 0.2)
         {
             signal = $"EXIT POSITION (TAKE PROFIT)";
-            _currentPosition = PositionState.None;
+            _currentState = StrategyState.None;
         }
-        else if (_currentPosition == PositionState.LongY_ShortX && zScoreSell >= -0.2)
+        else if (_currentState == StrategyState.LongY_ShortX && zScoreSell >= -0.2)
         {
             signal = $"EXIT POSITION (TAKE PROFIT)";
-            _currentPosition = PositionState.None;
+            _currentState = StrategyState.None;
         }
 
-        var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
+        // var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
 
         return new PairTradingSignal
         {
             Beta = _kalmanFilter.Beta,
             Signal = signal,
-            AssetX = AssetX,
-            AssetY = AssetY,
             ZScoreBuy = zScoreBuy,
             ZScoreSell = zScoreSell,
-            VolumeX = requiredVolumeX,
-            VolumeY = _tradeVolumeY,
-            VwapX = _quoteX,
-            VwapY = _quoteY,
+            BookX = _lastDepthX!,
+            BookY = _lastDepthY!,
         };
     }
 }

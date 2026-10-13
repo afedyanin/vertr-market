@@ -2,7 +2,7 @@
 
 public enum PositionState
 {
-    None,
-    LongY_ShortX,
-    ShortY_LongX
+    None = 0,
+    Long = 1,
+    Short = 2,
 }

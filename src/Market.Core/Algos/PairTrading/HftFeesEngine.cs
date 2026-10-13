@@ -29,7 +29,7 @@ public class HftFeesEngine
     private readonly double _feeRateX; // Комиссия X (в долях: 0.0005 = 0.05%)
     private readonly double _feeRateY; // Комиссия Y (в долях)
 
-    private PositionState _currentPosition = PositionState.None;
+    private StrategyState _currentPosition = StrategyState.None;
 
     public HftFeesEngine(double initialBeta, double tradeVolumeY, double feeRateX, double feeRateY)
     {
@@ -84,30 +84,30 @@ public class HftFeesEngine
         // 5. ТОРГОВАЯ ЛОГИКА
         string signal = "HOLD";
 
-        if (_currentPosition == PositionState.None)
+        if (_currentPosition == StrategyState.None)
         {
             // Используем скорректированный Z-Score для принятия решения о входе
             if (zScoreSellWithFees > 2.0)
             {
                 signal = $"EXECUTE SHORT Y / LONG X (Friction Passed)";
-                _currentPosition = PositionState.ShortY_LongX;
+                _currentPosition = StrategyState.ShortY_LongX;
             }
             else if (zScoreBuyWithFees < -2.0)
             {
                 signal = $"EXECUTE LONG Y / SHORT X (Friction Passed)";
-                _currentPosition = PositionState.LongY_ShortX;
+                _currentPosition = StrategyState.LongY_ShortX;
             }
         }
-        else if (_currentPosition == PositionState.ShortY_LongX && rawZScoreBuy <= 0.2)
+        else if (_currentPosition == StrategyState.ShortY_LongX && rawZScoreBuy <= 0.2)
         {
             // Выход контролируем по "чистому" спреду, так как комиссия на выход уже заложена в фильтр на этапе входа
             signal = $"EXIT POSITION";
-            _currentPosition = PositionState.None;
+            _currentPosition = StrategyState.None;
         }
-        else if (_currentPosition == PositionState.LongY_ShortX && rawZScoreSell >= -0.2)
+        else if (_currentPosition == StrategyState.LongY_ShortX && rawZScoreSell >= -0.2)
         {
             signal = $"EXIT POSITION";
-            _currentPosition = PositionState.None;
+            _currentPosition = StrategyState.None;
         }
 
         return new FeesResult

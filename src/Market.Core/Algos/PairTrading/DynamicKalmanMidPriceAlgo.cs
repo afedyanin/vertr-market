@@ -51,29 +51,30 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
         if (zScore > EntryThreshold)
         {
             signal = "SHORT Y / LONG X"; // Спред слишком большой, ставим на сужение
-            _currentPosition = PositionState.ShortY_LongX;
+            _currentState = StrategyState.ShortY_LongX;
         }
         else if (zScore < -EntryThreshold)
         {
             signal = "LONG Y / SHORT X"; // Спред слишком маленький, ставим на расширение
-            _currentPosition = PositionState.LongY_ShortX;
+            _currentState = StrategyState.LongY_ShortX;
         }
-        else if (Math.Abs(zScore) < ExitThreshold && _currentPosition != PositionState.None)
+        else if (Math.Abs(zScore) < ExitThreshold && _currentState != StrategyState.None)
         {
             signal = "EXIT POSITIONS";   // Спред вернулся в норму, фиксируем прибыль
-            _currentPosition = PositionState.None;
+            _currentState = StrategyState.None;
         }
 
         return new KalmanPairsAlgoSignal
         {
+
             PriceX = _lastDepthX!.MidPrice!.Value,
             PriceY = _lastDepthY!.MidPrice!.Value,
             Beta = _kalmanFilter.Beta,
             Spread = _kalmanFilter.Spread,
             ZScore = _kalmanFilter.ZScore,
             Signal = signal,
-            AssetX = AssetX,
-            AssetY = AssetY,
+            BookX = _lastDepthX,
+            BookY = _lastDepthY,
         };
     }
 }
