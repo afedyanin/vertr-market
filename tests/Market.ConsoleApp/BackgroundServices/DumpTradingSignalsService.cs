@@ -26,9 +26,9 @@ public class DumpTradingSignalsService : BackgroundService
         {
             await foreach (var signal in _reader.ReadAllAsync(stoppingToken))
             {
-                _logger.LogDebug("Received trading signal: {Signal}", signal.Signal);
+                _logger.LogDebug("Received trading signal: {Signal}", signal.Action);
 
-                if (signal.Signal.Equals("HOLD", StringComparison.OrdinalIgnoreCase))
+                if (signal.Action == PairTradingAction.Hold)
                 {
                     return;
                 }

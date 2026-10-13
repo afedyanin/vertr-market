@@ -1,5 +1,6 @@
 ﻿using Market.Core.Algos.PairTrading;
 using Market.Core.FileStore;
+using Market.Core.Models;
 
 namespace Market.Core.Tests.Algos.PairTrading;
 
@@ -30,7 +31,7 @@ public class DynamicKalmanMidPriceAlgoTests
             {
                 var signal = algo.ProcessBook(book) as KalmanPairsAlgoSignal;
 
-                if (signal != null && signal.Signal != "HOLD")
+                if (signal != null && signal.Action != PairTradingAction.Hold)
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
@@ -39,7 +40,7 @@ public class DynamicKalmanMidPriceAlgoTests
                         signal.Beta.ToString("F5"),
                         signal.Spread.ToString("F5"),
                         signal.ZScore.ToString("F5"),
-                        signal.Signal);
+                        signal.Action);
                 }
 
                 i++;

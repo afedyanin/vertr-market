@@ -1,5 +1,6 @@
 ﻿using Market.Core.Algos.PairTrading;
 using Market.Core.FileStore;
+using Market.Core.Models;
 using Market.Core.Tests.Stubs;
 
 namespace Market.Core.Tests.Algos.PairTrading;
@@ -38,7 +39,7 @@ public class KalmanMidPriceAlgoTests
                     i + 1,
                         signal.Beta.ToString("F3"),
                         signal.ZScore.ToString("F2"),
-                        signal.Signal);
+                        signal.Action);
             }
         }
     }
@@ -63,7 +64,7 @@ public class KalmanMidPriceAlgoTests
             {
                 var signal = algo.ProcessBook(book) as KalmanPairsAlgoSignal;
 
-                if (signal != null && signal.Signal != "HOLD")
+                if (signal != null && signal.Action != PairTradingAction.Hold)
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
@@ -72,7 +73,7 @@ public class KalmanMidPriceAlgoTests
                         signal.Beta.ToString("F5"),
                         signal.Spread.ToString("F5"),
                         signal.ZScore.ToString("F5"),
-                        signal.Signal);
+                        signal.Action);
                 }
 
                 i++;

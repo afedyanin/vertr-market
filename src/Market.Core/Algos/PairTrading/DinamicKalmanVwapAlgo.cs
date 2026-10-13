@@ -83,31 +83,30 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         var zScoreSell = spreadSellY_BuyX / sigma;
 
         // 5. Логика генерации сигналов
-        string signal = "HOLD";
+        var action = PairTradingAction.Hold;
 
         if (_currentState == StrategyState.None)
         {
             if (zScoreBuy > 2.0)
             {
-                //signal = $"EXECUTE SHORT Y (VWAP: {vwapBidY:F2}) / LONG X (VWAP: {vwapAskX:F2})";
-                signal = $"EXECUTE SHORT Y / LONG X";
+                action = PairTradingAction.ShortY_LongX;
                 _currentState = StrategyState.ShortY_LongX;
             }
             else if (zScoreSell < -2.0)
             {
                 // signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
-                signal = $"EXECUTE LONG Y / SHORT X";
+                action = PairTradingAction.LongY_ShortX;
                 _currentState = StrategyState.LongY_ShortX;
             }
         }
         else if (_currentState == StrategyState.ShortY_LongX && zScoreBuy <= 0.2)
         {
-            signal = $"EXIT POSITION (TAKE PROFIT)";
+            action = PairTradingAction.Exit;
             _currentState = StrategyState.None;
         }
         else if (_currentState == StrategyState.LongY_ShortX && zScoreSell >= -0.2)
         {
-            signal = $"EXIT POSITION (TAKE PROFIT)";
+            action = PairTradingAction.Exit;
             _currentState = StrategyState.None;
         }
 
@@ -117,7 +116,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         {
             SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
             Beta = _kalmanFilter.Beta,
-            Signal = signal,
+            Action = action,
             ZScoreBuy = zScoreBuy,
             ZScoreSell = zScoreSell,
             BookX = _lastDepthX!,

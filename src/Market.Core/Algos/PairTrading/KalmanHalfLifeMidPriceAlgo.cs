@@ -77,7 +77,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         var zScoreSell = spreadSellY_BuyX / sigma;
 
         // 3. Логика сигналов с контролем полураспада
-        string signal = "HOLD";
+        var action = PairTradingAction.Hold;
 
         if (_currentState == StrategyState.None && isCointegrated && halfLife > 1.0 && halfLife < 60.0)
         {
@@ -85,14 +85,14 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             // Мы будем бить по стакану: продавать Y по Bid и покупать X по Ask.
             if (zScoreSell > 2.0)
             {
-                signal = $"EXECUTE: SHORT Y / LONG X";
+                action = PairTradingAction.ShortY_LongX;
                 _currentState = StrategyState.ShortY_LongX;
                 _secondsInTrade = 0;
             }
             // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
             else if (zScoreBuy < -2.0)
             {
-                signal = $"EXECUTE: LONG Y / SHORT X";
+                action = PairTradingAction.LongY_ShortX;
                 _currentState = StrategyState.LongY_ShortX;
                 _secondsInTrade = 0;
             }
@@ -108,7 +108,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             // Поэтому мы отслеживаем zScoreBuy для выхода.
             if (zScoreBuy <= 0.2 || !isCointegrated || _secondsInTrade > (halfLife * 2.5))
             {
-                signal = $"EXIT: BUY Y / SELL X (TAKE PROFIT)";
+                action = PairTradingAction.Exit;
                 _currentState = StrategyState.None;
                 _secondsInTrade = 0;
             }
@@ -120,7 +120,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
             if (zScoreSell >= -0.2 || !isCointegrated || _secondsInTrade > (halfLife * 2.5))
             {
-                signal = $"EXIT: SELL Y / BUY X (TAKE PROFIT)";
+                action = PairTradingAction.Exit;
                 _currentState = StrategyState.None;
                 _secondsInTrade = 0;
             }
@@ -133,7 +133,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             Spread = spread,
             ZScoreBuy = zScoreBuy,
             ZScoreSell = zScoreSell,
-            Signal = signal,
+            Action = action,
             HalfLifeSeconds = halfLife,
             IsCointegrated = isCointegrated,
             BookX = _lastDepthX,
@@ -151,7 +151,7 @@ public record KalmanHalfLifePairsSignal : ITradingSignal
     public double Spread { get; set; }
     public double? ZScoreBuy { get; set; }
     public double? ZScoreSell { get; set; }
-    public string Signal { get; set; } = "HOLD";
+    public PairTradingAction Action { get; set; }
     public double HalfLifeSeconds { get; set; }
     public bool IsCointegrated { get; set; }
 }

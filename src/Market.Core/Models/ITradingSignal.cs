@@ -3,7 +3,7 @@
 public interface ITradingSignal
 {
     public string SourceId { get; }
-    public string Signal { get; }
+    public PairTradingAction Action { get; }
     public OrderBookDepth BookX { get; }
     public OrderBookDepth BookY { get; }
 }

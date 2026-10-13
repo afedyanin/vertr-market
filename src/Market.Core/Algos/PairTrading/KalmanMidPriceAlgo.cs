@@ -62,21 +62,21 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
 
         var zScore = _kalmanFilter.ZScore;
 
-        string signal = "HOLD";
+        var action = PairTradingAction.Hold;
 
         if (zScore > EntryThreshold)
         {
-            signal = "SHORT Y / LONG X"; // Спред слишком большой, ставим на сужение
+            action = PairTradingAction.ShortY_LongX; // Спред слишком большой, ставим на сужение
             _currentState = StrategyState.ShortY_LongX;
         }
         else if (zScore < -EntryThreshold)
         {
-            signal = "LONG Y / SHORT X"; // Спред слишком маленький, ставим на расширение
+            action = PairTradingAction.LongY_ShortX; // Спред слишком маленький, ставим на расширение
             _currentState = StrategyState.LongY_ShortX;
         }
         else if (Math.Abs(zScore) < ExitThreshold && _currentState != StrategyState.None)
         {
-            signal = "EXIT POSITIONS";   // Спред вернулся в норму, фиксируем прибыль
+            action = PairTradingAction.Exit;   // Спред вернулся в норму, фиксируем прибыль
             _currentState = StrategyState.None;
         }
 
@@ -88,7 +88,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             Beta = _kalmanFilter.Beta,
             Spread = _kalmanFilter.Spread,
             ZScore = _kalmanFilter.ZScore,
-            Signal = signal,
+            Action = action,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
         };
@@ -104,7 +104,7 @@ public record KalmanPairsAlgoSignal : ITradingSignal
     public double Beta { get; set; }
     public double ZScore { get; set; }
     public double Spread { get; set; }
-    public string Signal { get; set; } = "HOLD";
+    public PairTradingAction Action { get; set; }
     public double PriceX { get; set; }
     public double PriceY { get; set; }
 }

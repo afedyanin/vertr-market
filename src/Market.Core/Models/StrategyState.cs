@@ -2,7 +2,7 @@
 
 public enum StrategyState
 {
-    None,
-    LongY_ShortX,
-    ShortY_LongX
+    None = 0,
+    LongY_ShortX = 1,
+    ShortY_LongX = 2
 }

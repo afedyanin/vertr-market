@@ -18,7 +18,7 @@ public record PairTradingSignal : ITradingSignal
     public double ZScoreSell { get; set; }
 
     [Key(4)]
-    public string Signal { get; set; } = string.Empty;
+    public PairTradingAction Action { get; set; }
 
     [Key(5)]
     public required OrderBookDepth BookX { get; set; }

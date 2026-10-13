@@ -1,5 +1,6 @@
 ﻿using Market.Core.Algos.PairTrading;
 using Market.Core.FileStore;
+using Market.Core.Models;
 using Market.Core.Tests.Stubs;
 
 namespace Market.Core.Tests.Algos.PairTrading;
@@ -45,7 +46,7 @@ public class KalmanHalfLifeMidPriceAlgoTests
                     signal.ZScoreSell!.Value.ToString("F5"),
                     halfLifeStr,
                     signal.IsCointegrated,
-                    signal.Signal);
+                    signal.Action.ToString());
             }
         }
     }
@@ -69,7 +70,7 @@ public class KalmanHalfLifeMidPriceAlgoTests
             {
                 var signal = algo.ProcessBook(book) as KalmanHalfLifePairsSignal;
 
-                if (signal != null && signal.Signal != "HOLD")
+                if (signal != null && signal.Action != PairTradingAction.Hold)
                 {
                     string halfLifeStr = signal.IsCointegrated ? $"{signal.HalfLifeSeconds:F1}s" : "INF ";
 
@@ -81,7 +82,7 @@ public class KalmanHalfLifeMidPriceAlgoTests
                         signal.ZScoreSell!.Value.ToString("F5"),
                         halfLifeStr,
                         signal.IsCointegrated,
-                        signal.Signal);
+                        signal.Action.ToString());
                 }
 
                 i++;
