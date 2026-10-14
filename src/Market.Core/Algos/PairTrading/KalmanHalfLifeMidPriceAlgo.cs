@@ -128,7 +128,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 
         var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
+            SourceId = $"{nameof(KalmanHalfLifeMidPriceAlgo)}:{AssetX}:{AssetY}",
             Action = action,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
