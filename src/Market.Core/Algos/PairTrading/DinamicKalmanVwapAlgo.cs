@@ -40,7 +40,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         _tradeVolumeY = tradeVolumeY;
     }
 
-    protected override ITradingSignal? ProcessTickX()
+    protected override IPairTradingSignal? ProcessTickX()
     {
         if (_lastDepthX is null)
         {
@@ -53,7 +53,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    protected override ITradingSignal? ProcessTickY()
+    protected override IPairTradingSignal? ProcessTickY()
     {
         if (_lastDepthY is null)
         {
@@ -66,7 +66,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
     }
 
 
-    private ITradingSignal? ProcessTick()
+    private IPairTradingSignal? ProcessTick()
     {
         if (!_kalmanFilter.HasValidData)
         {

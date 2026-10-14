@@ -1,10 +1,12 @@
 ﻿namespace Market.Core.Models;
 
-public interface ITradingSignal
+public interface IPairTradingSignal
 {
     public string SourceId { get; }
     public PairTradingAction Action { get; }
     public OrderBookDepth BookX { get; }
     public OrderBookDepth BookY { get; }
+    public decimal XQty { get; }
+    public decimal YQty { get; }
     public Dictionary<string, double> Params { get; }
 }

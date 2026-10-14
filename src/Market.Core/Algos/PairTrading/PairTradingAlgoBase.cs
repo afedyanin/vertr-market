@@ -17,7 +17,7 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
         AssetY = assetY;
     }
 
-    public virtual ITradingSignal? ProcessBook(OrderBookDepth book)
+    public virtual IPairTradingSignal? ProcessBook(OrderBookDepth book)
     {
         if (book.AssetId == AssetX)
         {
@@ -35,6 +35,6 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
         }
     }
 
-    protected abstract ITradingSignal? ProcessTickX();
-    protected abstract ITradingSignal? ProcessTickY();
+    protected abstract IPairTradingSignal? ProcessTickX();
+    protected abstract IPairTradingSignal? ProcessTickY();
 }

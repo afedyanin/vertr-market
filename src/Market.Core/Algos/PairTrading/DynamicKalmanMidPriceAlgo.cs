@@ -25,19 +25,19 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
             r: r);
     }
 
-    protected override ITradingSignal? ProcessTickX()
+    protected override IPairTradingSignal? ProcessTickX()
     {
         _kalmanFilter.UpdateX(_lastDepthX!.MidPrice!.Value, _lastDepthX.Timestamp);
         return ProcessTick();
     }
 
-    protected override ITradingSignal? ProcessTickY()
+    protected override IPairTradingSignal? ProcessTickY()
     {
         _kalmanFilter.UpdateY(_lastDepthY!.MidPrice!.Value, _lastDepthY.Timestamp);
         return ProcessTick();
     }
 
-    private ITradingSignal? ProcessTick()
+    private IPairTradingSignal? ProcessTick()
     {
         if (!_kalmanFilter.HasValidData)
         {

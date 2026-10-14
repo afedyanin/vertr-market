@@ -4,6 +4,7 @@ public class Position
 {
     private readonly object _lock = new object();
 
+    public ushort AssetId { get; init; }
     public PositionState State { get; private set; } = PositionState.None;
     public decimal Quantity { get; private set; } = 0;
     public decimal Price { get; private set; } = 0;

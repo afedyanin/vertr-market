@@ -86,4 +86,43 @@ public class KalmanMidPriceAlgoTests
             Console.WriteLine("Чтение было отменено.");
         }
     }
+
+    [TestCase("Data\\books_2026-10-05.bin.gz")]
+    [TestCase("Data\\books_2026-10-06.bin.gz")]
+    public async Task KalmanPairsAlgoBtTrades(string filePath)
+    {
+        using var cts = new CancellationTokenSource();
+
+        try
+        {
+            var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 100);
+            var orderExec = new OrderExecution();
+            var portfolioManager = new PortfolioManager();
+
+            var i = 0;
+
+            await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
+            {
+                var signal = algo.ProcessBook(book);
+
+                if (signal is null || signal.Action == PairTradingAction.Hold)
+                {
+                    continue;
+                }
+
+                var portfolio = portfolioManager.GetOrCreate(signal.SourceId);
+                var trades = orderExec.Execute(signal, portfolio);
+                portfolioManager.Update(trades);
+
+                i++;
+            }
+
+            // TODO: Dump trades
+            // TODO: Dump portfolios & positions
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Чтение было отменено.");
+        }
+    }
 }

@@ -25,7 +25,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         _cointegration = new CointegrationEstimator();
     }
 
-    protected override ITradingSignal? ProcessTickX()
+    protected override IPairTradingSignal? ProcessTickX()
     {
         if (_lastDepthX is null)
         {
@@ -35,7 +35,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    protected override ITradingSignal? ProcessTickY()
+    protected override IPairTradingSignal? ProcessTickY()
     {
         if (_lastDepthY is null)
         {
@@ -45,7 +45,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    private ITradingSignal? ProcessTick()
+    private IPairTradingSignal? ProcessTick()
     {
         // Пока не получили данные по обоим инструментам — расчет невозможен
         if (_lastDepthX == null || _lastDepthY == null)

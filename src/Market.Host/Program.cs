@@ -67,7 +67,7 @@ public static class Program
 
         // Channels
         builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>());
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<ITradingSignal>());
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>());
 
         // Strategy
         builder.Services.AddTransient(sp =>
@@ -75,7 +75,7 @@ public static class Program
             var algo = new DinamicKalmanVwapAlgo(1, 5);
             var strategy = new PairTradingStrategy(algo,
                 sp.GetRequiredService<Channel<OrderBookDepth>>(),
-                sp.GetRequiredService<Channel<ITradingSignal>>(),
+                sp.GetRequiredService<Channel<IPairTradingSignal>>(),
                 sp.GetRequiredService<ILoggerFactory>());
             return strategy;
         });

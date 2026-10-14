@@ -13,6 +13,8 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
     private const double ExitThreshold = 0.5;   // Выход (тейк-профит) при приближении к 0
     private readonly KalmanFilterEstimator _kalmanFilter;
 
+    private readonly double _requiredYQty = 1.0;
+
     public KalmanMidPriceAlgo(
         ushort assetX,
         ushort assetY,
@@ -28,7 +30,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             r: r);
     }
 
-    protected override ITradingSignal? ProcessTickX()
+    protected override IPairTradingSignal? ProcessTickX()
     {
         if (_lastDepthX is null)
         {
@@ -38,7 +40,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    protected override ITradingSignal? ProcessTickY()
+    protected override IPairTradingSignal? ProcessTickY()
     {
         if (_lastDepthY is null)
         {
@@ -48,7 +50,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    private ITradingSignal? ProcessTick()
+    private IPairTradingSignal? ProcessTick()
     {
         // Пока не получили данные по обоим инструментам — расчет невозможен
         if (_lastDepthX is null || _lastDepthY is null)
@@ -80,12 +82,16 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             _currentState = StrategyState.None;
         }
 
+        var xQty = _requiredYQty / _kalmanFilter.Beta;
+
         var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
             Action = action,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
+            YQty = (decimal)_requiredYQty,
+            XQty = (decimal)xQty
         };
 
         signal.Params[SignalParamKeys.PriceX] = priceX;

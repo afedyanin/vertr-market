@@ -3,7 +3,7 @@
 namespace Market.Core.Models;
 
 [MessagePackObject]
-public record PairTradingSignal : ITradingSignal
+public record PairTradingSignal : IPairTradingSignal
 {
     [Key(0)]
     public required string SourceId { get; set; }
@@ -18,7 +18,14 @@ public record PairTradingSignal : ITradingSignal
     public required OrderBookDepth BookY { get; set; }
 
     [Key(4)]
+    public decimal XQty { get; set; }
+
+    [Key(5)]
+    public decimal YQty { get; set; }
+
+    [Key(6)]
     public Dictionary<string, double> Params { get; } = [];
+
 }
 
 public static class SignalParamKeys

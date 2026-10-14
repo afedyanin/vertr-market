@@ -4,5 +4,5 @@ public interface IPairTradingAlgo
 {
     public ushort AssetX { get; }
     public ushort AssetY { get; }
-    public ITradingSignal? ProcessBook(OrderBookDepth book);
+    public IPairTradingSignal? ProcessBook(OrderBookDepth book);
 }
