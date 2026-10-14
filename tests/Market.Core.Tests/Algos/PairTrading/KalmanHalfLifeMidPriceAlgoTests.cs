@@ -1,4 +1,5 @@
 ﻿using Market.Core.Algos.PairTrading;
+using Market.Core.Extensions;
 using Market.Core.FileStore;
 using Market.Core.Models;
 using Market.Core.Tests.Stubs;
@@ -31,21 +32,23 @@ public class KalmanHalfLifeMidPriceAlgoTests
             var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
             _ = algo.ProcessBook(bookX);
-            var resultY = algo.ProcessBook(bookY);
-
-            var signal = resultY as KalmanHalfLifePairsSignal;
+            var signal = algo.ProcessBook(bookY);
 
             if (signal != null)
             {
-                string halfLifeStr = signal.IsCointegrated ? $"{signal.HalfLifeSeconds:F1}s" : "INF ";
+
+                var isCointegrated = signal.GetParam(SignalParamKeys.IsCointegrated) > 0 ? true : false;
+                var halfLifeSeconds = signal.GetParam(SignalParamKeys.HalfLifeSeconds) ?? 0;
+                var halfLifeStr = isCointegrated ? $"{halfLifeSeconds:F1}s" : "INF ";
+
                 Console.WriteLine(rowTemplate,
                     i + 1,
-                    signal.Beta.ToString("F5"),
-                    signal.Spread.ToString("F5"),
-                    signal.ZScoreBuy!.Value.ToString("F5"),
-                    signal.ZScoreSell!.Value.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.ZScoreBuy)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.ZScoreSell)?.ToString("F5"),
                     halfLifeStr,
-                    signal.IsCointegrated,
+                    isCointegrated,
                     signal.Action.ToString());
             }
         }
@@ -68,20 +71,22 @@ public class KalmanHalfLifeMidPriceAlgoTests
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
             {
-                var signal = algo.ProcessBook(book) as KalmanHalfLifePairsSignal;
+                var signal = algo.ProcessBook(book);
 
                 if (signal != null && signal.Action != PairTradingAction.Hold)
                 {
-                    string halfLifeStr = signal.IsCointegrated ? $"{signal.HalfLifeSeconds:F1}s" : "INF ";
+                    var isCointegrated = signal.GetParam(SignalParamKeys.IsCointegrated) > 0 ? true : false;
+                    var halfLifeSeconds = signal.GetParam(SignalParamKeys.HalfLifeSeconds) ?? 0;
+                    var halfLifeStr = isCointegrated ? $"{halfLifeSeconds:F1}s" : "INF ";
 
                     Console.WriteLine(rowTemplate,
                         i + 1,
-                        signal.Beta.ToString("F5"),
-                        signal.Spread.ToString("F5"),
-                        signal.ZScoreBuy!.Value.ToString("F5"),
-                        signal.ZScoreSell!.Value.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.ZScoreBuy)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.ZScoreSell)?.ToString("F5"),
                         halfLifeStr,
-                        signal.IsCointegrated,
+                        isCointegrated,
                         signal.Action.ToString());
                 }
 

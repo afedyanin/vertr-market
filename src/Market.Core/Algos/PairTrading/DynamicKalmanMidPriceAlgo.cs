@@ -72,9 +72,9 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
             BookY = _lastDepthY!,
         };
 
-        signal.Params["Beta"] = _kalmanFilter.Beta;
-        signal.Params["Spread"] = _kalmanFilter.Spread;
-        signal.Params["ZScore"] = _kalmanFilter.ZScore;
+        signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
+        signal.Params[SignalParamKeys.Spread] = _kalmanFilter.Spread;
+        signal.Params[SignalParamKeys.ZScore] = _kalmanFilter.ZScore;
 
         return signal;
     }

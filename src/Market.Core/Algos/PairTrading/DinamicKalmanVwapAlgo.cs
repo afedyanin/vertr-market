@@ -120,10 +120,10 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
             BookY = _lastDepthY!,
         };
 
-        signal.Params["Beta"] = _kalmanFilter.Beta;
-        signal.Params["Spread"] = _kalmanFilter.Spread;
-        signal.Params["ZScoreBuy"] = zScoreBuy;
-        signal.Params["ZScoreSell"] = zScoreSell;
+        signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
+        signal.Params[SignalParamKeys.Spread] = _kalmanFilter.Spread;
+        signal.Params[SignalParamKeys.ZScoreBuy] = zScoreBuy;
+        signal.Params[SignalParamKeys.ZScoreSell] = zScoreSell;
 
         return signal;
     }

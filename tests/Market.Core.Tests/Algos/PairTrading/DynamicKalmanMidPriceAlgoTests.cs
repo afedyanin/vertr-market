@@ -1,4 +1,5 @@
 ﻿using Market.Core.Algos.PairTrading;
+using Market.Core.Extensions;
 using Market.Core.FileStore;
 using Market.Core.Models;
 
@@ -35,11 +36,11 @@ public class DynamicKalmanMidPriceAlgoTests
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
-                        signal.PriceX.ToString("F5"),
-                        signal.PriceY.ToString("F5"),
-                        signal.Beta.ToString("F5"),
-                        signal.Spread.ToString("F5"),
-                        signal.ZScore.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.PriceX)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.PriceY)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
                         signal.Action);
                 }
 

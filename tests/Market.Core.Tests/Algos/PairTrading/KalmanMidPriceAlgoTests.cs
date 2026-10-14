@@ -1,4 +1,5 @@
 ﻿using Market.Core.Algos.PairTrading;
+using Market.Core.Extensions;
 using Market.Core.FileStore;
 using Market.Core.Models;
 using Market.Core.Tests.Stubs;
@@ -31,15 +32,16 @@ public class KalmanMidPriceAlgoTests
             var bookY = OrderBookStub.Create(time, algo.AssetY, assetY[i], assetY[i]);
 
             _ = algo.ProcessBook(bookX);
-            var signal = algo.ProcessBook(bookY) as KalmanPairsAlgoSignal;
+            var signal = algo.ProcessBook(bookY);
 
             if (signal != null)
             {
                 Console.WriteLine(rowTemplate,
                     i + 1,
-                        signal.Beta.ToString("F3"),
-                        signal.ZScore.ToString("F2"),
-                        signal.Action);
+                    signal.Action,
+                    signal.GetParam(SignalParamKeys.Beta)?.ToString("F3"),
+                    signal.GetParam(SignalParamKeys.ZScore)?.ToString("F2"),
+                    signal.Action);
             }
         }
     }
@@ -62,17 +64,17 @@ public class KalmanMidPriceAlgoTests
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
             {
-                var signal = algo.ProcessBook(book) as KalmanPairsAlgoSignal;
+                var signal = algo.ProcessBook(book);
 
                 if (signal != null && signal.Action != PairTradingAction.Hold)
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
-                        signal.PriceX.ToString("F5"),
-                        signal.PriceY.ToString("F5"),
-                        signal.Beta.ToString("F5"),
-                        signal.Spread.ToString("F5"),
-                        signal.ZScore.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.PriceX)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.PriceY)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
+                        signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
                         signal.Action);
                 }
 

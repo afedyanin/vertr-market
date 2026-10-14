@@ -134,14 +134,14 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             BookY = _lastDepthY,
         };
 
-        signal.Params["PriceX"] = priceX;
-        signal.Params["PriceY"] = priceY;
-        signal.Params["Beta"] = beta;
-        signal.Params["Spread"] = spread;
-        signal.Params["ZScoreBuy"] = zScoreBuy!.Value;
-        signal.Params["ZScoreSell"] = zScoreSell!.Value;
-        signal.Params["HalfLifeSeconds"] = halfLife;
-        signal.Params["IsCointegrated"] = isCointegrated ? 1 : 0;
+        signal.Params[SignalParamKeys.PriceX] = priceX;
+        signal.Params[SignalParamKeys.PriceY] = priceY;
+        signal.Params[SignalParamKeys.Beta] = beta;
+        signal.Params[SignalParamKeys.Spread] = spread;
+        signal.Params[SignalParamKeys.ZScoreBuy] = zScoreBuy!.Value;
+        signal.Params[SignalParamKeys.ZScoreSell] = zScoreSell!.Value;
+        signal.Params[SignalParamKeys.HalfLifeSeconds] = halfLife;
+        signal.Params[SignalParamKeys.IsCointegrated] = isCointegrated ? 1 : 0;
 
         return signal;
     }

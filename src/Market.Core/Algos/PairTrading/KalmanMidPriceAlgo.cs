@@ -88,11 +88,11 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             BookY = _lastDepthY,
         };
 
-        signal.Params["PriceX"] = priceX;
-        signal.Params["PriceY"] = priceY;
-        signal.Params["Beta"] = _kalmanFilter.Beta;
-        signal.Params["Spread"] = _kalmanFilter.Spread;
-        signal.Params["ZScore"] = _kalmanFilter.ZScore;
+        signal.Params[SignalParamKeys.PriceX] = priceX;
+        signal.Params[SignalParamKeys.PriceY] = priceY;
+        signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
+        signal.Params[SignalParamKeys.Spread] = _kalmanFilter.Spread;
+        signal.Params[SignalParamKeys.ZScore] = _kalmanFilter.ZScore;
 
         return signal;
     }
