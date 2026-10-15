@@ -11,8 +11,8 @@ public static class OrderBookDepthExtensions
     {
         var levels = isBuy ? book.Asks : book.Bids; // Если покупаем, бьем в лимиты продавцов (Asks), если продаем — в Bids
 
-        // Пустой стакан — ликвидности нет, VWAP не определен
-        if (levels.Length == 0)
+        // Пустой стакан или некорректный объем — VWAP не определен (NaN фильтруется вызывающим кодом)
+        if (levels.Length == 0 || !double.IsFinite(requiredVolume) || requiredVolume < 0)
         {
             return double.NaN;
         }

@@ -43,15 +43,24 @@ public class PairTradingStrategy
                         continue;
                     }
 
-                    var signal = _algo.ProcessBook(orderBook);
-
-                    if (signal is null)
+                    // Обрабатываем каждый стакан изолированно: один сбойный тик
+                    // не должен останавливать стратегию целиком.
+                    try
                     {
-                        continue;
-                    }
+                        var signal = _algo.ProcessBook(orderBook);
 
-                    _logger.LogInformation("Sending signal: {Signal}.", signal);
-                    _writer.TryWrite(signal);
+                        if (signal is null)
+                        {
+                            continue;
+                        }
+
+                        _logger.LogInformation("Sending signal: {Signal}.", signal);
+                        _writer.TryWrite(signal);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Order book processing failed for AssetId={AssetId}. Skipping book.", orderBook.AssetId);
+                    }
                 }
             }
         }

@@ -18,7 +18,7 @@ public class DynamicKalmanFilterEstimator
     public double K { get; private set; }
     public double Spread { get; private set; }
     public double Sigma { get; private set; }
-    public double ZScore => Spread / Sigma;
+    public double ZScore => Sigma > 0 ? Spread / Sigma : 0;
 
     private double? _priceX;
     private double? _priceY;
@@ -46,6 +46,12 @@ public class DynamicKalmanFilterEstimator
 
     public void UpdateX(double priceX, DateTime time)
     {
+        // Пропускаем невалидные цены: иначе NaN/Infinity необратимо «отравит» Beta и Sigma.
+        if (!double.IsFinite(priceX))
+        {
+            return;
+        }
+
         _priceX = priceX;
         _lastUpdateXTime = time;
         ProcessTick(time);
@@ -53,6 +59,11 @@ public class DynamicKalmanFilterEstimator
 
     public void UpdateY(double priceY, DateTime time)
     {
+        if (!double.IsFinite(priceY))
+        {
+            return;
+        }
+
         _priceY = priceY;
         _lastUpdateYTime = time;
         ProcessTick(time);

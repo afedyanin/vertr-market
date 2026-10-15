@@ -15,7 +15,7 @@ public class KalmanFilterEstimator
     public double K { get; private set; }
     public double Spread { get; private set; }
     public double Sigma { get; private set; }
-    public double ZScore => Spread / Sigma;
+    public double ZScore => Sigma > 0 ? Spread / Sigma : 0;
 
     public KalmanFilterEstimator(
         double initialBeta = 1.0,
@@ -33,6 +33,12 @@ public class KalmanFilterEstimator
 
     public void Update(double priceX, double priceY)
     {
+        // Защита от «отравления» фильтра: NaN/Infinity в ценах делают Beta и Sigma необратимо невалидными.
+        if (!double.IsFinite(priceX) || !double.IsFinite(priceY))
+        {
+            return;
+        }
+
         // Ковариация ошибки оценки
         P += _q;
 

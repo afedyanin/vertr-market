@@ -28,6 +28,13 @@ public class OrderBookDepth
         ? (BestBid.Value + BestAsk.Value) / 2.0
         : null;
 
+    /// <summary>
+    /// Стакан пригоден для расчета, только если в нем есть обе стороны (bid и ask).
+    /// Односторонний/пустой стакан не содержит валидных цен и должен пропускаться.
+    /// </summary>
+    [IgnoreMember]
+    public bool IsValid => Bids is { Length: > 0 } && Asks is { Length: > 0 };
+
     public OrderBookDepth(
         DateTime timestamp,
         ushort assetId,

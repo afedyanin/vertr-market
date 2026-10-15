@@ -30,7 +30,7 @@ public class DumpTradingSignalsService : BackgroundService
 
                 if (signal.Action == PairTradingAction.Hold)
                 {
-                    return;
+                    continue;
                 }
 
                 _logger.LogInformation($"Signal details: {signal}");

@@ -24,8 +24,13 @@ namespace Market.Core.Algos.PairTrading;
 
 public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 {
+    private const double EntryThreshold = 2.0;
+    private const double ExitThreshold = 0.2;
+
     private readonly DynamicKalmanFilterEstimator _kalmanFilter;
     private readonly double _tradeVolumeY;
+    private readonly double _feeRateX;
+    private readonly double _feeRateY;
 
     private Quote? _quoteX;
     private Quote? _quoteY;
@@ -34,10 +39,14 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0,
-        double tradeVolumeY = 1.0) : base(assetX, assetY)
+        double tradeVolumeY = 1.0,
+        double feeRateX = 0.0,
+        double feeRateY = 0.0) : base(assetX, assetY)
     {
         _kalmanFilter = new DynamicKalmanFilterEstimator(initialBeta);
         _tradeVolumeY = tradeVolumeY;
+        _feeRateX = feeRateX;
+        _feeRateY = feeRateY;
     }
 
     protected override IPairTradingSignal? ProcessTickX()
@@ -49,6 +58,13 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 
         var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
         _quoteX = _lastDepthX.GetVwapQuote(requiredVolumeX);
+
+        // Пустой/неликвидный стакан даёт NaN — не пускаем его в фильтр.
+        if (!IsValidQuote(_quoteX))
+        {
+            return null;
+        }
+
         _kalmanFilter.UpdateX(_quoteX.Mid, _lastDepthX.Timestamp);
         return ProcessTick();
     }
@@ -61,6 +77,12 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         }
 
         _quoteY = _lastDepthY.GetVwapQuote(_tradeVolumeY);
+
+        if (!IsValidQuote(_quoteY))
+        {
+            return null;
+        }
+
         _kalmanFilter.UpdateY(_quoteY.Mid, _lastDepthY.Timestamp);
         return ProcessTick();
     }
@@ -82,42 +104,56 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         var zScoreBuy = spreadBuyY_SellX / sigma;
         var zScoreSell = spreadSellY_BuyX / sigma;
 
+        // Защита от деления на ноль и «отравления» сигнала значениями NaN/Infinity.
+        if (!double.IsFinite(zScoreBuy) || !double.IsFinite(zScoreSell))
+        {
+            return null;
+        }
+
+        // Комиссии уменьшают фактический edge входа: переводим их в единицы Z-Score
+        // и ужесточаем порог входа на эту величину (при нулевых ставках фильтр выключен).
+        var feesInZScore = CalculateFeesInZScore(beta);
+
         // 5. Логика генерации сигналов
         var action = PairTradingAction.Hold;
 
         if (_currentState == StrategyState.None)
         {
-            if (zScoreBuy > 2.0)
+            // Вход оцениваем по спреду ИСПОЛНЯЕМОЙ ноги (как в KalmanHalfLifeMidPriceAlgo и HftFeesEngine):
+            //  - ShortY_LongX исполняется продажей Y (Bid) и покупкой X (Ask) → zScoreSell;
+            //  - LongY_ShortX исполняется покупкой Y (Ask) и продажей X (Bid) → zScoreBuy.
+            if (zScoreSell - feesInZScore > EntryThreshold)
             {
                 action = PairTradingAction.ShortY_LongX;
                 _currentState = StrategyState.ShortY_LongX;
             }
-            else if (zScoreSell < -2.0)
+            else if (zScoreBuy + feesInZScore < -EntryThreshold)
             {
-                // signal = $"EXECUTE LONG Y (VWAP: {vwapAskY:F2}) / SHORT X (VWAP: {vwapBidX:F2})";
                 action = PairTradingAction.LongY_ShortX;
                 _currentState = StrategyState.LongY_ShortX;
             }
         }
-        else if (_currentState == StrategyState.ShortY_LongX && zScoreBuy <= 0.2)
+        else if (_currentState == StrategyState.ShortY_LongX && zScoreBuy <= ExitThreshold)
         {
             action = PairTradingAction.Exit;
             _currentState = StrategyState.None;
         }
-        else if (_currentState == StrategyState.LongY_ShortX && zScoreSell >= -0.2)
+        else if (_currentState == StrategyState.LongY_ShortX && zScoreSell >= -ExitThreshold)
         {
             action = PairTradingAction.Exit;
             _currentState = StrategyState.None;
         }
 
-        // var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
+        var xQty = beta > 0 ? _tradeVolumeY / beta : 0.0;
 
         var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
+            SourceId = $"{nameof(DinamicKalmanVwapAlgo)}:{AssetX}:{AssetY}",
             Action = action,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
+            YQty = (decimal)_tradeVolumeY,
+            XQty = double.IsFinite(xQty) ? (decimal)xQty : 0m,
         };
 
         signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
@@ -127,4 +163,30 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 
         return signal;
     }
+
+    /// <summary>
+    /// Стоимость комиссий «вход + выход» в единицах Z-Score для текущего спреда.
+    /// </summary>
+    private double CalculateFeesInZScore(double beta)
+    {
+        if (_feeRateX <= 0 && _feeRateY <= 0)
+        {
+            return 0.0;
+        }
+
+        var sigma = _kalmanFilter.Sigma;
+        if (!(sigma > 0))
+        {
+            return 0.0;
+        }
+
+        var midX = (_quoteX!.Bid + _quoteX.Ask) / 2.0;
+        var midY = (_quoteY!.Bid + _quoteY.Ask) / 2.0;
+
+        var totalFeesInY = 2.0 * (midY * _feeRateY) + 2.0 * beta * (midX * _feeRateX);
+        return totalFeesInY / sigma;
+    }
+
+    private static bool IsValidQuote(Quote quote)
+        => double.IsFinite(quote.Bid) && double.IsFinite(quote.Ask) && quote.Ask > 0 && quote.Bid > 0;
 }

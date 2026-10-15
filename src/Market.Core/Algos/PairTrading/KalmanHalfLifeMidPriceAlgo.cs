@@ -6,7 +6,8 @@ namespace Market.Core.Algos.PairTrading;
 public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 {
     // Калман 2: Онлайн-оценка AR(1) для спреда (Модель Орнштейна-Уленбека)
-    private int _secondsInTrade = 0;
+    // Момент входа в позицию (по таймстампам стаканов) — для тайм-стопа по полураспаду.
+    private DateTime? _entryTime = null;
 
     private readonly KalmanFilterEstimator _kalmanFilter;
     private readonly CointegrationEstimator _cointegration;
@@ -87,42 +88,38 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             {
                 action = PairTradingAction.ShortY_LongX;
                 _currentState = StrategyState.ShortY_LongX;
-                _secondsInTrade = 0;
+                _entryTime = LatestTimestamp();
             }
             // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
             else if (zScoreBuy < -2.0)
             {
                 action = PairTradingAction.LongY_ShortX;
                 _currentState = StrategyState.LongY_ShortX;
-                _secondsInTrade = 0;
+                _entryTime = LatestTimestamp();
             }
         }
         else if (_currentState == StrategyState.ShortY_LongX)
         {
-            _secondsInTrade++;
-
             // СИГНАЛ ВЫХОДА ПО ПОЛУРАСПАДУ (Time Stop): 
             // Если позиция висит дольше, чем 2-3 периода полураспада, математическое ожидание прибыли исчезает.
             // Либо если коинтеграция полностью исчезла (isCointegrated == false)
             // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
             // Поэтому мы отслеживаем zScoreBuy для выхода.
-            if (zScoreBuy <= 0.2 || !isCointegrated || _secondsInTrade > (halfLife * 2.5))
+            if (zScoreBuy <= 0.2 || !isCointegrated || SecondsInTrade() > (halfLife * 2.5))
             {
                 action = PairTradingAction.Exit;
                 _currentState = StrategyState.None;
-                _secondsInTrade = 0;
+                _entryTime = null;
             }
         }
         else if (_currentState == StrategyState.LongY_ShortX)
         {
-            _secondsInTrade++;
-
             // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
-            if (zScoreSell >= -0.2 || !isCointegrated || _secondsInTrade > (halfLife * 2.5))
+            if (zScoreSell >= -0.2 || !isCointegrated || SecondsInTrade() > (halfLife * 2.5))
             {
                 action = PairTradingAction.Exit;
                 _currentState = StrategyState.None;
-                _secondsInTrade = 0;
+                _entryTime = null;
             }
         }
 
@@ -145,4 +142,16 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 
         return signal;
     }
+
+    /// <summary>
+    /// Актуальное время пары — максимальный из таймстампов последних стаканов X и Y.
+    /// </summary>
+    private DateTime LatestTimestamp()
+        => _lastDepthX!.Timestamp >= _lastDepthY!.Timestamp ? _lastDepthX.Timestamp : _lastDepthY.Timestamp;
+
+    /// <summary>
+    /// Время удержания позиции в секундах (по таймстампам стаканов, а не по числу тиков).
+    /// </summary>
+    private double SecondsInTrade()
+        => _entryTime.HasValue ? (LatestTimestamp() - _entryTime.Value).TotalSeconds : 0.0;
 }

@@ -19,6 +19,13 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
 
     public virtual IPairTradingSignal? ProcessBook(OrderBookDepth book)
     {
+        // Односторонний/пустой стакан не содержит валидных цен: пропускаем его,
+        // чтобы не упасть на MidPrice!.Value и не «отравить» фильтр значениями NaN.
+        if (book is null || !book.IsValid)
+        {
+            return null;
+        }
+
         if (book.AssetId == AssetX)
         {
             _lastDepthX = book;

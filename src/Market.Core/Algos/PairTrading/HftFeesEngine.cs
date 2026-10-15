@@ -76,10 +76,12 @@ public class HftFeesEngine
         // Переводим стоимость комиссий из пунктов цены в единицы Z-Score
         double feesInZScore = totalFeesInY / sigma;
 
-        // Скорректированные Z-Score. 
-        // Комиссия всегда уменьшает нашу прибыль, сдвигая порог входа дальше.
-        double zScoreBuyWithFees = rawZScoreBuy + feesInZScore;   // Сдвигаем вниз (в сторону еще больших отрицательных значений)
-        double zScoreSellWithFees = rawZScoreSell - feesInZScore; // Сдвигаем вниз (уменьшаем профитный потенциал шорта)
+        // Скорректированные Z-Score.
+        // Комиссия всегда уменьшает прибыль, поэтому ужесточаем порог входа:
+        //  - для лонга по Y (вход при Z-Score < -2) добавляем издержки, чтобы требуемый порог стал ещё ниже;
+        //  - для шорта по Y (вход при Z-Score > +2) вычитаем издержки, чтобы требуемый порог стал ещё выше.
+        double zScoreBuyWithFees = rawZScoreBuy + feesInZScore;
+        double zScoreSellWithFees = rawZScoreSell - feesInZScore;
 
         // 5. ТОРГОВАЯ ЛОГИКА
         string signal = "HOLD";
