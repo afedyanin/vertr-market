@@ -13,7 +13,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
     private const double ExitThreshold = 0.5;   // Выход (тейк-профит) при приближении к 0
     private readonly KalmanFilterEstimator _kalmanFilter;
 
-    private readonly double _requiredYQty = 1.0;
+    private readonly decimal _requiredYQty = 1.0m;
 
     public KalmanMidPriceAlgo(
         ushort assetX,
@@ -62,36 +62,20 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         var priceY = _lastDepthY.MidPrice!.Value;
         _kalmanFilter.Update(priceX, priceY);
 
-        var zScore = _kalmanFilter.ZScore;
+        (var xQty, var yQty) = GetQty();
 
-        var action = PairTradingAction.Hold;
-
-        if (zScore > EntryThreshold)
+        if (xQty == 0 && yQty == 0)
         {
-            action = PairTradingAction.ShortY_LongX; // Спред слишком большой, ставим на сужение
-            _currentState = StrategyState.ShortY_LongX;
+            return null;
         }
-        else if (zScore < -EntryThreshold)
-        {
-            action = PairTradingAction.LongY_ShortX; // Спред слишком маленький, ставим на расширение
-            _currentState = StrategyState.LongY_ShortX;
-        }
-        else if (Math.Abs(zScore) < ExitThreshold && _currentState != StrategyState.None)
-        {
-            action = PairTradingAction.Exit;   // Спред вернулся в норму, фиксируем прибыль
-            _currentState = StrategyState.None;
-        }
-
-        var xQty = _requiredYQty / _kalmanFilter.Beta;
 
         var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
-            Action = action,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
-            YQty = (decimal)_requiredYQty,
-            XQty = (decimal)xQty
+            XQty = xQty,
+            YQty = yQty,
         };
 
         signal.Params[SignalParamKeys.PriceX] = priceX;
@@ -99,7 +83,37 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
         signal.Params[SignalParamKeys.Spread] = _kalmanFilter.Spread;
         signal.Params[SignalParamKeys.ZScore] = _kalmanFilter.ZScore;
+        signal.Params[SignalParamKeys.Sigma] = _kalmanFilter.Sigma;
+
+        _openXQty += xQty;
+        _openYQty += yQty;
 
         return signal;
+    }
+
+    private (decimal xQty, decimal yQty) GetQty()
+    {
+        var zScore = _kalmanFilter.ZScore;
+        var xQty = 0m;
+        var yQty = 0m;
+
+        if (zScore > EntryThreshold && !HasOpenPosition)
+        {
+            yQty = -_requiredYQty;
+            xQty = _requiredYQty / (decimal)_kalmanFilter.Beta;
+        }
+        else if (zScore < -EntryThreshold && !HasOpenPosition)
+        {
+            yQty = _requiredYQty;
+            xQty = -_requiredYQty / (decimal)_kalmanFilter.Beta;
+        }
+        else if (Math.Abs(zScore) < ExitThreshold && HasOpenPosition)
+        {
+            // Спред вернулся в норму, фиксируем прибыль
+            yQty = -_openYQty;
+            xQty = -_openXQty;
+        }
+
+        return (xQty, yQty);
     }
 }

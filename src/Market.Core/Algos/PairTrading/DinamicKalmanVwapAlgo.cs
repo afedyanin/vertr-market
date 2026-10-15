@@ -26,12 +26,11 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 {
     private const double EntryThreshold = 2.0;
     private const double ExitThreshold = 0.2;
+    private readonly double _requiredYQty = 1.0;
 
     private readonly DynamicKalmanFilterEstimator _kalmanFilter;
-    private readonly double _tradeVolumeY;
     private readonly double _feeRateX;
     private readonly double _feeRateY;
-
     private Quote? _quoteX;
     private Quote? _quoteY;
 
@@ -44,7 +43,6 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         double feeRateY = 0.0) : base(assetX, assetY)
     {
         _kalmanFilter = new DynamicKalmanFilterEstimator(initialBeta);
-        _tradeVolumeY = tradeVolumeY;
         _feeRateX = feeRateX;
         _feeRateY = feeRateY;
     }
@@ -56,7 +54,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
             return null;
         }
 
-        var requiredVolumeX = _tradeVolumeY / _kalmanFilter.Beta;
+        var requiredVolumeX = _requiredYQty / _kalmanFilter.Beta;
         _quoteX = _lastDepthX.GetVwapQuote(requiredVolumeX);
 
         // Пустой/неликвидный стакан даёт NaN — не пускаем его в фильтр.
@@ -76,7 +74,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
             return null;
         }
 
-        _quoteY = _lastDepthY.GetVwapQuote(_tradeVolumeY);
+        _quoteY = _lastDepthY.GetVwapQuote(_requiredYQty);
 
         if (!IsValidQuote(_quoteY))
         {
@@ -110,58 +108,74 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
             return null;
         }
 
-        // Комиссии уменьшают фактический edge входа: переводим их в единицы Z-Score
-        // и ужесточаем порог входа на эту величину (при нулевых ставках фильтр выключен).
-        var feesInZScore = CalculateFeesInZScore(beta);
+        (var xQty, var yQty) = GetQty(zScoreBuy, zScoreSell);
 
-        // 5. Логика генерации сигналов
-        var action = PairTradingAction.Hold;
-
-        if (_currentState == StrategyState.None)
+        if (xQty == 0 && yQty == 0)
         {
-            // Вход оцениваем по спреду ИСПОЛНЯЕМОЙ ноги (как в KalmanHalfLifeMidPriceAlgo и HftFeesEngine):
-            //  - ShortY_LongX исполняется продажей Y (Bid) и покупкой X (Ask) → zScoreSell;
-            //  - LongY_ShortX исполняется покупкой Y (Ask) и продажей X (Bid) → zScoreBuy.
-            if (zScoreSell - feesInZScore > EntryThreshold)
-            {
-                action = PairTradingAction.ShortY_LongX;
-                _currentState = StrategyState.ShortY_LongX;
-            }
-            else if (zScoreBuy + feesInZScore < -EntryThreshold)
-            {
-                action = PairTradingAction.LongY_ShortX;
-                _currentState = StrategyState.LongY_ShortX;
-            }
+            return null;
         }
-        else if (_currentState == StrategyState.ShortY_LongX && zScoreBuy <= ExitThreshold)
-        {
-            action = PairTradingAction.Exit;
-            _currentState = StrategyState.None;
-        }
-        else if (_currentState == StrategyState.LongY_ShortX && zScoreSell >= -ExitThreshold)
-        {
-            action = PairTradingAction.Exit;
-            _currentState = StrategyState.None;
-        }
-
-        var xQty = beta > 0 ? _tradeVolumeY / beta : 0.0;
 
         var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(DinamicKalmanVwapAlgo)}:{AssetX}:{AssetY}",
-            Action = action,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
-            YQty = (decimal)_tradeVolumeY,
-            XQty = double.IsFinite(xQty) ? (decimal)xQty : 0m,
+            XQty = xQty,
+            YQty = yQty,
         };
 
         signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
         signal.Params[SignalParamKeys.Spread] = _kalmanFilter.Spread;
+        signal.Params[SignalParamKeys.Sigma] = _kalmanFilter.Sigma;
         signal.Params[SignalParamKeys.ZScoreBuy] = zScoreBuy;
         signal.Params[SignalParamKeys.ZScoreSell] = zScoreSell;
 
         return signal;
+    }
+
+    private (decimal xQty, decimal yQty) GetQty(double? zScoreBuy, double? zScoreSell)
+    {
+        var beta = _kalmanFilter.Beta;
+
+        var xQty = 0.0m;
+        var yQty = 0.0m;
+
+        // Комиссии уменьшают фактический edge входа: переводим их в единицы Z-Score
+        // и ужесточаем порог входа на эту величину (при нулевых ставках фильтр выключен).
+        var feesInZScore = CalculateFeesInZScore(beta);
+
+        var requiredYQty = (decimal)_requiredYQty;
+        if (!HasOpenPosition)
+        {
+            // Вход в Short Y / Long X имеет смысл, только если спред ПРОДАЖИ (Sell) превысил верхний порог.
+            // Мы будем бить по стакану: продавать Y по Bid и покупать X по Ask.
+            if (zScoreSell - feesInZScore > EntryThreshold)
+            {
+                yQty = (-requiredYQty);
+                xQty = requiredYQty / (decimal)beta;
+            }
+            // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
+            else if (zScoreBuy + feesInZScore < -EntryThreshold)
+            {
+                yQty = requiredYQty;
+                xQty = -requiredYQty / (decimal)beta;
+            }
+        }
+        else if (_openYQty < 0 && zScoreBuy <= ExitThreshold)
+        {
+            // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
+            // Поэтому мы отслеживаем zScoreBuy для выхода.
+            yQty = -_openYQty;
+            xQty = -_openXQty;
+        }
+        else if (_openYQty > 0 && zScoreSell >= -ExitThreshold)
+        {
+            // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
+            yQty = -_openYQty;
+            xQty = -_openXQty;
+        }
+
+        return (xQty, yQty);
     }
 
     /// <summary>

@@ -6,10 +6,14 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
 {
     protected OrderBookDepth? _lastDepthX;
     protected OrderBookDepth? _lastDepthY;
+
+    protected decimal _openXQty;
+    protected decimal _openYQty;
+
     public ushort AssetX { get; }
     public ushort AssetY { get; }
 
-    protected StrategyState _currentState = StrategyState.None;
+    public bool HasOpenPosition => _openXQty != 0 || _openYQty != 0;
 
     protected PairTradingAlgoBase(ushort assetX, ushort assetY)
     {
@@ -19,8 +23,6 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
 
     public virtual IPairTradingSignal? ProcessBook(OrderBookDepth book)
     {
-        // Односторонний/пустой стакан не содержит валидных цен: пропускаем его,
-        // чтобы не упасть на MidPrice!.Value и не «отравить» фильтр значениями NaN.
         if (book is null || !book.IsValid)
         {
             return null;

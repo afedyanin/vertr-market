@@ -12,7 +12,7 @@ public static class OrderBookDepthExtensions
         var levels = isBuy ? book.Asks : book.Bids; // Если покупаем, бьем в лимиты продавцов (Asks), если продаем — в Bids
 
         // Пустой стакан или некорректный объем — VWAP не определен (NaN фильтруется вызывающим кодом)
-        if (levels.Length == 0 || !double.IsFinite(requiredVolume) || requiredVolume < 0)
+        if (levels.Length == 0 || requiredVolume < 0)
         {
             return double.NaN;
         }
@@ -23,18 +23,18 @@ public static class OrderBookDepthExtensions
             return levels[0].Price;
         }
 
-        double accumulatedVolume = 0;
-        double accumulatedCash = 0;
+        var accumulatedVolume = 0.0;
+        var accumulatedCash = 0.0;
 
         foreach (var level in levels)
         {
-            double remainingVolume = requiredVolume - accumulatedVolume;
+            var remainingVolume = requiredVolume - accumulatedVolume;
             if (remainingVolume <= 0)
             {
                 break;
             }
 
-            double volumeToTake = Math.Min(remainingVolume, level.Size);
+            var volumeToTake = Math.Min(remainingVolume, level.Size);
             accumulatedCash += volumeToTake * level.Price;
             accumulatedVolume += volumeToTake;
         }
@@ -47,7 +47,6 @@ public static class OrderBookDepthExtensions
 
         return accumulatedCash / requiredVolume;
     }
-
     public static Quote GetVwapQuote(this OrderBookDepth book, double requiredVolume)
         => new Quote(book.GetVwap(requiredVolume, false), book.GetVwap(requiredVolume, true));
 }

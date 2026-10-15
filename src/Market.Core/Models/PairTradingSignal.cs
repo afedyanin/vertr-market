@@ -9,21 +9,18 @@ public record PairTradingSignal : IPairTradingSignal
     public required string SourceId { get; set; }
 
     [Key(1)]
-    public PairTradingAction Action { get; set; }
-
-    [Key(2)]
     public required OrderBookDepth BookX { get; set; }
 
-    [Key(3)]
+    [Key(2)]
     public required OrderBookDepth BookY { get; set; }
 
-    [Key(4)]
+    [Key(3)]
     public decimal XQty { get; set; }
 
-    [Key(5)]
+    [Key(4)]
     public decimal YQty { get; set; }
 
-    [Key(6)]
+    [Key(5)]
     public Dictionary<string, double> Params { get; } = [];
 
 }
@@ -35,6 +32,7 @@ public static class SignalParamKeys
     public const string Beta = nameof(Beta);
     public const string Spread = nameof(Spread);
     public const string ZScore = nameof(ZScore);
+    public const string Sigma = nameof(Sigma);
     public const string ZScoreBuy = nameof(ZScoreBuy);
     public const string ZScoreSell = nameof(ZScoreSell);
     public const string HalfLifeSeconds = nameof(HalfLifeSeconds);

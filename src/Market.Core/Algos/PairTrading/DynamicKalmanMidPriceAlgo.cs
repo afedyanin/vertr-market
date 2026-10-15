@@ -8,6 +8,8 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
     // Пороговые значения для генерации сигналов
     private const double EntryThreshold = 2.0;  // Вход при Z-Score > 2.0 или < -2.0
     private const double ExitThreshold = 0.5;   // Выход (тейк-профит) при приближении к 0
+    private readonly decimal _requiredYQty = 1.0m;
+
     private readonly DynamicKalmanFilterEstimator _kalmanFilter;
 
     public DynamicKalmanMidPriceAlgo(
@@ -44,38 +46,52 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
             return null;
         }
 
-        var zScore = _kalmanFilter.ZScore;
+        (var xQty, var yQty) = GetQty();
 
-        var action = PairTradingAction.Hold;
-
-        if (zScore > EntryThreshold)
+        if (xQty == 0 && yQty == 0)
         {
-            action = PairTradingAction.ShortY_LongX;
-            _currentState = StrategyState.ShortY_LongX;
-        }
-        else if (zScore < -EntryThreshold)
-        {
-            action = PairTradingAction.LongY_ShortX; // Спред слишком маленький, ставим на расширение
-            _currentState = StrategyState.LongY_ShortX;
-        }
-        else if (Math.Abs(zScore) < ExitThreshold && _currentState != StrategyState.None)
-        {
-            action = PairTradingAction.Exit; // Спред вернулся в норму, фиксируем прибыль
-            _currentState = StrategyState.None;
+            return null;
         }
 
         var signal = new PairTradingSignal
         {
             SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
-            Action = action,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
+            XQty = xQty,
+            YQty = yQty,
         };
 
         signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
         signal.Params[SignalParamKeys.Spread] = _kalmanFilter.Spread;
         signal.Params[SignalParamKeys.ZScore] = _kalmanFilter.ZScore;
+        signal.Params[SignalParamKeys.Sigma] = _kalmanFilter.Sigma;
 
         return signal;
+    }
+    private (decimal xQty, decimal yQty) GetQty()
+    {
+        var zScore = _kalmanFilter.ZScore;
+        var xQty = 0m;
+        var yQty = 0m;
+
+        if (zScore > EntryThreshold && !HasOpenPosition)
+        {
+            yQty = -_requiredYQty;
+            xQty = _requiredYQty / (decimal)_kalmanFilter.Beta;
+        }
+        else if (zScore < -EntryThreshold && !HasOpenPosition)
+        {
+            yQty = _requiredYQty;
+            xQty = -_requiredYQty / (decimal)_kalmanFilter.Beta;
+        }
+        else if (Math.Abs(zScore) < ExitThreshold && HasOpenPosition)
+        {
+            // Спред вернулся в норму, фиксируем прибыль
+            yQty = -_openYQty;
+            xQty = -_openXQty;
+        }
+
+        return (xQty, yQty);
     }
 }

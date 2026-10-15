@@ -1,5 +1,4 @@
-﻿using Market.Core.Extensions;
-using Market.Core.Models;
+﻿using Market.Core.Models;
 
 namespace Market.Core.Algos.PairTrading;
 
@@ -20,27 +19,13 @@ namespace Market.Core.Algos.PairTrading;
 
 public class HftFeesEngine
 {
-    private double _beta;
-    private double _pBeta = 1.0;
-    private const double QBeta = 0.00005;
-    private const double RBeta = 0.01;
-
-    private readonly double _tradeVolumeY;
-    private readonly double _feeRateX; // Комиссия X (в долях: 0.0005 = 0.05%)
-    private readonly double _feeRateY; // Комиссия Y (в долях)
-
-    private StrategyState _currentPosition = StrategyState.None;
-
     public HftFeesEngine(double initialBeta, double tradeVolumeY, double feeRateX, double feeRateY)
     {
-        _beta = initialBeta;
-        _tradeVolumeY = tradeVolumeY;
-        _feeRateX = feeRateX;
-        _feeRateY = feeRateY;
     }
 
     public FeesResult ProcessSecond(OrderBookDepth x, OrderBookDepth y)
     {
+        /*
         // 1. VWAP расчеты
         double vwapAskY = y.GetVwap(_tradeVolumeY, isBuy: true);
         double vwapBidY = y.GetVwap(_tradeVolumeY, isBuy: false);
@@ -122,6 +107,9 @@ public class HftFeesEngine
             TotalFeesInY = totalFeesInY,
             Signal = signal
         };
+        */
+
+        return new FeesResult();
     }
 }
 

@@ -2,5 +2,5 @@
 
 public interface IOrderExecutionEngine
 {
-    public IEnumerable<MyTrade> Execute(IPairTradingSignal signal, Portfolio portfolio);
+    public IEnumerable<MyTrade> Execute(IPairTradingSignal signal);
 }
