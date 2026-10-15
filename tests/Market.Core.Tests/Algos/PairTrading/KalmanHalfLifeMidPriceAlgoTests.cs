@@ -18,8 +18,8 @@ public class KalmanHalfLifeMidPriceAlgoTests
         // Инициализируем робота
         var algo = new KalmanHalfLifeMidPriceAlgo(1, 5, initialBeta: 1.5);
 
-        const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,6} {6, 6} {7,-8}";
-        Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "Сигнал");
+        const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,6} {6, 6} {7,12} {8, 12}";
+        Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "XQty", "YQty");
         Console.WriteLine(new string('-', 85));
 
         var time = new DateTime(2026, 10, 06, 10, 10, 10);
@@ -49,7 +49,8 @@ public class KalmanHalfLifeMidPriceAlgoTests
                     signal.GetParam(SignalParamKeys.ZScoreSell)?.ToString("F5"),
                     halfLifeStr,
                     isCointegrated,
-                    signal.Action.ToString());
+                    signal.XQty,
+                    signal.YQty);
             }
         }
     }
@@ -62,8 +63,8 @@ public class KalmanHalfLifeMidPriceAlgoTests
 
         try
         {
-            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,6} {6, 6} {7,-8}";
-            Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "Сигнал");
+            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,6} {6, 6} {7,12} {8, 12}";
+            Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "XQty", "YQty");
             Console.WriteLine(new string('-', 85));
 
             var algo = new KalmanHalfLifeMidPriceAlgo(1, 5, initialBeta: 100);
@@ -73,7 +74,7 @@ public class KalmanHalfLifeMidPriceAlgoTests
             {
                 var signal = algo.ProcessBook(book);
 
-                if (signal != null && signal.Action != PairTradingAction.Hold)
+                if (signal != null)
                 {
                     var isCointegrated = signal.GetParam(SignalParamKeys.IsCointegrated) > 0 ? true : false;
                     var halfLifeSeconds = signal.GetParam(SignalParamKeys.HalfLifeSeconds) ?? 0;
@@ -87,7 +88,8 @@ public class KalmanHalfLifeMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.ZScoreSell)?.ToString("F5"),
                         halfLifeStr,
                         isCointegrated,
-                        signal.Action.ToString());
+                        signal.XQty,
+                        signal.YQty);
                 }
 
                 i++;

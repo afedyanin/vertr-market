@@ -15,8 +15,8 @@ public class DynamicKalmanMidPriceAlgoTests
 
         try
         {
-            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6,-8}";
-            Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "Сигнал");
+            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6,12} {7, 12}";
+            Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "XQty", "YQty");
             Console.WriteLine(new string('-', 85));
 
             var algo = new KalmanMidPriceAlgo(
@@ -32,7 +32,7 @@ public class DynamicKalmanMidPriceAlgoTests
             {
                 var signal = algo.ProcessBook(book) as PairTradingSignal;
 
-                if (signal != null && signal.Action != PairTradingAction.Hold)
+                if (signal != null)
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
@@ -41,7 +41,8 @@ public class DynamicKalmanMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                        signal.Action);
+                        signal.XQty,
+                        signal.YQty);
                 }
 
                 i++;

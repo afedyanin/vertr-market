@@ -18,9 +18,9 @@ public class KalmanMidPriceAlgoTests
         // Инициализируем робота
         var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 1.5);
 
-        const string rowTemplate = "{0,-6} {1, 12} {2,10} {3,-8}";
-        Console.WriteLine(rowTemplate, "Шаг", "Beta", "Z-Score", "Сигнал");
-        Console.WriteLine(new string('-', 50));
+        const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6, 12} {7, 12}";
+        Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
+        Console.WriteLine(new string('-', 85));
 
         var time = new DateTime(2026, 10, 06, 10, 10, 10);
 
@@ -38,10 +38,13 @@ public class KalmanMidPriceAlgoTests
             {
                 Console.WriteLine(rowTemplate,
                     i + 1,
-                    signal.Action,
-                    signal.GetParam(SignalParamKeys.Beta)?.ToString("F3"),
-                    signal.GetParam(SignalParamKeys.ZScore)?.ToString("F2"),
-                    signal.Action);
+                    signal.GetParam(SignalParamKeys.PriceX)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.PriceY)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
+                    signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
+                    signal.XQty,
+                    signal.YQty);
             }
         }
     }
@@ -54,19 +57,18 @@ public class KalmanMidPriceAlgoTests
 
         try
         {
-            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6,-8}";
-            Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "Сигнал");
+            const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6, 12} {7, 12}";
+            Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
             Console.WriteLine(new string('-', 85));
 
             var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 100);
-            //var algo = new KalmanPairsAlgo(5, 6);
             var i = 0;
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
             {
                 var signal = algo.ProcessBook(book);
 
-                if (signal != null && signal.Action != PairTradingAction.Hold)
+                if (signal != null)
                 {
                     Console.WriteLine(rowTemplate,
                         i + 1,
@@ -75,7 +77,8 @@ public class KalmanMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                        signal.Action);
+                        signal.XQty,
+                        signal.YQty);
                 }
 
                 i++;
@@ -105,13 +108,13 @@ public class KalmanMidPriceAlgoTests
             {
                 var signal = algo.ProcessBook(book);
 
-                if (signal is null || signal.Action == PairTradingAction.Hold)
+                if (signal is null)
                 {
                     continue;
                 }
 
                 var portfolio = portfolioManager.GetOrCreate(signal.SourceId);
-                var trades = orderExec.Execute(signal, portfolio);
+                var trades = orderExec.Execute(signal);
                 portfolioManager.Update(trades);
 
                 i++;
