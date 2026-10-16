@@ -16,11 +16,11 @@ public class KalmanMidPriceAlgoTests
         double[] assetY = { 150, 152, 149, 153, 162, 164, 155, 156, 154, 153 }; // На шагах 5 и 6 искусственный выброс вверх
 
         // Инициализируем робота
-        var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 1.5);
+        var algo = new KalmanMidPriceAlgo(1, 5, 1, 1, initialBeta: 1.5);
 
         const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6, 12} {7, 12}";
-        Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
-        Console.WriteLine(new string('-', 85));
+        Console.WriteLine(rowTemplate, "Step", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
+        Console.WriteLine(new string('-', 100));
 
         var time = new DateTime(2026, 10, 06, 10, 10, 10);
 
@@ -43,8 +43,8 @@ public class KalmanMidPriceAlgoTests
                     signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                     signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                     signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                    signal.XQty,
-                    signal.YQty);
+                    signal.XQty.ToString("F5"),
+                    signal.YQty.ToString("F5"));
             }
         }
     }
@@ -58,10 +58,10 @@ public class KalmanMidPriceAlgoTests
         try
         {
             const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6, 12} {7, 12}";
-            Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
-            Console.WriteLine(new string('-', 85));
+            Console.WriteLine(rowTemplate, "Step", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
+            Console.WriteLine(new string('-', 100));
 
-            var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 100);
+            var algo = new KalmanMidPriceAlgo(1, 5, 1, 100);
             var i = 0;
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
@@ -77,8 +77,8 @@ public class KalmanMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                        signal.XQty,
-                        signal.YQty);
+                        signal.XQty.ToString("F5"),
+                        signal.YQty.ToString("F5"));
                 }
 
                 i++;
@@ -98,7 +98,7 @@ public class KalmanMidPriceAlgoTests
 
         try
         {
-            var algo = new KalmanMidPriceAlgo(1, 5, initialBeta: 100);
+            var algo = new KalmanMidPriceAlgo(1, 5, 1, 100);
             var orderExec = new OrderExecution();
             var portfolioManager = new PortfolioManager();
 
@@ -113,15 +113,30 @@ public class KalmanMidPriceAlgoTests
                     continue;
                 }
 
+                Console.WriteLine($"Signal: XQty={signal.XQty} YQty={signal.YQty} XBid={signal.BookX.BestBid} XAsk={signal.BookX.BestAsk} YBid={signal.BookY.BestBid} YAsk={signal.BookY.BestAsk}");
+
                 var portfolio = portfolioManager.GetOrCreate(signal.SourceId);
                 var trades = orderExec.Execute(signal);
+
+                foreach (var trade in trades)
+                {
+                    Console.WriteLine($"Trade: AssetId={trade.AssetId} Price={trade.Price} Qty={trade.Qty}");
+                }
+
                 portfolioManager.Update(trades);
 
                 i++;
             }
 
-            // TODO: Dump trades
-            // TODO: Dump portfolios & positions
+            foreach (var portfolio in portfolioManager.Portfolios)
+            {
+                Console.WriteLine($"Portfolio: {portfolio.SourceId}");
+
+                foreach (var pos in portfolio.Positions)
+                {
+                    Console.WriteLine($"-- AssetId={pos.AssetId} Qty={pos.Quantity} Price={pos.Price} Cash={pos.Cash}");
+                }
+            }
         }
         catch (OperationCanceledException)
         {

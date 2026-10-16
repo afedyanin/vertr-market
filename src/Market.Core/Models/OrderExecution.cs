@@ -18,8 +18,16 @@ public class OrderExecution : IOrderExecutionEngine
             return [];
         }
 
+        var bid = orderBook.BestBid;
+        var ask = orderBook.BestAsk;
+
+        if (bid == 0 || ask == 0) // неполный стакан
+        {
+            return [];
+        }
+
         // TODO: Implement trades filling by Price Levels
-        var price = qty > 0 ? orderBook.BestAsk : orderBook.BestBid;
+        var price = qty > 0 ? ask : bid;
 
         if (!price.HasValue)
         {
