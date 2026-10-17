@@ -9,7 +9,7 @@ namespace Market.Core.Algos.PairTrading;
 public class KalmanMidPriceAlgo : PairTradingAlgoBase
 {
     // Пороговые значения для генерации сигналов
-    private const double EntryThreshold = 0.1;  // Вход при Z-Score > 2.0 или < -2.0
+    private const double EntryThreshold = 0.2;  // Вход при Z-Score > 2.0 или < -2.0
     private const double ExitThreshold = 0.01;   // Выход (тейк-профит) при приближении к 0
     private readonly KalmanFilterEstimator _kalmanFilter;
 
@@ -26,8 +26,8 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         int lotSizeY,
         double initialBeta = 1.0,
         double initialErrorCovariance = 1.0,
-        double q = 0.0001,
-        double r = 1.0) : base(assetX, assetY)
+        double q = 0.00001,
+        double r = 0.01) : base(assetX, assetY)
     {
         _lotSizeX = lotSizeX;
         _lotSizeY = lotSizeY;
