@@ -26,7 +26,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         int lotSizeY,
         double initialBeta = 1.0,
         double initialErrorCovariance = 1.0,
-        double q = 0.00001,
+        double q = 0.00005,
         double r = 0.01) : base(assetX, assetY)
     {
         _lotSizeX = lotSizeX;
