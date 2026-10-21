@@ -15,6 +15,8 @@ public class TinvestSettings
     public string OutputDirectory { get; set; } = "tinvest";
 
     public TimeSpan TradeAggergationInterval { get; set; } = TimeSpan.FromSeconds(5);
+
+    public string AccountId { get; set; } = string.Empty;
 }
 
 public record class SubscriptionRequest
