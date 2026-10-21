@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Market.Gateways.Tinvest.Helpers;
+using Microsoft.AspNetCore.Mvc;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
 
@@ -15,7 +16,7 @@ public class AccountsController : ControllerBase
         _apiClient = apiClient;
     }
 
-    [HttpGet()]
+    [HttpGet]
     public async Task<IActionResult> GetAccounts()
     {
         var response = await _apiClient.Users.GetAccountsAsync();
@@ -73,12 +74,12 @@ public class AccountsController : ControllerBase
     }
 
     [HttpPut("sandbox/{accountId}")]
-    public async Task<IActionResult> PayIn(string accountId, MoneyValue money)
+    public async Task<IActionResult> PayIn(string accountId, Money money)
     {
         var tRequest = new SandboxPayInRequest
         {
             AccountId = accountId,
-            Amount = money
+            Amount = money.Convert()
         };
 
         var response = await _apiClient.Sandbox.SandboxPayInAsync(tRequest);
