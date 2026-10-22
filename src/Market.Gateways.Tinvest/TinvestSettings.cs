@@ -8,6 +8,8 @@ public class TinvestSettings
 
     public bool DataStreamEnabled { get; set; }
 
+    public bool TradesStreamEnabled { get; set; }
+
     public int OrderBookDepth { get; set; }
 
     public SubscriptionRequest[] Subscriptions { get; set; } = [];

@@ -40,15 +40,26 @@ public static class Program
 
         builder.Services.AddSingleton(marketDepthChannel);
 
+        var tradesChannel = Channel.CreateBounded<MyTrade>(new BoundedChannelOptions(1000)
+        {
+            SingleWriter = true,
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.Wait
+        });
+
+        builder.Services.AddSingleton(tradesChannel);
+
         // Add Tinvest API
         builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));
         builder.Services.AddInvestApiClient((_, settings) => configuration.Bind($"{nameof(TinvestSettings)}:{nameof(InvestApiSettings)}", settings));
-        builder.Services.AddHostedService<TinvestBackgroundService>();
+        builder.Services.AddHostedService<OrderBooksStreamService>();
+        builder.Services.AddHostedService<OrderTradesStreamService>();
 
         // Redis publishers
         var redisConnectionString = configuration.GetConnectionString("Redis");
         builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
         builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
+        builder.Services.AddHostedService<RedisOrderTradesPublisherService>();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

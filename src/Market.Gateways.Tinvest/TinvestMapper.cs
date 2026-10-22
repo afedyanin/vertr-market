@@ -40,6 +40,23 @@ internal static class TinvestMapper
             asksBuffer);
     }
 
+    public static IEnumerable<MyTrade> ToMyTrades(OrderTrades orderTrades)
+    {
+        foreach (var trade in orderTrades.Trades)
+        {
+            yield return new MyTrade
+            {
+                AssetId = 0, // TODO: Fill this
+                SourceId = string.Empty, // TODO: Fill this
+                OrderId = orderTrades.OrderId,
+                TradeId = trade.TradeId,
+                Price = trade.Price,
+                Qty = trade.Quantity,
+                Timestamp = trade.DateTime.ToDateTime(),
+            };
+        }
+    }
+
     public static Core.Models.Asset ToAsset(Instrument instrument)
         => new Core.Models.Asset
         {
