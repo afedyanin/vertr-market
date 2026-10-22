@@ -92,17 +92,16 @@ public class AccountsController : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet("portfolio/{accountId}")]
-    public async Task<IActionResult> GetPortfolio(string accountId, bool isSandbox = true)
+    [HttpGet("positions/{accountId}")]
+    public async Task<IActionResult> GetPositions(string accountId, bool isSandbox = true)
     {
-        var request = new PortfolioRequest
+        var request = new PositionsRequest
         {
             AccountId = accountId,
-            Currency = PortfolioRequest.Types.CurrencyRequest.Rub
         };
 
-        var response = isSandbox ? await _apiClient.Sandbox.GetSandboxPortfolioAsync(request) :
-            await _apiClient.Operations.GetPortfolioAsync(request);
+        var response = isSandbox ? await _apiClient.Sandbox.GetSandboxPositionsAsync(request) :
+            await _apiClient.Operations.GetPositionsAsync(request);
 
         if (response is null)
         {

@@ -29,7 +29,7 @@ public class OrdersController : ControllerBase
             return BadRequest($"QtyLost must be non zero.");
         }
 
-        if (request.Price <= decimal.Zero)
+        if (request.Price < decimal.Zero)
         {
             return BadRequest($"Price must be positive.");
         }
