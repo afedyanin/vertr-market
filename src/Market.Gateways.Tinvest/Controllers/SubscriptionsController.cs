@@ -15,9 +15,8 @@ public class SubscriptionsController : ControllerBase
     }
 
     [HttpGet()]
-    public Task<SubscriptionRequest[]> GetSubscriptions()
+    public IActionResult GetSubscriptions()
     {
-        var items = _settings.Subscriptions;
-        return Task.FromResult(items);
+        return Ok(_settings.Subscriptions);
     }
 }

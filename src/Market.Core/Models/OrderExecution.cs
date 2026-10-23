@@ -36,7 +36,7 @@ public class OrderExecution : IOrderExecutionEngine
 
         var trade = new MyTrade()
         {
-            SourceId = sourceId,
+            // SourceId = sourceId, // TODO: Нужен другой способ матчить трейд к стратегии
             Timestamp = orderBook.Timestamp,
             AssetId = orderBook.AssetId,
             Qty = qty,

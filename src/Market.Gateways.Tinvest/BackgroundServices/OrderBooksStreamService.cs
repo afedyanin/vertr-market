@@ -9,7 +9,6 @@ namespace Market.Gateways.Tinvest.BackgroundServices;
 
 internal sealed class OrderBooksStreamService : StreamServiceBase
 {
-    private readonly Dictionary<string, ushort> _instruments = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
     private readonly Channel<OrderBookDepth> _marketDepthChannel;
     protected override ILogger Logger { get; init; }
     protected override bool IsEnabled { get; init; }
@@ -29,6 +28,7 @@ internal sealed class OrderBooksStreamService : StreamServiceBase
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var investApiClient = scope.ServiceProvider.GetRequiredService<InvestApiClient>();
+        var staticDataProvider = scope.ServiceProvider.GetRequiredService<IStaticDataProvider>();
 
         var orderBookRequest = new SubscribeOrderBookRequest
         {
@@ -37,20 +37,20 @@ internal sealed class OrderBooksStreamService : StreamServiceBase
 
         foreach (var sub in _tinvestSettings.Subscriptions)
         {
-            if (sub.Disabled)
+            var asset = staticDataProvider.GetByTicker(sub);
+
+            if (asset is null)
             {
-                Logger.LogInformation($"Skipping subscription: InstrumentId={sub.InstrumentId}");
+                Logger.LogWarning("Annot find asset by ticker: {Ticker}", sub);
                 continue;
             }
 
             orderBookRequest.Instruments.Add(new OrderBookInstrument()
             {
-                InstrumentId = sub.InstrumentId.ToString(),
+                InstrumentId = asset.ExternalId,
                 Depth = _tinvestSettings.OrderBookDepth,
                 OrderBookType = OrderBookType.All,
             });
-
-            _instruments[sub.InstrumentId.ToString()] = sub.AssetId;
         }
 
         var request = new MarketDataServerSideStreamRequest()
@@ -97,13 +97,15 @@ internal sealed class OrderBooksStreamService : StreamServiceBase
             {
                 if (response.Orderbook != null && response.Orderbook.IsConsistent)
                 {
-                    if (!_instruments.TryGetValue(response.Orderbook.InstrumentUid, out var assetId))
+                    var asset = staticDataProvider.GetByExternalId(response.Orderbook.InstrumentUid);
+
+                    if (asset is null)
                     {
                         Logger.LogWarning("Skipping order book for unknown instrument: {InstrumentUid}", response.Orderbook.InstrumentUid);
                         continue;
                     }
 
-                    var book = TinvestMapper.ToMarketDepth(response.Orderbook, assetId);
+                    var book = TinvestMapper.ToMarketDepth(response.Orderbook, asset.Id);
 
                     _marketDepthChannel.Writer.TryWrite(book);
 

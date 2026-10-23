@@ -20,10 +20,11 @@ public class PortfolioManager : IPortfolioManager
 
     public void Update(IEnumerable<MyTrade> trades)
     {
-        foreach (var trade in trades)
+        //foreach (var trade in trades)
         {
-            var portfolio = GetOrCreate(trade.SourceId);
-            portfolio.Update(trade.AssetId, trade.Qty, trade.Price);
+            // TODO: Нужен другой способ матчинга
+            // var portfolio = GetOrCreate(trade.SourceId); 
+            // portfolio.Update(trade.AssetId, trade.Qty, trade.Price);
         }
     }
 }

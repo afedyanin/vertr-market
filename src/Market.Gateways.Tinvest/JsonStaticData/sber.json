@@ -1,0 +1,52 @@
+[
+  {
+    "id": 10,
+    "externalId": "fd32e9a3-d386-48fd-b0a8-0c1cc2ae95c6",
+    "isin": null,
+    "ticker": "SRZ6",
+    "classCode": "SPBFUT",
+    "name": "SBRF-12.26 Сбербанк (обыкновенные)",
+    "currency": "rub",
+    "expDate": "2026-12-18T00:00:00Z",
+    "lotSize": 1,
+    "minPriceIncrement": 1,
+    "minPriceIncrementAmount": 1,
+    "basicAssetSize": 100,
+    "basicAsset": "SBER",
+    "assetType": "TYPE_SECURITY",
+    "assetKind": "DELIVERY_TYPE_PHYSICAL_DELIVERY"
+  },
+  {
+    "id": 11,
+    "externalId": "9e9c5921-43ac-47a8-b537-ccf32ebc6da3",
+    "isin": null,
+    "ticker": "SBERF",
+    "classCode": "SPBFUT",
+    "name": "SBERF Сбербанк (обыкновенные)",
+    "currency": "rub",
+    "expDate": "2099-12-31T00:00:00Z",
+    "lotSize": 1,
+    "minPriceIncrement": 0.01,
+    "minPriceIncrementAmount": 1,
+    "basicAssetSize": 100,
+    "basicAsset": "SBER",
+    "assetType": "TYPE_SECURITY",
+    "assetKind": "DELIVERY_TYPE_CASH_SETTLEMENT"
+  },
+  {
+    "id": 12,
+    "externalId": "e6123145-9665-43e0-8413-cd61b8aa9b13",
+    "isin": "RU0009029540",
+    "ticker": "SBER",
+    "classCode": "TQBR",
+    "name": "Сбербанк",
+    "currency": "rub",
+    "expDate": null,
+    "lotSize": 1,
+    "minPriceIncrement": 0.01,
+    "basicAssetSize": null,
+    "basicAsset": null,
+    "assetType": "Common",
+    "assetKind": null
+  }
+]

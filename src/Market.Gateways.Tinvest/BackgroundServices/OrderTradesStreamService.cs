@@ -28,6 +28,7 @@ public sealed class OrderTradesStreamService : StreamServiceBase
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var investApiClient = scope.ServiceProvider.GetRequiredService<InvestApiClient>();
+        var staticDataProvider = scope.ServiceProvider.GetRequiredService<IStaticDataProvider>();
 
         var request = new TradesStreamRequest();
         request.Accounts.Add(_tinvestSettings.AccountId);
@@ -49,7 +50,15 @@ public sealed class OrderTradesStreamService : StreamServiceBase
             {
                 Logger.LogInformation($"New order trades received for OrderId={response.OrderTrades.OrderId} TradesCount={response.OrderTrades.Trades.Count}");
 
-                foreach (var trade in TinvestMapper.ToMyTrades(response.OrderTrades))
+                var asset = staticDataProvider.GetByExternalId(response.OrderTrades.InstrumentUid);
+
+                if (asset is null)
+                {
+                    Logger.LogWarning($"Cannot find asset for trades with InstrumentId={response.OrderTrades.InstrumentUid}. Skipping trades. Ids=[{string.Join(',', response.OrderTrades.Trades.Select(t => t.TradeId))}]");
+                    continue;
+                }
+
+                foreach (var trade in TinvestMapper.ToMyTrades(response.OrderTrades, asset.Id))
                 {
                     _tradesChannel.Writer.TryWrite(trade);
                 }

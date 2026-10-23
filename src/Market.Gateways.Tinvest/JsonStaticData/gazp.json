@@ -1,0 +1,53 @@
+[
+  {
+    "id": 20,
+    "externalId": "962e2a95-02a9-4171-abd7-aa198dbe643a",
+    "isin": "RU0007661625",
+    "ticker": "GAZP",
+    "classCode": "TQBR",
+    "name": "Газпром",
+    "currency": "rub",
+    "expDate": null,
+    "lotSize": 10,
+    "minPriceIncrement": 0.01,
+    "minPriceIncrementAmount": null,
+    "basicAssetSize": null,
+    "basicAsset": null,
+    "assetType": "Common",
+    "assetKind": null
+  },
+  {
+    "id": 21,
+    "externalId": "82b34e5c-30c3-4be2-ba9d-5ba3b37ca99b",
+    "isin": null,
+    "ticker": "GAZPF",
+    "classCode": "SPBFUT",
+    "name": "GAZPF Газпром",
+    "currency": "rub",
+    "expDate": "2099-12-31T00:00:00Z",
+    "lotSize": 1,
+    "minPriceIncrement": 0.01,
+    "minPriceIncrementAmount": 1,
+    "basicAssetSize": 100,
+    "basicAsset": "GAZP",
+    "assetType": "TYPE_SECURITY",
+    "assetKind": "DELIVERY_TYPE_CASH_SETTLEMENT"
+  },
+  {
+    "id": 22,
+    "externalId": "2e2d733d-ed60-4fca-82b8-e8bfab1ffe29",
+    "isin": null,
+    "ticker": "GZZ6",
+    "classCode": "SPBFUT",
+    "name": "GAZR-12.26 Газпром",
+    "currency": "rub",
+    "expDate": "2026-12-18T00:00:00Z",
+    "lotSize": 1,
+    "minPriceIncrement": 1,
+    "minPriceIncrementAmount": 1,
+    "basicAssetSize": 100,
+    "basicAsset": "GAZP",
+    "assetType": "TYPE_SECURITY",
+    "assetKind": "DELIVERY_TYPE_PHYSICAL_DELIVERY"
+  }
+]

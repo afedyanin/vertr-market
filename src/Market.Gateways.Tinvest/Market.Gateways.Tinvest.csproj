@@ -1,6 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<ItemGroup>
+	  <Content Remove="JsonStaticData\gazp.json" />
+	  <Content Remove="JsonStaticData\sber.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="JsonStaticData\gazp.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Include="JsonStaticData\sber.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.24.1-preview.1" />
 		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.18.0" />

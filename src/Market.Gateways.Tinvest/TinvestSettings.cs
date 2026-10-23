@@ -12,20 +12,13 @@ public class TinvestSettings
 
     public int OrderBookDepth { get; set; }
 
-    public SubscriptionRequest[] Subscriptions { get; set; } = [];
+    public string[] Subscriptions { get; set; } = [];
 
     public string OutputDirectory { get; set; } = "tinvest";
+
+    public string StaticDataDirectory { get; set; } = "JsonStaticData";
 
     public TimeSpan TradeAggergationInterval { get; set; } = TimeSpan.FromSeconds(5);
 
     public string AccountId { get; set; } = string.Empty;
-}
-
-public record class SubscriptionRequest
-{
-    public ushort AssetId { get; set; }
-
-    public Guid InstrumentId { get; set; }
-
-    public bool Disabled { get; set; }
 }

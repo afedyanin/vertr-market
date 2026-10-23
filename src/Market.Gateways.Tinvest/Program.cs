@@ -1,7 +1,9 @@
 using System.Threading.Channels;
 using Market.Core.Models;
 using Market.Gateways.Tinvest.BackgroundServices;
+using Market.Infrastructure;
 using Market.Infrastructure.BackgroundServices;
+using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Serilog;
@@ -61,6 +63,11 @@ public static class Program
         builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
         builder.Services.AddHostedService<RedisOrderTradesPublisherService>();
 
+        // Static data provider
+
+        builder.Services.AddSingleton<JsonStaticDataProvider>();
+        builder.Services.AddSingleton<IStaticDataProvider>(sp => sp.GetRequiredService<JsonStaticDataProvider>());
+
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
@@ -82,6 +89,11 @@ public static class Program
         });
 
         app.MapControllers();
+
+        // Load static data
+        var options = app.Services.GetRequiredService<IOptions<TinvestSettings>>();
+        var staticDataProvider = app.Services.GetRequiredService<JsonStaticDataProvider>();
+        await staticDataProvider.LoadFrom(options.Value.StaticDataDirectory);
 
         await app.RunAsync();
     }
