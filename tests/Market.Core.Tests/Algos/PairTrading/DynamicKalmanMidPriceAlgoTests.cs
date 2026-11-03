@@ -20,6 +20,7 @@ public class DynamicKalmanMidPriceAlgoTests
             Console.WriteLine(new string('-', 85));
 
             var algo = new KalmanMidPriceAlgo(
+                100,
                 1, 5, 1, 100,
                 initialBeta: 1.0,
                 initialErrorCovariance: 1.0,

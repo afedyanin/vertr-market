@@ -16,7 +16,7 @@ public class KalmanHalfLifeMidPriceAlgoTests
         double[] assetY = { 150.0, 150.1, 150.3, 150.2, 150.8, 153.0, 156.0, 159.0, 162.0, 165.0 };
 
         // Инициализируем робота
-        var algo = new KalmanHalfLifeMidPriceAlgo(1, 5, initialBeta: 1.5);
+        var algo = new KalmanHalfLifeMidPriceAlgo(400, 1, 5, initialBeta: 1.5);
 
         const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,6} {6, 6} {7,12} {8, 12}";
         Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "XQty", "YQty");
@@ -67,7 +67,7 @@ public class KalmanHalfLifeMidPriceAlgoTests
             Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "XQty", "YQty");
             Console.WriteLine(new string('-', 85));
 
-            var algo = new KalmanHalfLifeMidPriceAlgo(1, 5, initialBeta: 100);
+            var algo = new KalmanHalfLifeMidPriceAlgo(401, 1, 5, initialBeta: 100);
             var i = 0;
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))

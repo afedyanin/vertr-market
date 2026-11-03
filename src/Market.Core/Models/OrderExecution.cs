@@ -5,13 +5,13 @@ public class OrderExecution : IOrderExecutionEngine
     public IEnumerable<MyTrade> Execute(IPairTradingSignal signal)
     {
         var trades = new List<MyTrade>();
-        trades.AddRange(GenerateTrades(signal.SourceId, signal.XQty, signal.BookX));
-        trades.AddRange(GenerateTrades(signal.SourceId, signal.YQty, signal.BookY));
+        trades.AddRange(GenerateTrades(signal.StrategyId, signal.XQty, signal.BookX));
+        trades.AddRange(GenerateTrades(signal.StrategyId, signal.YQty, signal.BookY));
 
         return trades;
     }
 
-    private MyTrade[] GenerateTrades(string sourceId, decimal qty, OrderBookDepth orderBook)
+    private MyTrade[] GenerateTrades(int strategyId, decimal qty, OrderBookDepth orderBook)
     {
         if (qty == 0)
         {
@@ -37,6 +37,7 @@ public class OrderExecution : IOrderExecutionEngine
         var trade = new MyTrade()
         {
             // SourceId = sourceId, // TODO: Нужен другой способ матчить трейд к стратегии
+            StrategyId = strategyId,
             Timestamp = orderBook.Timestamp,
             AssetId = orderBook.AssetId,
             Qty = qty,

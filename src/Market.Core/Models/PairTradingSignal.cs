@@ -6,7 +6,7 @@ namespace Market.Core.Models;
 public record PairTradingSignal : IPairTradingSignal
 {
     [Key(0)]
-    public required string SourceId { get; set; }
+    public int StrategyId { get; set; }
 
     [Key(1)]
     public required OrderBookDepth BookX { get; set; }
@@ -22,7 +22,6 @@ public record PairTradingSignal : IPairTradingSignal
 
     [Key(5)]
     public Dictionary<string, double> Params { get; } = [];
-
 }
 
 public static class SignalParamKeys

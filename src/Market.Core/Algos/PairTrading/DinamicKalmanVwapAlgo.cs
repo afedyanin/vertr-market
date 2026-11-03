@@ -35,12 +35,13 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
     private Quote? _quoteY;
 
     public DinamicKalmanVwapAlgo(
+        int strategyId,
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0,
         double tradeVolumeY = 1.0,
         double feeRateX = 0.0,
-        double feeRateY = 0.0) : base(assetX, assetY)
+        double feeRateY = 0.0) : base(strategyId, assetX, assetY)
     {
         _kalmanFilter = new DynamicKalmanFilterEstimator(initialBeta);
         _feeRateX = feeRateX;
@@ -117,7 +118,8 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 
         var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(DinamicKalmanVwapAlgo)}:{AssetX}:{AssetY}",
+            //SourceId = $"{nameof(DinamicKalmanVwapAlgo)}:{AssetX}:{AssetY}",
+            StrategyId = StrategyId,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
             XQty = xQty,

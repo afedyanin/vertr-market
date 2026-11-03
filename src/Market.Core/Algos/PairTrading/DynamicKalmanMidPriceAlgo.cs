@@ -13,12 +13,13 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
     private readonly DynamicKalmanFilterEstimator _kalmanFilter;
 
     public DynamicKalmanMidPriceAlgo(
+        int strategyId,
         ushort assetX,
         ushort assetY,
         double initialBeta = 1.0,
         double initialErrorCovariance = 1.0,
         double q = 0.0001,
-        double r = 1.0) : base(assetX, assetY)
+        double r = 1.0) : base(strategyId, assetX, assetY)
     {
         _kalmanFilter = new DynamicKalmanFilterEstimator(
             initialBeta: initialBeta,
@@ -55,7 +56,8 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
 
         var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
+            //SourceId = $"{nameof(DynamicKalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
+            StrategyId = StrategyId,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
             XQty = xQty,

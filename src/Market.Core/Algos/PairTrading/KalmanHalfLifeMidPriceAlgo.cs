@@ -19,9 +19,10 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
     private readonly CointegrationEstimator _cointegration;
 
     public KalmanHalfLifeMidPriceAlgo(
+        int strategyId,
         ushort assetX,
         ushort assetY,
-        double initialBeta = 1.0) : base(assetX, assetY)
+        double initialBeta = 1.0) : base(strategyId, assetX, assetY)
     {
         _kalmanFilter = new KalmanFilterEstimator(
             initialBeta: initialBeta,
@@ -96,7 +97,8 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 
         var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(KalmanHalfLifeMidPriceAlgo)}:{AssetX}:{AssetY}",
+            //SourceId = $"{nameof(KalmanHalfLifeMidPriceAlgo)}:{AssetX}:{AssetY}",
+            StrategyId = StrategyId,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
             XQty = xQty,

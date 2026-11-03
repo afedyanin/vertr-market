@@ -41,7 +41,7 @@ internal sealed class OrderBooksStreamService : StreamServiceBase
 
             if (asset is null)
             {
-                Logger.LogWarning("Annot find asset by ticker: {Ticker}", sub);
+                Logger.LogWarning("Cannot find asset by ticker: {Ticker}", sub);
                 continue;
             }
 

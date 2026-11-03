@@ -20,6 +20,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
     private readonly int _lotSizeY;
 
     public KalmanMidPriceAlgo(
+        int strategyId,
         ushort assetX,
         ushort assetY,
         int lotSizeX,
@@ -27,7 +28,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         double initialBeta = 1.0,
         double initialErrorCovariance = 1.0,
         double q = 0.00005,
-        double r = 0.01) : base(assetX, assetY)
+        double r = 0.01) : base(strategyId, assetX, assetY)
     {
         _lotSizeX = lotSizeX;
         _lotSizeY = lotSizeY;
@@ -81,7 +82,8 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
 
         var signal = new PairTradingSignal
         {
-            SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
+            //SourceId = $"{nameof(KalmanMidPriceAlgo)}:{AssetX}:{AssetY}",
+            StrategyId = StrategyId,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
             XQty = xQty,

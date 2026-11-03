@@ -1,6 +1,5 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
-using Market.Core.Models;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
@@ -9,7 +8,7 @@ namespace Market.Gateways.Tinvest.BackgroundServices;
 
 public sealed class OrderTradesStreamService : StreamServiceBase
 {
-    private readonly Channel<MyTrade> _tradesChannel;
+    private readonly ChannelWriter<OrderTrades> _tradesWriter;
     protected override ILogger Logger { get; init; }
     protected override bool IsEnabled { get; init; }
 
@@ -21,14 +20,13 @@ public sealed class OrderTradesStreamService : StreamServiceBase
         Logger = loggerFactory.CreateLogger<OrderTradesStreamService>();
         IsEnabled = _tinvestSettings.TradesStreamEnabled;
 
-        _tradesChannel = serviceProvider.GetRequiredService<Channel<MyTrade>>();
+        _tradesWriter = serviceProvider.GetRequiredService<Channel<OrderTrades>>().Writer;
     }
 
     protected override async Task Subscribe(Action onDataReceived, CancellationToken stoppingToken = default)
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var investApiClient = scope.ServiceProvider.GetRequiredService<InvestApiClient>();
-        var staticDataProvider = scope.ServiceProvider.GetRequiredService<IStaticDataProvider>();
 
         var request = new TradesStreamRequest();
         request.Accounts.Add(_tinvestSettings.AccountId);
@@ -48,20 +46,8 @@ public sealed class OrderTradesStreamService : StreamServiceBase
 
             if (response.PayloadCase == TradesStreamResponse.PayloadOneofCase.OrderTrades)
             {
-                Logger.LogInformation($"New order trades received for OrderId={response.OrderTrades.OrderId} TradesCount={response.OrderTrades.Trades.Count}");
-
-                var asset = staticDataProvider.GetByExternalId(response.OrderTrades.InstrumentUid);
-
-                if (asset is null)
-                {
-                    Logger.LogWarning($"Cannot find asset for trades with InstrumentId={response.OrderTrades.InstrumentUid}. Skipping trades. Ids=[{string.Join(',', response.OrderTrades.Trades.Select(t => t.TradeId))}]");
-                    continue;
-                }
-
-                foreach (var trade in TinvestMapper.ToMyTrades(response.OrderTrades, asset.Id))
-                {
-                    _tradesChannel.Writer.TryWrite(trade);
-                }
+                _tradesWriter.TryWrite(response.OrderTrades);
+                Logger.LogDebug($"New order trades received for OrderId={response.OrderTrades.OrderId} TradesCount={response.OrderTrades.Trades.Count}");
             }
 
             if (response.PayloadCase == TradesStreamResponse.PayloadOneofCase.Ping)
@@ -80,7 +66,7 @@ public sealed class OrderTradesStreamService : StreamServiceBase
 
     protected override ValueTask OnComplete()
     {
-        _tradesChannel.Writer.TryComplete();
+        _tradesWriter.TryComplete();
         return ValueTask.CompletedTask;
     }
 }

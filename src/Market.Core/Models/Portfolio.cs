@@ -7,7 +7,7 @@ public class Portfolio
 {
     private readonly ConcurrentDictionary<ushort, Position> _positions = [];
 
-    public required string SourceId { get; init; }
+    public int StrategyId { get; init; }
 
     public ImmutableArray<Position> Positions => [.. _positions.Values];
 

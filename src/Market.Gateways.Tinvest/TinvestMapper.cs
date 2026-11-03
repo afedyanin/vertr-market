@@ -40,15 +40,16 @@ internal static class TinvestMapper
             asksBuffer);
     }
 
-    public static IEnumerable<MyTrade> ToMyTrades(OrderTrades orderTrades, ushort assetId)
+    public static IEnumerable<MyTrade> ToMyTrades(OrderTrades orderTrades, ushort assetId, int? strategyId)
     {
         foreach (var trade in orderTrades.Trades)
         {
             yield return new MyTrade
             {
                 AssetId = assetId,
-                OrderId = orderTrades.OrderId,
+                StrategyId = strategyId,
                 TradeId = trade.TradeId,
+                OrderId = orderTrades.OrderId,
                 Price = trade.Price,
                 Qty = trade.Quantity,
                 Timestamp = trade.DateTime.ToDateTime(),
