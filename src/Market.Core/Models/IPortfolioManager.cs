@@ -4,7 +4,7 @@ public interface IPortfolioManager
 {
     public IEnumerable<Portfolio> Portfolios { get; }
 
-    public Portfolio GetOrCreate(int strategyId);
+    public Portfolio GetOrCreate(Guid strategyId);
 
     public void Update(IEnumerable<MyTrade> trades);
 }

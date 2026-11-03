@@ -18,7 +18,7 @@ public class OrderExecutionEngineService : BackgroundService
     private readonly ILogger _logger;
 
     // OrderRequestId to StrategyId mapper
-    private readonly ConcurrentDictionary<string, int> _requestId2StrategyId = new();
+    private readonly ConcurrentDictionary<string, Guid> _requestId2StrategyId = new();
 
     // OrderId to OrderRequestId mapper
     private readonly ConcurrentDictionary<string, string> _orderId2requestId = new();
@@ -184,7 +184,7 @@ public class OrderExecutionEngineService : BackgroundService
         return requests;
     }
 
-    private int? GetStrategyId(string orderId)
+    private Guid? GetStrategyId(string orderId)
     {
         if (!_orderId2requestId.TryGetValue(orderId, out var requestId))
         {

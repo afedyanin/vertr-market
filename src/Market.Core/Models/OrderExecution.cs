@@ -11,7 +11,7 @@ public class OrderExecution : IOrderExecutionEngine
         return trades;
     }
 
-    private MyTrade[] GenerateTrades(int strategyId, decimal qty, OrderBookDepth orderBook)
+    private MyTrade[] GenerateTrades(Guid strategyId, decimal qty, OrderBookDepth orderBook)
     {
         if (qty == 0)
         {

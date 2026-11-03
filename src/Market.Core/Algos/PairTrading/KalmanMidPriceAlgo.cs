@@ -8,30 +8,25 @@ namespace Market.Core.Algos.PairTrading;
 /// </summary>
 public class KalmanMidPriceAlgo : PairTradingAlgoBase
 {
-    // Пороговые значения для генерации сигналов
-    private const double EntryThreshold = 0.2;  // Вход при Z-Score > 2.0 или < -2.0
-    private const double ExitThreshold = 0.01;   // Выход (тейк-профит) при приближении к 0
     private readonly KalmanFilterEstimator _kalmanFilter;
-
-    private readonly decimal _requiredYQty = 1.0m;
-
-    // размер лота в единицах актива
+    private readonly double _entryThreshold;
+    private readonly double _exitThreshold;
+    private readonly decimal _requiredYQty;
     private readonly int _lotSizeX;
     private readonly int _lotSizeY;
 
-    public KalmanMidPriceAlgo(
-        int strategyId,
-        ushort assetX,
-        ushort assetY,
-        int lotSizeX,
-        int lotSizeY,
-        double initialBeta = 1.0,
-        double initialErrorCovariance = 1.0,
-        double q = 0.00005,
-        double r = 0.01) : base(strategyId, assetX, assetY)
+    public KalmanMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
     {
-        _lotSizeX = lotSizeX;
-        _lotSizeY = lotSizeY;
+        _lotSizeX = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeX, 1.0);
+        _lotSizeY = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeY, 1.0);
+        _requiredYQty = (decimal)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);
+        _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 0.2);
+        _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.01);
+
+        var initialBeta = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
+        var initialErrorCovariance = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+        var q = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.Q, 0.00005);
+        var r = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.R, 0.01);
 
         _kalmanFilter = new KalmanFilterEstimator(
             initialBeta: initialBeta,
@@ -109,17 +104,17 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         var xQty = 0m;
         var yQty = 0m;
 
-        if (zScore > EntryThreshold && !HasOpenPosition)
+        if (zScore > _entryThreshold && !HasOpenPosition)
         {
             yQty = -_requiredYQty;
             xQty = _requiredYQty / (decimal)_kalmanFilter.Beta;
         }
-        else if (zScore < -EntryThreshold && !HasOpenPosition)
+        else if (zScore < -_entryThreshold && !HasOpenPosition)
         {
             yQty = _requiredYQty;
             xQty = -_requiredYQty / (decimal)_kalmanFilter.Beta;
         }
-        else if (Math.Abs(zScore) < ExitThreshold && HasOpenPosition)
+        else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
         {
             // Спред вернулся в норму, фиксируем прибыль
             yQty = -_openYQty;

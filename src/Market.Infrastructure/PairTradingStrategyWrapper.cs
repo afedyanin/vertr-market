@@ -2,34 +2,34 @@
 using Market.Core.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Market.Core.Strategies;
+namespace Market.Infrastructure;
 
-public class PairTradingStrategy
+public class PairTradingStrategyWrapper
 {
     private readonly ushort _assetX;
     private readonly ushort _assetY;
     private readonly IPairTradingAlgo _algo;
     private readonly ChannelReader<OrderBookDepth> _reader;
     private readonly ChannelWriter<IPairTradingSignal> _writer;
-    private readonly ILogger<PairTradingStrategy> _logger;
+    private readonly ILogger<PairTradingStrategyWrapper> _logger;
 
-    public PairTradingStrategy(
+    public PairTradingStrategyWrapper(
         IPairTradingAlgo algo,
-        Channel<OrderBookDepth> orderBooksChannel,
-        Channel<IPairTradingSignal> signalsChannel,
+        ChannelReader<OrderBookDepth> orderBooksChannelReader,
+        ChannelWriter<IPairTradingSignal> signalsChannelWriter,
         ILoggerFactory loggerFactory)
     {
         _assetX = algo.AssetX;
         _assetY = algo.AssetY;
         _algo = algo;
-        _reader = orderBooksChannel.Reader;
-        _writer = signalsChannel.Writer;
-        _logger = loggerFactory.CreateLogger<PairTradingStrategy>();
+        _reader = orderBooksChannelReader;
+        _writer = signalsChannelWriter;
+        _logger = loggerFactory.CreateLogger<PairTradingStrategyWrapper>();
     }
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation($"Order Book Pair Trading Strategy started. AssetX={_assetX} AssetY={_assetY}");
+        _logger.LogInformation($"Order Book Pair Trading Strategy wrapper started. AssetX={_assetX} AssetY={_assetY}");
 
         try
         {

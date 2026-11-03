@@ -4,10 +4,10 @@ namespace Market.Core.Models;
 
 public class PortfolioManager : IPortfolioManager
 {
-    private readonly ConcurrentDictionary<int, Portfolio> _portfolios = [];
+    private readonly ConcurrentDictionary<Guid, Portfolio> _portfolios = [];
 
     public IEnumerable<Portfolio> Portfolios => _portfolios.Values;
-    public Portfolio GetOrCreate(int strategyId)
+    public Portfolio GetOrCreate(Guid strategyId)
     {
         // GetOrAdd возвращает именно тот экземпляр, который лежит в словаре.
         // Раньше метод возвращал локальный объект, даже если гонку создания выиграл другой поток,

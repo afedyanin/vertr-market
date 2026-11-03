@@ -24,9 +24,9 @@ namespace Market.Core.Algos.PairTrading;
 
 public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
 {
-    private const double EntryThreshold = 2.0;
-    private const double ExitThreshold = 0.2;
-    private readonly double _requiredYQty = 1.0;
+    private readonly double _entryThreshold;
+    private readonly double _exitThreshold;
+    private readonly double _requiredYQty;
 
     private readonly DynamicKalmanFilterEstimator _kalmanFilter;
     private readonly double _feeRateX;
@@ -34,18 +34,25 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
     private Quote? _quoteX;
     private Quote? _quoteY;
 
-    public DinamicKalmanVwapAlgo(
-        int strategyId,
-        ushort assetX,
-        ushort assetY,
-        double initialBeta = 1.0,
-        double tradeVolumeY = 1.0,
-        double feeRateX = 0.0,
-        double feeRateY = 0.0) : base(strategyId, assetX, assetY)
+    public DinamicKalmanVwapAlgo(AlgoMetadata metadata) : base(metadata)
     {
-        _kalmanFilter = new DynamicKalmanFilterEstimator(initialBeta);
-        _feeRateX = feeRateX;
-        _feeRateY = feeRateY;
+
+        _requiredYQty = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);
+        _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 0.2);
+        _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.01);
+        _feeRateX = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.FeeRateX, 0);
+        _feeRateY = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.FeeRateY, 0);
+
+        var initialBeta = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
+        var initialErrorCovariance = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+        var q = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.Q, 0.00005);
+        var r = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.R, 0.01);
+
+        _kalmanFilter = new DynamicKalmanFilterEstimator(
+            initialBeta: initialBeta,
+            initialErrorCovariance: initialErrorCovariance,
+            q: q,
+            r: r);
     }
 
     protected override IPairTradingSignal? ProcessTickX()
@@ -151,26 +158,26 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
         {
             // Вход в Short Y / Long X имеет смысл, только если спред ПРОДАЖИ (Sell) превысил верхний порог.
             // Мы будем бить по стакану: продавать Y по Bid и покупать X по Ask.
-            if (zScoreSell - feesInZScore > EntryThreshold)
+            if (zScoreSell - feesInZScore > _entryThreshold)
             {
                 yQty = (-requiredYQty);
                 xQty = requiredYQty / (decimal)beta;
             }
             // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
-            else if (zScoreBuy + feesInZScore < -EntryThreshold)
+            else if (zScoreBuy + feesInZScore < -_entryThreshold)
             {
                 yQty = requiredYQty;
                 xQty = -requiredYQty / (decimal)beta;
             }
         }
-        else if (_openYQty < 0 && zScoreBuy <= ExitThreshold)
+        else if (_openYQty < 0 && zScoreBuy <= _exitThreshold)
         {
             // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
             // Поэтому мы отслеживаем zScoreBuy для выхода.
             yQty = -_openYQty;
             xQty = -_openXQty;
         }
-        else if (_openYQty > 0 && zScoreSell >= -ExitThreshold)
+        else if (_openYQty > 0 && zScoreSell >= -_exitThreshold)
         {
             // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
             yQty = -_openYQty;

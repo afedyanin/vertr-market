@@ -6,7 +6,7 @@ namespace Market.Core.Models;
 public record PairTradingSignal : IPairTradingSignal
 {
     [Key(0)]
-    public int StrategyId { get; set; }
+    public Guid StrategyId { get; set; }
 
     [Key(1)]
     public required OrderBookDepth BookX { get; set; }

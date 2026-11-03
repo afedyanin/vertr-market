@@ -10,18 +10,20 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
     protected decimal _openXQty;
     protected decimal _openYQty;
 
+    protected Dictionary<string, double> AlgoParams { get; }
+
     public ushort AssetX { get; }
     public ushort AssetY { get; }
-
-    public int StrategyId { get; }
+    public Guid StrategyId { get; }
 
     public bool HasOpenPosition => _openXQty != 0 || _openYQty != 0;
 
-    protected PairTradingAlgoBase(int strategyId, ushort assetX, ushort assetY)
+    protected PairTradingAlgoBase(AlgoMetadata metadata)
     {
-        StrategyId = strategyId;
-        AssetX = assetX;
-        AssetY = assetY;
+        StrategyId = metadata.StrategyId;
+        AssetX = metadata.AssetX;
+        AssetY = metadata.AssetY;
+        AlgoParams = metadata.AlgoParams;
     }
 
     public virtual IPairTradingSignal? ProcessBook(OrderBookDepth book)

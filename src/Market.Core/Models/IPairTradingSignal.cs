@@ -2,7 +2,7 @@
 
 public interface IPairTradingSignal
 {
-    public int StrategyId { get; }
+    public Guid StrategyId { get; }
     public OrderBookDepth BookX { get; }
     public OrderBookDepth BookY { get; }
     public decimal XQty { get; }

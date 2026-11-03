@@ -3,7 +3,6 @@ using System.Diagnostics.Metrics;
 using System.Threading.Channels;
 using Market.Core.Algos.PairTrading;
 using Market.Core.Models;
-using Market.Core.Strategies;
 using Market.Host.BackgroundServices;
 using Market.Infrastructure.BackgroundServices;
 using OpenTelemetry.Metrics;

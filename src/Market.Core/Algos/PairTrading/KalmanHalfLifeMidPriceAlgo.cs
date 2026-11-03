@@ -9,26 +9,29 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
     // Момент входа в позицию (по таймстампам стаканов) — для тайм-стопа по полураспаду.
     private DateTime? _entryTime = null;
 
-    // Пороговые значения для генерации сигналов
-    private const double EntryThreshold = 2.0;  // Вход при Z-Score > 2.0 или < -2.0
-    private const double ExitThreshold = 0.2;   // Выход (тейк-профит) при приближении к 0
-
-    private readonly decimal _requiredYQty = 1.0m;
+    private readonly double _entryThreshold;
+    private readonly double _exitThreshold;
+    private readonly decimal _requiredYQty;
 
     private readonly KalmanFilterEstimator _kalmanFilter;
     private readonly CointegrationEstimator _cointegration;
 
-    public KalmanHalfLifeMidPriceAlgo(
-        int strategyId,
-        ushort assetX,
-        ushort assetY,
-        double initialBeta = 1.0) : base(strategyId, assetX, assetY)
+    public KalmanHalfLifeMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
     {
+        _requiredYQty = (decimal)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);
+        _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 2.0);
+        _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.2);
+
+        var initialBeta = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
+        var initialErrorCovariance = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+        var q = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.Q, 0.00005);
+        var r = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.R, 0.01);
+
         _kalmanFilter = new KalmanFilterEstimator(
             initialBeta: initialBeta,
-            initialErrorCovariance: 1.0,
-            q: 0.00005,
-            r: 0.01);
+            initialErrorCovariance: initialErrorCovariance,
+            q: q,
+            r: r);
 
         _cointegration = new CointegrationEstimator();
     }
@@ -148,13 +151,13 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         {
             // Вход в Short Y / Long X имеет смысл, только если спред ПРОДАЖИ (Sell) превысил верхний порог.
             // Мы будем бить по стакану: продавать Y по Bid и покупать X по Ask.
-            if (zScoreSell > EntryThreshold)
+            if (zScoreSell > _entryThreshold)
             {
                 yQty = -_requiredYQty;
                 xQty = _requiredYQty / (decimal)beta;
             }
             // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
-            else if (zScoreBuy < -EntryThreshold)
+            else if (zScoreBuy < -_entryThreshold)
             {
                 yQty = _requiredYQty;
                 xQty = -_requiredYQty / (decimal)beta;
@@ -172,14 +175,14 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             yQty = -_openYQty;
             xQty = -_openXQty;
         }
-        else if (_openYQty < 0 && zScoreBuy <= ExitThreshold)
+        else if (_openYQty < 0 && zScoreBuy <= _exitThreshold)
         {
             // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
             // Поэтому мы отслеживаем zScoreBuy для выхода.
             yQty = -_openYQty;
             xQty = -_openXQty;
         }
-        else if (_openYQty > 0 && zScoreSell >= -ExitThreshold)
+        else if (_openYQty > 0 && zScoreSell >= -_exitThreshold)
         {
             // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
             yQty = -_openYQty;
