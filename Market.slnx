@@ -1,4 +1,9 @@
 <Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
   <Folder Name="/common/">
     <File Path=".editorconfig" />
     <File Path="AGENTS.md" />
@@ -17,11 +22,13 @@
     <Project Path="src/Market.Infrastructure/Market.Infrastructure.csproj" Id="6372b09d-f724-404b-a277-6b8e9da0b388" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CppApp/CppApp.vcxproj" Id="29744f51-4bd4-420b-b168-9b75d75e0b87" />
     <Project Path="tests/Market.Benchmarks/Market.Benchmarks.csproj" Id="2c9cac3c-1eba-43e1-8a44-311f91f25e6c" />
     <Project Path="tests/Market.ConsoleApp/Market.ConsoleApp.csproj" />
     <Project Path="tests/Market.Core.Tests/Market.Core.Tests.csproj" Id="d5820a11-7300-4b10-a60a-375db27e7967" />
     <Project Path="tests/Market.Infrastructure.Tests/Market.Infrastructure.Tests.csproj" Id="70fd05b1-a5d2-4e3d-88ec-e09fab6c20a6" />
     <Project Path="tests/Market.PythonApp/Market.PythonApp.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="ab834bed-067d-4788-b3e4-e3ca7ace155e">
+      <Platform Project="AnyCPU" />
       <Build Project="false" />
     </Project>
   </Folder>
