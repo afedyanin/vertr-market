@@ -15,8 +15,22 @@ public class KalmanHalfLifeMidPriceAlgoTests
         double[] assetX = { 100.0, 100.2, 100.1, 100.3, 100.4, 100.5, 100.6, 100.7, 100.8, 100.9 };
         double[] assetY = { 150.0, 150.1, 150.3, 150.2, 150.8, 153.0, 156.0, 159.0, 162.0, 165.0 };
 
-        // Инициализируем робота
-        var algo = new KalmanHalfLifeMidPriceAlgo(400, 1, 5, initialBeta: 1.5);
+        var meta = new AlgoMetadata
+        {
+            AssetX = 1,
+            AssetY = 5,
+            StrategyId = Guid.NewGuid(),
+            AlgoType = nameof(KalmanHalfLifeMidPriceAlgo),
+        };
+
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeX, 1);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeY, 100);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialBeta, 1.5);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.Q, 0.00005);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.R, 0.01);
+
+        var algo = new KalmanHalfLifeMidPriceAlgo(meta);
 
         const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,6} {6, 6} {7,12} {8, 12}";
         Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "XQty", "YQty");
@@ -67,7 +81,22 @@ public class KalmanHalfLifeMidPriceAlgoTests
             Console.WriteLine(rowTemplate, "Шаг", "Beta", "Spread", "Z-Score Buy", "Z-Score Sell", "Half-Life(sec)", "Cointegrated", "XQty", "YQty");
             Console.WriteLine(new string('-', 85));
 
-            var algo = new KalmanHalfLifeMidPriceAlgo(401, 1, 5, initialBeta: 100);
+            var meta = new AlgoMetadata
+            {
+                AssetX = 1,
+                AssetY = 5,
+                StrategyId = Guid.NewGuid(),
+                AlgoType = nameof(KalmanHalfLifeMidPriceAlgo),
+            };
+
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeX, 1);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeY, 100);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialBeta, 100);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.Q, 0.00005);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.R, 0.01);
+
+            var algo = new KalmanHalfLifeMidPriceAlgo(meta);
             var i = 0;
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))

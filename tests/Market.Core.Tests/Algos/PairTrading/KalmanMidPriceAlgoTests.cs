@@ -16,7 +16,7 @@ public class KalmanMidPriceAlgoTests
         double[] assetY = { 150, 152, 149, 153, 162, 164, 155, 156, 154, 153 }; // На шагах 5 и 6 искусственный выброс вверх
 
         // Инициализируем робота
-        var algo = new KalmanMidPriceAlgo(200, 1, 5, 1, 1, initialBeta: 1.5);
+        var algo = CreateAlgo();
 
         const string rowTemplate = "{0,-6} {1, 12} {2,12} {3,12} {4,12} {5,12} {6, 12} {7, 12}";
         Console.WriteLine(rowTemplate, "Step", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
@@ -61,7 +61,7 @@ public class KalmanMidPriceAlgoTests
             Console.WriteLine(rowTemplate, "Step", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "xQty", "yQty");
             Console.WriteLine(new string('-', 100));
 
-            var algo = new KalmanMidPriceAlgo(300, 1, 5, 1, 100);
+            var algo = CreateAlgo();
             var i = 0;
 
             await foreach (var book in OrderBookFileReader.ReadAsync(filePath, cts.Token))
@@ -98,9 +98,9 @@ public class KalmanMidPriceAlgoTests
 
         try
         {
-            var algo = new KalmanMidPriceAlgo(201, 1, 5, 1, 100);
             var orderExec = new OrderExecution();
             var portfolioManager = new PortfolioManager();
+            var algo = CreateAlgo();
 
             var i = 0;
 
@@ -142,5 +142,27 @@ public class KalmanMidPriceAlgoTests
         {
             Console.WriteLine("Чтение было отменено.");
         }
+    }
+
+    private static KalmanMidPriceAlgo CreateAlgo()
+    {
+        var meta = new AlgoMetadata
+        {
+            AssetX = 1,
+            AssetY = 5,
+            StrategyId = Guid.NewGuid(),
+            AlgoType = nameof(KalmanMidPriceAlgo),
+        };
+
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeX, 1);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeY, 100);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialBeta, 1.0);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.Q, 0.00005);
+        meta.AlgoParams.TryAdd(AlgoMetadata.Keys.R, 0.01);
+
+        var algo = new KalmanMidPriceAlgo(meta);
+
+        return algo;
     }
 }

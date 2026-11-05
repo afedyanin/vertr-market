@@ -19,13 +19,22 @@ public class DynamicKalmanMidPriceAlgoTests
             Console.WriteLine(rowTemplate, "Шаг", "PriceX", "PriceY", "Beta", "Spread", "Z-Score", "XQty", "YQty");
             Console.WriteLine(new string('-', 85));
 
-            var algo = new KalmanMidPriceAlgo(
-                100,
-                1, 5, 1, 100,
-                initialBeta: 1.0,
-                initialErrorCovariance: 1.0,
-                q: 0.00005,
-                r: 0.01);
+            var meta = new AlgoMetadata
+            {
+                AssetX = 1,
+                AssetY = 5,
+                StrategyId = Guid.NewGuid(),
+                AlgoType = nameof(DynamicKalmanMidPriceAlgo),
+            };
+
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeX, 1);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.LotSizeY, 100);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialBeta, 1.0);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.Q, 0.00005);
+            meta.AlgoParams.TryAdd(AlgoMetadata.Keys.R, 0.01);
+
+            var algo = new DynamicKalmanMidPriceAlgo(meta);
 
             var i = 0;
 

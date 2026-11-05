@@ -22,7 +22,4 @@ public record class AlgoMetadata
     public ushort AssetY { get; init; }
     public Dictionary<string, double> AlgoParams { get; init; } = [];
     public required string AlgoType { get; init; }
-
-    public double GetOrDefault(string key, double defaultValue)
-        => AlgoParams.TryGetValue(key, out var found) ? found : defaultValue;
 }
