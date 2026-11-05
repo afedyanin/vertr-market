@@ -1,24 +1,26 @@
-@HostAddress = http://localhost:7001
-@AssetId = 1
+@HostAddress = http://localhost:5001
+@StrategyId = 3fa85f64-5717-4562-b3fc-2c963f66afa8
 
-
-GET {{HostAddress}}/api/trades/stats
+GET {{HostAddress}}/api/algos
 Accept: application/json
 
 ###
 
-POST {{HostAddress}}/api/trades
+POST {{HostAddress}}/api/algos
 Content-Type: application/json
-[
-  {
-    "microsecondTimestamp": 1234567,
-    "price": 0.156,
-    "volume": 110,
-    "assetId": {{AssetId}},
-    "side": 1
-  }
-]
+{
+  "strategyId": "{{StrategyId}}",
+  "assetX": 1,
+  "assetY": 5,
+  "algoParams": {
+    "LotSizeX": 1,
+    "LotSizeY": 100,
+    "InitialBeta": 1.0,
+    "InitialErrorCovariance": 1.0
+  },
+  "algoType": "KalmanMidPriceAlgo"
+}
 ### 
 
-GET {{HostAddress}}/api/trades/{{AssetId}}?count=10
+DELETE {{HostAddress}}/api/algos/{{StrategyId}}
 

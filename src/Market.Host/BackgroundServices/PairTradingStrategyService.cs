@@ -7,7 +7,7 @@ namespace Market.Host.BackgroundServices;
 
 public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
 {
-    private class TaskInfo
+    private sealed class TaskInfo
     {
         public required CancellationTokenSource TokenSource { get; init; }
         public required Task ExecutingTask { get; init; }
@@ -26,7 +26,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
     public PairTradingStrategyService(
         IAlgoMetadataRepository algoMetadataRepository,
         Channel<OrderBookDepth> orderBookChannel,
-        ChannelWriter<IPairTradingSignal> signalWriter,
+        Channel<IPairTradingSignal> signalsChannel,
         ILoggerFactory loggerFactory)
     {
         _algoMetadataRepository = algoMetadataRepository;
@@ -37,7 +37,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
         _logger = loggerFactory.CreateLogger<PairTradingStrategyService>();
 
         _orderBooksTopic = new OrderBooksTopic(orderBookChannel, loggerFactory);
-        _signalWriter = signalWriter;
+        _signalWriter = signalsChannel.Writer;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

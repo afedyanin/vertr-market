@@ -9,6 +9,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using StackExchange.Redis;
+using Market.Infrastructure;
 
 namespace Market.Host;
 
@@ -66,6 +67,8 @@ public static class Program
         // Channels
         builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>()); // one writer, many readers
         builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>()); // many writers, one reader
+
+        builder.Services.AddAlgoMetadataRepository();
 
         // Hosted services
         builder.Services.AddHostedService<PairTradingStrategyService>();

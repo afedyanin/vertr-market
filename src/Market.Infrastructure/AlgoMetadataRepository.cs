@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Market.Core.Models;
 
-namespace Market.Core.Algos;
+namespace Market.Infrastructure;
 
 internal sealed class AlgoMetadataRepository : IAlgoMetadataRepository
 {
