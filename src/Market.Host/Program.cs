@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Threading.Channels;
-using Market.Core.Algos.PairTrading;
 using Market.Core.Models;
 using Market.Host.BackgroundServices;
 using Market.Infrastructure.BackgroundServices;
@@ -65,19 +64,8 @@ public static class Program
         builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
 
         // Channels
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>());
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>());
-
-        // Strategy
-        builder.Services.AddTransient(sp =>
-        {
-            var algo = new DinamicKalmanVwapAlgo(100, 1, 5);
-            var strategy = new PairTradingStrategy(algo,
-                sp.GetRequiredService<Channel<OrderBookDepth>>(),
-                sp.GetRequiredService<Channel<IPairTradingSignal>>(),
-                sp.GetRequiredService<ILoggerFactory>());
-            return strategy;
-        });
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>()); // one writer, many readers
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>()); // many writers, one reader
 
         // Hosted services
         builder.Services.AddHostedService<PairTradingStrategyService>();

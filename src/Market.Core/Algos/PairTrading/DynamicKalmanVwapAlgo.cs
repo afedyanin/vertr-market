@@ -22,7 +22,7 @@ namespace Market.Core.Algos.PairTrading;
 и накладывает штраф за "устаревание" данных на RBeta.
 */
 
-public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
+public class DynamicKalmanVwapAlgo : PairTradingAlgoBase
 {
     private readonly double _entryThreshold;
     private readonly double _exitThreshold;
@@ -34,7 +34,7 @@ public class DinamicKalmanVwapAlgo : PairTradingAlgoBase
     private Quote? _quoteX;
     private Quote? _quoteY;
 
-    public DinamicKalmanVwapAlgo(AlgoMetadata metadata) : base(metadata)
+    public DynamicKalmanVwapAlgo(AlgoMetadata metadata) : base(metadata)
     {
 
         _requiredYQty = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);

@@ -16,3 +16,4 @@ dotnet_diagnostic.CA1063.severity = none # Dispose
 dotnet_diagnostic.CA2016.severity = none # Forward the 'CancellationToken' parameter to methods 
 dotnet_diagnostic.MA0040.severity = none # Forward the CancellationToken parameter to methods that take one 
 dotnet_diagnostic.CA1805.severity = none # Do not initialize unnecessarily
+dotnet_diagnostic.CA1003.severity = none # Use generic event handler instances
