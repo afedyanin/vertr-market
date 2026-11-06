@@ -1,4 +1,5 @@
-@HostAddress = http://localhost:5001
+#@HostAddress = http://localhost:5001
+@HostAddress = http://localhost:7001
 @StrategyId = 3fa85f64-5717-4562-b3fc-2c963f66afa8
 
 GET {{HostAddress}}/algos
@@ -31,4 +32,15 @@ Accept: application/json
 ### 
 GET {{HostAddress}}/portfolios/{{StrategyId}}
 Accept: application/json
+
+###
+
+POST {{HostAddress}}/algos
+Content-Type: application/json
+{
+  "strategyId": "{{StrategyId}}",
+  "assetX": 20,
+  "assetY": 10,
+  "algoType": "DummyRandomAlgo"
+}
 

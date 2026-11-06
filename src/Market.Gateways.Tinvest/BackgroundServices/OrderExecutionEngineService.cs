@@ -68,6 +68,11 @@ public class OrderExecutionEngineService : BackgroundService
         {
             try
             {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Trading signal received: {Signal}", signal);
+                }
+
                 await PostOrders(signal, cancellationToken);
             }
             catch (Exception ex)
@@ -129,6 +134,11 @@ public class OrderExecutionEngineService : BackgroundService
 
         foreach (var request in requests)
         {
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Posting order request: {Request}", request);
+            }
+
             _requestId2StrategyId.TryAdd(request.OrderId, signal.StrategyId);
             var task = PostOrderInternal(request, cancellationToken: cancellationToken);
             tasks.Add(task);

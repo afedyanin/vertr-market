@@ -22,6 +22,11 @@ public record PairTradingSignal : IPairTradingSignal
 
     [Key(5)]
     public Dictionary<string, double> Params { get; } = [];
+
+    public override string ToString()
+    {
+        return $"StrategyId={StrategyId} AssetX[Id={BookX.AssetId};Qty={XQty}] AssetY[Id={BookY.AssetId};Qty={YQty}]";
+    }
 }
 
 public static class SignalParamKeys

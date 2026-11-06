@@ -45,10 +45,19 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
     {
         _logger.LogInformation("Starting PairTradingStrategyService...");
 
+        _stoppingToken = stoppingToken;
+
+        var orderBooksTopicTask = _orderBooksTopic.ExecuteAsync(stoppingToken);
+        var strategiesTask = StartStrategies(stoppingToken);
+        await Task.WhenAll(orderBooksTopicTask, strategiesTask);
+
+        _logger.LogInformation("PairTradingStrategyService stopped.");
+    }
+
+    private Task StartStrategies(CancellationToken cancellationToken)
+    {
         try
         {
-            _stoppingToken = stoppingToken;
-
             foreach (var algoMeta in _algoMetadataRepository.GetAll())
             {
                 try
@@ -65,7 +74,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
                 }
             }
 
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            return Task.Delay(Timeout.Infinite, cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -75,7 +84,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
             _logger.LogError(ex, "PairTradingStrategyService failed to execute. Message={Message}", ex.Message);
         }
 
-        _logger.LogInformation("PairTradingStrategyService stopped.");
+        return Task.CompletedTask;
     }
 
     public void OnAlgoSaved(AlgoMetadata algoMeta)

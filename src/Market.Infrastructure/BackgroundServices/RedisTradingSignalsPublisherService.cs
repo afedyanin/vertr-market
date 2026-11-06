@@ -33,14 +33,26 @@ public class RedisTradingSignalsPublisherService : BackgroundService
         {
             await foreach (var signal in _reader.ReadAllAsync(stoppingToken))
             {
-                var redisChannel = _channelCache.GetOrAdd(
-                    ((uint)signal.BookX.AssetId << 16) | signal.BookY.AssetId,
-                    _ => new RedisChannel($"signals:{signal.BookX.AssetId}:{signal.BookY.AssetId}", RedisChannel.PatternMode.Auto));
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Receiving signal from channel: {Signal}", signal.ToString());
+                }
 
-                await _redisDb.PublishAsync(
-                    redisChannel,
-                    JsonSerializer.Serialize(signal, signal.GetType()),
-                    CommandFlags.FireAndForget);
+                try
+                {
+                    var redisChannel = _channelCache.GetOrAdd(
+                        ((uint)signal.BookX.AssetId << 16) | signal.BookY.AssetId,
+                        _ => new RedisChannel($"signals:{signal.BookX.AssetId}:{signal.BookY.AssetId}", RedisChannel.PatternMode.Auto));
+
+                    await _redisDb.PublishAsync(
+                        redisChannel,
+                        JsonSerializer.Serialize(signal, signal.GetType()),
+                        CommandFlags.FireAndForget);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Publishing signal to Redis failed. Message={Message} Signal={Signal} ", ex.Message, signal.ToString());
+                }
             }
         }
         catch (OperationCanceledException)

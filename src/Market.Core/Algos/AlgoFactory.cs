@@ -13,6 +13,7 @@ public static class AlgoFactory
             nameof(KalmanHalfLifeMidPriceAlgo) => new KalmanHalfLifeMidPriceAlgo(algoMetadata),
             nameof(DynamicKalmanMidPriceAlgo) => new DynamicKalmanMidPriceAlgo(algoMetadata),
             nameof(DynamicKalmanVwapAlgo) => new DynamicKalmanVwapAlgo(algoMetadata),
+            nameof(DummyRandomAlgo) => new DummyRandomAlgo(algoMetadata),
             _ => throw new NotImplementedException($"Unknown AlgoType={algoMetadata.AlgoType}"),
         };
     }

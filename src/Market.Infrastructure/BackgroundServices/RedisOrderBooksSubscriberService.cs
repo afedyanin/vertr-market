@@ -39,6 +39,7 @@ public class RedisOrderBooksSubscriberService : BackgroundService
                 }
 
                 var orderBook = MessagePackSerializer.Deserialize<OrderBookDepth>(value, cancellationToken: stoppingToken);
+
                 _writer.TryWrite(orderBook);
             }
             catch (Exception ex)

@@ -42,6 +42,8 @@ internal static class TinvestMapper
 
     public static IEnumerable<MyTrade> ToMyTrades(OrderTrades orderTrades, ushort assetId, Guid? strategyId)
     {
+        var direction = orderTrades.Direction == OrderDirection.Sell ? -1 : orderTrades.Direction == OrderDirection.Buy ? 1 : 0;
+
         foreach (var trade in orderTrades.Trades)
         {
             yield return new MyTrade
@@ -51,7 +53,7 @@ internal static class TinvestMapper
                 TradeId = trade.TradeId,
                 OrderId = orderTrades.OrderId,
                 Price = trade.Price,
-                Qty = trade.Quantity,
+                Qty = trade.Quantity * direction,
                 Timestamp = trade.DateTime.ToDateTime(),
             };
         }

@@ -54,7 +54,7 @@ public class PairTradingStrategyWrapper
                             continue;
                         }
 
-                        _logger.LogInformation("Sending signal: {Signal}.", signal);
+                        _logger.LogInformation("Sending signal: {Signal}.", signal.ToString());
                         _writer.TryWrite(signal);
                     }
                     catch (Exception ex)

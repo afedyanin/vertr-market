@@ -44,7 +44,7 @@ public class OrderBooksTopic
     {
         try
         {
-            await foreach (var item in _incomingChannel.Reader.ReadAllAsync(cancellationToken))
+            await foreach (var book in _incomingChannel.Reader.ReadAllAsync(cancellationToken))
             {
                 var currentSubs = _subscribers;
 
@@ -57,7 +57,7 @@ public class OrderBooksTopic
                 {
                     try
                     {
-                        currentSubs[i].Writer.TryWrite(item);
+                        currentSubs[i].Writer.TryWrite(book);
                     }
                     catch (Exception ex)
                     {

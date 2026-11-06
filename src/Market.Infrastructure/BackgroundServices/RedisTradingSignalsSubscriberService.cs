@@ -10,12 +10,12 @@ namespace Market.Infrastructure.BackgroundServices;
 public class RedisTradingSignalsSubscriberService : BackgroundService
 {
     private readonly ISubscriber _subscriber;
-    private readonly ChannelWriter<PairTradingSignal> _writer;
+    private readonly ChannelWriter<IPairTradingSignal> _writer;
     private readonly ILogger<RedisTradingSignalsSubscriberService> _logger;
 
     public RedisTradingSignalsSubscriberService(
         IConnectionMultiplexer redis,
-        Channel<PairTradingSignal> channel,
+        Channel<IPairTradingSignal> channel,
         ILoggerFactory loggerFactory)
     {
         _subscriber = redis.GetSubscriber();
