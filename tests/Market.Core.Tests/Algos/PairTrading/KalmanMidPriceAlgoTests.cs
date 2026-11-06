@@ -3,6 +3,7 @@ using Market.Core.Extensions;
 using Market.Core.FileStore;
 using Market.Core.Models;
 using Market.Core.Tests.Stubs;
+using Market.Infrastructure.Repositories;
 
 namespace Market.Core.Tests.Algos.PairTrading;
 
@@ -99,7 +100,7 @@ public class KalmanMidPriceAlgoTests
         try
         {
             var orderExec = new OrderExecution();
-            var portfolioManager = new PortfolioManager();
+            var portfolioManager = new PortfolioRepository();
             var algo = CreateAlgo();
 
             var i = 0;
@@ -121,9 +122,8 @@ public class KalmanMidPriceAlgoTests
                 foreach (var trade in trades)
                 {
                     Console.WriteLine($"Trade: AssetId={trade.AssetId} Price={trade.Price} Qty={trade.Qty}");
+                    portfolio.Update(trade);
                 }
-
-                portfolioManager.Update(trades);
 
                 i++;
             }

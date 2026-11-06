@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Market.Core.Models;
+using Market.Core.Repositories;
 using Market.Gateways.Tinvest.BackgroundServices;
 using Market.Infrastructure;
 using Market.Infrastructure.BackgroundServices;
@@ -9,6 +10,7 @@ using OpenTelemetry.Resources;
 using Serilog;
 using StackExchange.Redis;
 using Tinkoff.InvestApi;
+using Tinkoff.InvestApi.V1;
 
 namespace Market.Gateways.Tinvest;
 
@@ -33,40 +35,55 @@ public static class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
-        var marketDepthChannel = Channel.CreateBounded<OrderBookDepth>(new BoundedChannelOptions(10000)
-        {
-            SingleWriter = true, // Писать в канал будет только gRPC поток
-            SingleReader = true, // Читать будет один фоновый воркер записи
-            FullMode = BoundedChannelFullMode.DropOldest // Если очередь полная, выкидываем старый стакан
-        });
 
-        builder.Services.AddSingleton(marketDepthChannel);
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // OrderBooksStreamService
+                SingleReader = true, // RedisOrderBooksPublisherService
+            }));
 
-        var tradesChannel = Channel.CreateBounded<MyTrade>(new BoundedChannelOptions(1000)
-        {
-            SingleWriter = true,
-            SingleReader = true,
-            FullMode = BoundedChannelFullMode.Wait
-        });
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<MyTrade>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // OrderExecutionEngineService
+                SingleReader = true, // RedisMyTradesPublisherService
+            }));
 
-        builder.Services.AddSingleton(tradesChannel);
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // RedisTradingSignalsSubscriberService
+                SingleReader = true, // OrderExecutionEngineService
+            }));
+
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderTrades>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // OrderTradesStreamService
+                SingleReader = true, // OrderExecutionEngineService
+            }));
 
         // Add Tinvest API
         builder.Services.AddOptions<TinvestSettings>().BindConfiguration(nameof(TinvestSettings));
         builder.Services.AddInvestApiClient((_, settings) => configuration.Bind($"{nameof(TinvestSettings)}:{nameof(InvestApiSettings)}", settings));
+
+        // Hosted services
         builder.Services.AddHostedService<OrderBooksStreamService>();
         builder.Services.AddHostedService<OrderTradesStreamService>();
+        builder.Services.AddHostedService<OrderExecutionEngineService>();
 
-        // Redis publishers
+        // Redis 
         var redisConnectionString = configuration.GetConnectionString("Redis");
         builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
+
+        // Redis consumers & publishers
         builder.Services.AddHostedService<RedisOrderBooksPublisherService>();
-        builder.Services.AddHostedService<RedisOrderTradesPublisherService>();
+        builder.Services.AddHostedService<RedisMyTradesPublisherService>();
+        builder.Services.AddHostedService<RedisTradingSignalsSubscriberService>();
 
-        // Static data provider
-
-        builder.Services.AddSingleton<JsonStaticDataProvider>();
-        builder.Services.AddSingleton<IStaticDataProvider>(sp => sp.GetRequiredService<JsonStaticDataProvider>());
+        // Repositories
+        builder.Services.AddStaticDataProvider();
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
@@ -92,7 +109,7 @@ public static class Program
 
         // Load static data
         var options = app.Services.GetRequiredService<IOptions<TinvestSettings>>();
-        var staticDataProvider = app.Services.GetRequiredService<JsonStaticDataProvider>();
+        var staticDataProvider = app.Services.GetRequiredService<IStaticDataProvider>();
         await staticDataProvider.LoadFrom(options.Value.StaticDataDirectory);
 
         await app.RunAsync();

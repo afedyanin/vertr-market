@@ -1,12 +1,12 @@
 @HostAddress = http://localhost:5001
 @StrategyId = 3fa85f64-5717-4562-b3fc-2c963f66afa8
 
-GET {{HostAddress}}/api/algos
+GET {{HostAddress}}/algos
 Accept: application/json
 
 ###
 
-POST {{HostAddress}}/api/algos
+POST {{HostAddress}}/algos
 Content-Type: application/json
 {
   "strategyId": "{{StrategyId}}",
@@ -22,5 +22,13 @@ Content-Type: application/json
 }
 ### 
 
-DELETE {{HostAddress}}/api/algos/{{StrategyId}}
+DELETE {{HostAddress}}/algos/{{StrategyId}}
+
+### 
+GET {{HostAddress}}/portfolios
+Accept: application/json
+
+### 
+GET {{HostAddress}}/portfolios/{{StrategyId}}
+Accept: application/json
 

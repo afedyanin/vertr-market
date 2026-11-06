@@ -1,9 +1,10 @@
 ﻿using Market.Core.Models;
+using Market.Core.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Market.Host.Controllers;
 
-[Route("api/algos")]
+[Route("algos")]
 [ApiController]
 public class AlgosController : ControllerBase
 {

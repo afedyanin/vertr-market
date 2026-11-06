@@ -8,21 +8,21 @@ using StackExchange.Redis;
 
 namespace Market.Infrastructure.BackgroundServices;
 
-public class RedisOrderTradesPublisherService : BackgroundService
+public class RedisMyTradesPublisherService : BackgroundService
 {
     private readonly ChannelReader<MyTrade> _reader;
-    private readonly ILogger<RedisOrderTradesPublisherService> _logger;
+    private readonly ILogger<RedisMyTradesPublisherService> _logger;
     private readonly IDatabase _redisDb;
     private readonly ConcurrentDictionary<ushort, RedisChannel> _channelCache = new();
 
-    public RedisOrderTradesPublisherService(
+    public RedisMyTradesPublisherService(
         IConnectionMultiplexer redis,
         Channel<MyTrade> channel,
         ILoggerFactory loggerFactory)
     {
         _reader = channel.Reader;
         _redisDb = redis.GetDatabase();
-        _logger = loggerFactory.CreateLogger<RedisOrderTradesPublisherService>();
+        _logger = loggerFactory.CreateLogger<RedisMyTradesPublisherService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -7,20 +7,20 @@ using StackExchange.Redis;
 
 namespace Market.Infrastructure.BackgroundServices;
 
-public class RedisOrderTradesSubscriberService : BackgroundService
+public class RedisMyTradesSubscriberService : BackgroundService
 {
     private readonly ISubscriber _subscriber;
     private readonly ChannelWriter<MyTrade> _writer;
-    private readonly ILogger<RedisOrderTradesSubscriberService> _logger;
+    private readonly ILogger<RedisMyTradesSubscriberService> _logger;
 
-    public RedisOrderTradesSubscriberService(
+    public RedisMyTradesSubscriberService(
         IConnectionMultiplexer redis,
         Channel<MyTrade> channel,
         ILoggerFactory loggerFactory)
     {
         _subscriber = redis.GetSubscriber();
         _writer = channel.Writer;
-        _logger = loggerFactory.CreateLogger<RedisOrderTradesSubscriberService>();
+        _logger = loggerFactory.CreateLogger<RedisMyTradesSubscriberService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

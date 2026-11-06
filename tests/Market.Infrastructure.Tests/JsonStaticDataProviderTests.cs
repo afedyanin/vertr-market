@@ -1,4 +1,5 @@
-﻿using Market.Core.Models;
+﻿using Market.Core.Repositories;
+using Market.Infrastructure.Repositories;
 
 namespace Market.Infrastructure.Tests;
 

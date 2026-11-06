@@ -1,6 +1,7 @@
 ﻿using System.Threading.Channels;
 using Grpc.Core;
 using Market.Core.Models;
+using Market.Core.Repositories;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;

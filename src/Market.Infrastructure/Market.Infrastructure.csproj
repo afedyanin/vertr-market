@@ -5,4 +5,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Market.Core\Market.Core.csproj" />
   </ItemGroup>
+ <ItemGroup>
+	 <InternalsVisibleTo Include="Market.Infrastructure.Tests"/>
+	 <InternalsVisibleTo Include="Market.Core.Tests"/>
+ </ItemGroup>
 </Project>

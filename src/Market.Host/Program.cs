@@ -60,19 +60,43 @@ public static class Program
             .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
             .Enrich.WithThreadId());
 
+        // Channels
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // RedisOrderBooksSubscriberService
+                SingleReader = true, // PairTradingStrategyService
+            }));
+
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<MyTrade>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // RedisMyTradesSubscriberService
+                SingleReader = true, // PortfolioManagerService
+            }));
+
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>(
+            new UnboundedChannelOptions()
+            {
+                SingleWriter = true, // PairTradingStrategyService
+                SingleReader = true, // RedisTradingSignalsPublisherService
+            }));
+
+        // Repositories
+        builder.Services.AddAlgoMetadataRepository();
+        builder.Services.AddPortfolioRepository();
+
+        // Hosted services
+        builder.Services.AddHostedService<PairTradingStrategyService>();
+        builder.Services.AddHostedService<PortfolioManagerService>();
+
         // Redis
         var redisConnectionString = configuration.GetConnectionString("Redis");
         builder.Services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
 
-        // Channels
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>()); // one writer, many readers
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>()); // many writers, one reader
-
-        builder.Services.AddAlgoMetadataRepository();
-
-        // Hosted services
-        builder.Services.AddHostedService<PairTradingStrategyService>();
+        // Redis consumers & publishers
         builder.Services.AddHostedService<RedisOrderBooksSubscriberService>();
+        builder.Services.AddHostedService<RedisMyTradesSubscriberService>();
         builder.Services.AddHostedService<RedisTradingSignalsPublisherService>();
 
         var app = builder.Build();

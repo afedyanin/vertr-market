@@ -1,4 +1,6 @@
-﻿namespace Market.Core.Models;
+﻿using Market.Core.Models;
+
+namespace Market.Core.Repositories;
 
 public interface IAlgoMetadataRepository
 {

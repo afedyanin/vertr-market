@@ -1,9 +1,10 @@
 ﻿using System.Text.Json;
 using Market.Core.Models;
+using Market.Core.Repositories;
 
-namespace Market.Infrastructure;
+namespace Market.Infrastructure.Repositories;
 
-public class JsonStaticDataProvider : IStaticDataProvider
+internal sealed class JsonStaticDataProvider : IStaticDataProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 

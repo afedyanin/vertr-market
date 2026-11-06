@@ -2,6 +2,7 @@
 using System.Threading.Channels;
 using Market.Core.Algos;
 using Market.Core.Models;
+using Market.Core.Repositories;
 using Market.Infrastructure;
 namespace Market.Host.BackgroundServices;
 
@@ -42,10 +43,11 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("Starting PairTradingStrategyService...");
+
         try
         {
             _stoppingToken = stoppingToken;
-            _logger.LogInformation("Starting PairTradingStrategyService...");
 
             foreach (var algoMeta in _algoMetadataRepository.GetAll())
             {
@@ -125,9 +127,9 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
             return;
         }
 
+        _disposed = true;
         _algoMetadataRepository.OnSaved -= OnAlgoSaved;
         _algoMetadataRepository.OnDeleted -= OnAlgoDeleted;
-        _disposed = true;
 
         try
         {

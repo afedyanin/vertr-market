@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Market.Core.Models;
+using Market.Core.Repositories;
 using Microsoft.Extensions.Options;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
@@ -9,7 +10,7 @@ namespace Market.Gateways.Tinvest.BackgroundServices;
 
 public class OrderExecutionEngineService : BackgroundService
 {
-    private readonly ChannelReader<PairTradingSignal> _signalsReader;
+    private readonly ChannelReader<IPairTradingSignal> _signalsReader;
     private readonly ChannelReader<OrderTrades> _orderTradesReader;
     private readonly ChannelWriter<MyTrade> _myTradesWriter;
     private readonly IStaticDataProvider _staticDataProvider;
@@ -27,7 +28,7 @@ public class OrderExecutionEngineService : BackgroundService
     private readonly ConcurrentDictionary<string, List<MyTrade>> _pendingTrades = new();
 
     public OrderExecutionEngineService(
-        Channel<PairTradingSignal> signalsChannel,
+        Channel<IPairTradingSignal> signalsChannel,
         Channel<OrderTrades> orderTradesChannel,
         Channel<MyTrade> tradesChannel,
         IOptions<TinvestSettings> tinvestOptions,
@@ -41,7 +42,6 @@ public class OrderExecutionEngineService : BackgroundService
         _tinvestSettings = tinvestOptions.Value;
         _apiClient = apiClient;
         _staticDataProvider = staticDataProvider;
-
         _logger = loggerFactory.CreateLogger<OrderExecutionEngineService>();
     }
 
@@ -122,7 +122,7 @@ public class OrderExecutionEngineService : BackgroundService
         }
     }
 
-    private async Task PostOrders(PairTradingSignal signal, CancellationToken cancellationToken)
+    private async Task PostOrders(IPairTradingSignal signal, CancellationToken cancellationToken)
     {
         var requests = CreateRequests(signal);
         var tasks = new List<Task>(requests.Count());
@@ -162,8 +162,7 @@ public class OrderExecutionEngineService : BackgroundService
         }
     }
 
-
-    private IEnumerable<Tinkoff.InvestApi.V1.PostOrderRequest> CreateRequests(PairTradingSignal signal)
+    private IEnumerable<Tinkoff.InvestApi.V1.PostOrderRequest> CreateRequests(IPairTradingSignal signal)
     {
         var requests = new List<Tinkoff.InvestApi.V1.PostOrderRequest>();
 

@@ -6,10 +6,13 @@ namespace Market.Core.Models;
 public class Portfolio
 {
     private readonly ConcurrentDictionary<ushort, Position> _positions = [];
+    private readonly IList<MyTrade> _trades = [];
 
     public Guid StrategyId { get; init; }
 
     public ImmutableArray<Position> Positions => [.. _positions.Values];
+
+    public ImmutableArray<MyTrade> Trades => [.. _trades];
 
     public Position? Get(ushort assetId)
     {
@@ -17,14 +20,16 @@ public class Portfolio
         return position;
     }
 
-    public Position Update(ushort assetId, decimal tradeQty, decimal tradePrice)
+    public Position Update(MyTrade trade)
     {
-        var position = _positions.GetOrAdd(assetId, new Position
+        _trades.Add(trade);
+
+        var position = _positions.GetOrAdd(trade.AssetId, new Position
         {
-            AssetId = assetId,
+            AssetId = trade.AssetId,
         });
 
-        position.Update(tradeQty, tradePrice);
+        position.Update(trade.Qty, trade.Price);
         return position;
     }
 }
