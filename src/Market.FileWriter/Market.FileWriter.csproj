@@ -25,4 +25,8 @@
 	  <ProjectReference Include="..\Market.Infrastructure\Market.Infrastructure.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="books\" />
+	</ItemGroup>
+
 </Project>

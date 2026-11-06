@@ -40,15 +40,12 @@ public static class Program
                 var redisConnectionString = configuration.GetConnectionString("Redis");
                 services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
 
-                // Order Book Channel
-                var channelOptions = new BoundedChannelOptions(capacity: 10000)
-                {
-                    FullMode = BoundedChannelFullMode.DropOldest, // Или Wait, если нельзя терять данные
-                    SingleWriter = true,  // Подписка Redis работает в один поток на обработчик
-                    SingleReader = true   // Наш фоновый метод чтения файла тоже один
-                };
-
-                services.AddSingleton(sp => Channel.CreateBounded<OrderBookDepth>(channelOptions));
+                services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>(
+                    new UnboundedChannelOptions()
+                    {
+                        SingleWriter = true, // RedisOrderBooksSubscriberService
+                        SingleReader = true, // PairTradingStrategyService
+                    }));
 
                 // Hosted services
                 services.AddHostedService<RedisOrderBooksSubscriberService>();
