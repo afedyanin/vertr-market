@@ -3,7 +3,7 @@
 namespace Market.Core.Models;
 
 [MessagePackObject]
-public record PairTradingSignal : IPairTradingSignal
+public record PairTradingSignal
 {
     [Key(0)]
     public Guid StrategyId { get; set; }

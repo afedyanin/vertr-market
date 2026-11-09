@@ -55,7 +55,7 @@ public class DynamicKalmanVwapAlgo : PairTradingAlgoBase
             r: r);
     }
 
-    protected override IPairTradingSignal? ProcessTickX()
+    protected override PairTradingSignal? ProcessTickX()
     {
         if (_lastDepthX is null)
         {
@@ -75,7 +75,7 @@ public class DynamicKalmanVwapAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    protected override IPairTradingSignal? ProcessTickY()
+    protected override PairTradingSignal? ProcessTickY()
     {
         if (_lastDepthY is null)
         {
@@ -94,7 +94,7 @@ public class DynamicKalmanVwapAlgo : PairTradingAlgoBase
     }
 
 
-    private IPairTradingSignal? ProcessTick()
+    private PairTradingSignal? ProcessTick()
     {
         if (!_kalmanFilter.HasValidData)
         {

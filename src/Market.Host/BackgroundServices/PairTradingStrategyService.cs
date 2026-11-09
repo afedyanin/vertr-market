@@ -16,7 +16,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
 
     private readonly IAlgoMetadataRepository _algoMetadataRepository;
     private readonly OrderBooksTopic _orderBooksTopic;
-    private readonly ChannelWriter<IPairTradingSignal> _signalWriter;
+    private readonly ChannelWriter<PairTradingSignal> _signalWriter;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PairTradingStrategyService> _logger;
     private readonly ConcurrentDictionary<Guid, TaskInfo> _strategyTasks = [];
@@ -27,7 +27,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
     public PairTradingStrategyService(
         IAlgoMetadataRepository algoMetadataRepository,
         Channel<OrderBookDepth> orderBookChannel,
-        Channel<IPairTradingSignal> signalsChannel,
+        Channel<PairTradingSignal> signalsChannel,
         ILoggerFactory loggerFactory)
     {
         _algoMetadataRepository = algoMetadataRepository;

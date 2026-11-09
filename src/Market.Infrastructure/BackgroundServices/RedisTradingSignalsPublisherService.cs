@@ -10,14 +10,14 @@ namespace Market.Infrastructure.BackgroundServices;
 
 public class RedisTradingSignalsPublisherService : BackgroundService
 {
-    private readonly ChannelReader<IPairTradingSignal> _reader;
+    private readonly ChannelReader<PairTradingSignal> _reader;
     private readonly ILogger<RedisTradingSignalsPublisherService> _logger;
     private readonly IDatabase _redisDb;
     private readonly ConcurrentDictionary<uint, RedisChannel> _channelCache = new();
 
     public RedisTradingSignalsPublisherService(
         IConnectionMultiplexer redis,
-        Channel<IPairTradingSignal> channel,
+        Channel<PairTradingSignal> channel,
         ILoggerFactory loggerFactory)
     {
         _reader = channel.Reader;

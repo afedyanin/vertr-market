@@ -10,13 +10,13 @@ public class PairTradingStrategyWrapper
     private readonly ushort _assetY;
     private readonly IPairTradingAlgo _algo;
     private readonly ChannelReader<OrderBookDepth> _reader;
-    private readonly ChannelWriter<IPairTradingSignal> _writer;
+    private readonly ChannelWriter<PairTradingSignal> _writer;
     private readonly ILogger<PairTradingStrategyWrapper> _logger;
 
     public PairTradingStrategyWrapper(
         IPairTradingAlgo algo,
         ChannelReader<OrderBookDepth> orderBooksChannelReader,
-        ChannelWriter<IPairTradingSignal> signalsChannelWriter,
+        ChannelWriter<PairTradingSignal> signalsChannelWriter,
         ILoggerFactory loggerFactory)
     {
         _assetX = algo.AssetX;

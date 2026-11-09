@@ -2,7 +2,7 @@
 
 public class OrderExecution : IOrderExecutionEngine
 {
-    public IEnumerable<MyTrade> Execute(IPairTradingSignal signal)
+    public IEnumerable<MyTrade> Execute(PairTradingSignal signal)
     {
         var trades = new List<MyTrade>();
         trades.AddRange(GenerateTrades(signal.StrategyId, signal.XQty, signal.BookX));

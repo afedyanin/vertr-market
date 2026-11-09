@@ -75,7 +75,7 @@ public static class Program
                 SingleReader = true, // PortfolioManagerService
             }));
 
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>(
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<PairTradingSignal>(
             new UnboundedChannelOptions()
             {
                 SingleWriter = true, // PairTradingStrategyService

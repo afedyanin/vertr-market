@@ -26,7 +26,7 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
         AlgoParams = metadata.AlgoParams;
     }
 
-    public virtual IPairTradingSignal? ProcessBook(OrderBookDepth book)
+    public virtual PairTradingSignal? ProcessBook(OrderBookDepth book)
     {
         if (book is null || !book.IsValid)
         {
@@ -49,6 +49,6 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
         }
     }
 
-    protected abstract IPairTradingSignal? ProcessTickX();
-    protected abstract IPairTradingSignal? ProcessTickY();
+    protected abstract PairTradingSignal? ProcessTickX();
+    protected abstract PairTradingSignal? ProcessTickY();
 }

@@ -50,7 +50,7 @@ public static class Program
                 SingleReader = true, // RedisMyTradesPublisherService
             }));
 
-        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<IPairTradingSignal>(
+        builder.Services.AddSingleton(sp => Channel.CreateUnbounded<PairTradingSignal>(
             new UnboundedChannelOptions()
             {
                 SingleWriter = true, // RedisTradingSignalsSubscriberService

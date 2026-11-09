@@ -35,7 +35,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             r: r);
     }
 
-    protected override IPairTradingSignal? ProcessTickX()
+    protected override PairTradingSignal? ProcessTickX()
     {
         if (_lastDepthX is null)
         {
@@ -45,7 +45,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    protected override IPairTradingSignal? ProcessTickY()
+    protected override PairTradingSignal? ProcessTickY()
     {
         if (_lastDepthY is null)
         {
@@ -55,7 +55,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         return ProcessTick();
     }
 
-    private IPairTradingSignal? ProcessTick()
+    private PairTradingSignal? ProcessTick()
     {
         // Пока не получили данные по обоим инструментам — расчет невозможен
         if (_lastDepthX is null || _lastDepthY is null)

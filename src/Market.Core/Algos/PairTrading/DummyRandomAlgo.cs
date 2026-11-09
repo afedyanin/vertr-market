@@ -19,13 +19,13 @@ public class DummyRandomAlgo : PairTradingAlgoBase
         _beta = (decimal)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
     }
 
-    protected override IPairTradingSignal? ProcessTickX()
+    protected override PairTradingSignal? ProcessTickX()
         => ProcessTick();
 
-    protected override IPairTradingSignal? ProcessTickY()
+    protected override PairTradingSignal? ProcessTickY()
         => ProcessTick();
 
-    private IPairTradingSignal? ProcessTick()
+    private PairTradingSignal? ProcessTick()
     {
         if (_lastDepthX is null || _lastDepthY is null)
         {
