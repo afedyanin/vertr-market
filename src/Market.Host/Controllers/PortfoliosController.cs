@@ -1,4 +1,5 @@
 ﻿using Market.Core.Repositories;
+using Market.Host.Converters;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Market.Host.Controllers;
@@ -18,7 +19,7 @@ public class PortfoliosController : ControllerBase
     public IActionResult GetAll()
     {
         var portfolios = _portfolioRepository.Portfolios;
-        return Ok(portfolios);
+        return Ok(portfolios.ToDto());
     }
 
     [HttpGet("{strategyId:guid}")]
@@ -31,6 +32,6 @@ public class PortfoliosController : ControllerBase
             return NotFound();
         }
 
-        return Ok(portfolio);
+        return Ok(portfolio.ToDto());
     }
 }
