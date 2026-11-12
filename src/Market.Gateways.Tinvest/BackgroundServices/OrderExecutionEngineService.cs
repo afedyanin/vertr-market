@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Threading.Channels;
 using Market.Core.Models;
 using Market.Core.Repositories;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
 
@@ -27,7 +29,12 @@ public class OrderExecutionEngineService : BackgroundService
     // Trades by OrderId without strategyId
     private readonly ConcurrentDictionary<string, List<MyTrade>> _pendingTrades = new();
 
+    private readonly IDatabase _redisDb;
+    private readonly ConcurrentDictionary<ushort, RedisChannel> _requestsChannelCache = new();
+    private readonly ConcurrentDictionary<ushort, RedisChannel> _responsesChannelCache = new();
+
     public OrderExecutionEngineService(
+        IConnectionMultiplexer redis,
         Channel<PairTradingSignal> signalsChannel,
         Channel<OrderTrades> orderTradesChannel,
         Channel<MyTrade> tradesChannel,
@@ -42,6 +49,7 @@ public class OrderExecutionEngineService : BackgroundService
         _tinvestSettings = tinvestOptions.Value;
         _apiClient = apiClient;
         _staticDataProvider = staticDataProvider;
+        _redisDb = redis.GetDatabase();
         _logger = loggerFactory.CreateLogger<OrderExecutionEngineService>();
     }
 
@@ -149,26 +157,59 @@ public class OrderExecutionEngineService : BackgroundService
 
     private async Task PostOrderInternal(Tinkoff.InvestApi.V1.PostOrderRequest request, CancellationToken cancellationToken)
     {
-        var response = await _apiClient.Orders.PostOrderAsync(request, cancellationToken: cancellationToken);
-        // TODO: Обработка кривых респонсов
-
-        _orderId2requestId.TryAdd(response.OrderId, response.OrderRequestId);
-
-        if (!_requestId2StrategyId.TryGetValue(response.OrderRequestId, out var strategyId))
+        try
         {
-            _logger.LogWarning("Cannot find strategyId by requestId. RequestId={RequestId}", response.OrderRequestId);
-            return;
+            var asset = _staticDataProvider.GetByExternalId(request.InstrumentId);
+
+            if (asset is not null)
+            {
+                var redisChannel = _requestsChannelCache.GetOrAdd(
+                    asset.Id,
+                    symbol => new RedisChannel($"orders:requests:{symbol}", RedisChannel.PatternMode.Auto));
+
+                await _redisDb.PublishAsync(
+                    redisChannel,
+                    JsonSerializer.Serialize(request, request.GetType()),
+                    CommandFlags.FireAndForget);
+            }
+
+            var response = await _apiClient.Orders.PostOrderAsync(request, cancellationToken: cancellationToken);
+
+            if (asset is not null)
+            {
+                var redisChannel = _responsesChannelCache.GetOrAdd(
+                    asset.Id,
+                    symbol => new RedisChannel($"orders:responses:{symbol}", RedisChannel.PatternMode.Auto));
+
+                await _redisDb.PublishAsync(
+                    redisChannel,
+                    JsonSerializer.Serialize(response, response.GetType()),
+                    CommandFlags.FireAndForget);
+            }
+
+            _orderId2requestId.TryAdd(response.OrderId, response.OrderRequestId);
+
+            if (!_requestId2StrategyId.TryGetValue(response.OrderRequestId, out var strategyId))
+            {
+                _logger.LogWarning("Cannot find strategyId by requestId. RequestId={RequestId}", response.OrderRequestId);
+                return;
+            }
+
+            if (!_pendingTrades.TryRemove(response.OrderId, out var trades))
+            {
+                return;
+            }
+
+            foreach (var trade in trades)
+            {
+                trade.StrategyId = strategyId;
+                _myTradesWriter.TryWrite(trade);
+            }
         }
-
-        if (!_pendingTrades.TryRemove(response.OrderId, out var trades))
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Post order error. RequestId={RequestId} Message={Message}", request.OrderId, ex.Message);
             return;
-        }
-
-        foreach (var trade in trades)
-        {
-            trade.StrategyId = strategyId;
-            _myTradesWriter.TryWrite(trade);
         }
     }
 

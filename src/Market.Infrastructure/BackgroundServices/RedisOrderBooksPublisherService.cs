@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Threading.Channels;
 using Market.Core.Models;
-using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -37,9 +37,11 @@ public class RedisOrderBooksPublisherService : BackgroundService
                     book.AssetId,
                     symbol => new RedisChannel($"books:{symbol}", RedisChannel.PatternMode.Auto));
 
+                //MessagePackSerializer.Serialize(book, cancellationToken: stoppingToken),
+
                 await _redisDb.PublishAsync(
                     redisChannel,
-                    MessagePackSerializer.Serialize(book, cancellationToken: stoppingToken),
+                    JsonSerializer.Serialize(book, book.GetType()),
                     CommandFlags.FireAndForget);
             }
         }

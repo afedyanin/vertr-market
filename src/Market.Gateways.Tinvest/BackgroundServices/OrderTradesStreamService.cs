@@ -1,6 +1,10 @@
-﻿using System.Threading.Channels;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Threading.Channels;
 using Grpc.Core;
+using Market.Core.Repositories;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 using Tinkoff.InvestApi;
 using Tinkoff.InvestApi.V1;
 
@@ -11,8 +15,13 @@ public sealed class OrderTradesStreamService : StreamServiceBase
     private readonly ChannelWriter<OrderTrades> _tradesWriter;
     protected override ILogger Logger { get; init; }
     protected override bool IsEnabled { get; init; }
+    private readonly IDatabase _redisDb;
+    private readonly ConcurrentDictionary<ushort, RedisChannel> _channelCache = new();
+    private readonly IStaticDataProvider _staticDataProvider;
 
     public OrderTradesStreamService(
+        IConnectionMultiplexer redis,
+        IStaticDataProvider staticDataProvider,
         IServiceProvider serviceProvider,
         IOptions<TinvestSettings> tinvestOptions,
         ILoggerFactory loggerFactory) : base(serviceProvider, tinvestOptions, loggerFactory)
@@ -20,6 +29,8 @@ public sealed class OrderTradesStreamService : StreamServiceBase
         Logger = loggerFactory.CreateLogger<OrderTradesStreamService>();
         IsEnabled = _tinvestSettings.TradesStreamEnabled;
 
+        _redisDb = redis.GetDatabase();
+        _staticDataProvider = staticDataProvider;
         _tradesWriter = serviceProvider.GetRequiredService<Channel<OrderTrades>>().Writer;
     }
 
@@ -46,7 +57,24 @@ public sealed class OrderTradesStreamService : StreamServiceBase
 
             if (response.PayloadCase == TradesStreamResponse.PayloadOneofCase.OrderTrades)
             {
-                _tradesWriter.TryWrite(response.OrderTrades);
+                var orderTrades = response.OrderTrades;
+
+                _tradesWriter.TryWrite(orderTrades);
+
+                var asset = _staticDataProvider.GetByExternalId(orderTrades.InstrumentUid);
+
+                if (asset is not null)
+                {
+                    var redisChannel = _channelCache.GetOrAdd(
+                        asset.Id,
+                        symbol => new RedisChannel($"orders:trades:{symbol}", RedisChannel.PatternMode.Auto));
+
+                    await _redisDb.PublishAsync(
+                        redisChannel,
+                        JsonSerializer.Serialize(orderTrades, orderTrades.GetType()),
+                        CommandFlags.FireAndForget);
+                }
+
                 Logger.LogDebug($"New order trades received for OrderId={response.OrderTrades.OrderId} TradesCount={response.OrderTrades.Trades.Count}");
             }
 

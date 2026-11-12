@@ -1,6 +1,6 @@
-﻿using System.Threading.Channels;
+﻿using System.Text.Json;
+using System.Threading.Channels;
 using Market.Core.Models;
-using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -38,9 +38,9 @@ public class RedisOrderBooksSubscriberService : BackgroundService
                     return;
                 }
 
-                var orderBook = MessagePackSerializer.Deserialize<OrderBookDepth>(value, cancellationToken: stoppingToken);
-
-                _writer.TryWrite(orderBook);
+                // var orderBook = MessagePackSerializer.Deserialize<OrderBookDepth>(value, cancellationToken: stoppingToken);
+                var orderBook = JsonSerializer.Deserialize<OrderBookDepth>((string)value!);
+                _writer.TryWrite(orderBook!);
             }
             catch (Exception ex)
             {

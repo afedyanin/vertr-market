@@ -1,0 +1,36 @@
+[
+  {
+    "id": 21,
+    "externalId": "53b67587-96eb-4b41-8e0c-d2e3c0bdd234",
+    "isin": "RU000A0DQZE3",
+    "ticker": "AFKS",
+    "classCode": "TQBR",
+    "name": "АФК Система",
+    "currency": "rub",
+    "expDate": null,
+    "lotSize": 100,
+    "minPriceIncrement": 0.001,
+    "minPriceIncrementAmount": null,
+    "basicAssetSize": null,
+    "basicAsset": null,
+    "assetType": "share",
+    "assetKind": "Share"
+  },
+  {
+    "id": 22,
+    "externalId": "1c69e020-f3b1-455c-affa-45f8b8049234",
+    "isin": "RU0009062285",
+    "ticker": "AFLT",
+    "classCode": "TQBR",
+    "name": "Аэрофлот",
+    "currency": "rub",
+    "expDate": null,
+    "lotSize": 10,
+    "minPriceIncrement": 0.01,
+    "minPriceIncrementAmount": null,
+    "basicAssetSize": null,
+    "basicAsset": null,
+    "assetType": "share",
+    "assetKind": "Share"
+  }
+]
