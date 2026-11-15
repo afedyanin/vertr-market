@@ -11,6 +11,9 @@
     <File Path="Directory.Build.props" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/qty2lots.md" />
+  </Folder>
   <Folder Name="/infra/">
     <File Path="infra/compose.yaml" />
   </Folder>
