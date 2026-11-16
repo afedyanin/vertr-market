@@ -1,80 +1,7 @@
-﻿namespace Market.Core.Tests.Algos;
+﻿using Market.Core.Algos;
 
-public static class ApproximateLotCalculator
-{
+namespace Market.Core.Tests.Algos;
 
-    public static (int lotsX, int lotsY) CalculateBestApproximationV2(
-        double qtyX, double qtyY,
-        double lotSizeX, double lotSizeY)
-    {
-        if (qtyX <= 0 || qtyY <= 0 || lotSizeX <= 0 || lotSizeY <= 0)
-        {
-            throw new InvalidOperationException("Все входные значения должны быть больше нуля.");
-        }
-
-        double ratio = (qtyY * lotSizeX) / (qtyX * lotSizeY);
-
-        if (lotSizeX >= lotSizeY)
-        {
-            return (1, (int)Math.Round(ratio, MidpointRounding.AwayFromZero));
-        }
-        else
-        {
-            return ((int)Math.Round(1 / ratio, MidpointRounding.AwayFromZero), 1);
-        }
-    }
-
-    public static (int lotsX, int lotsY) CalculateBestApproximation(
-        double qtyX, double qtyY,
-        double lotSizeX, double lotSizeY,
-        int maxLots = 100)
-    {
-        if (qtyX <= 0 || qtyY <= 0 || lotSizeX <= 0 || lotSizeY <= 0)
-        {
-            throw new InvalidOperationException("Все входные значения должны быть больше нуля.");
-        }
-
-        // Целевое отношение: lotsX / lotsY
-        double targetRatio = (qtyX / lotSizeX) / (qtyY / lotSizeY);
-
-        int bestX = 1;
-        int bestY = 1;
-        double minError = double.MaxValue;
-
-        // Перебираем количество лотов Y от 1 до maxLots и ищем ближайшее целое X
-        for (int y = 1; y <= maxLots; y++)
-        {
-            int x = (int)Math.Round(y * targetRatio);
-            if (x == 0)
-            {
-                continue;
-            }
-
-            if (x > maxLots)
-            {
-                break;
-            }
-
-            double currentRatio = (double)x / y;
-            double relativeError = Math.Abs(currentRatio - targetRatio) / targetRatio;
-
-            if (relativeError < minError)
-            {
-                minError = relativeError;
-                bestX = x;
-                bestY = y;
-
-                // Если нашли идеальное совпадение, выходим досрочно
-                if (minError < 1e-9)
-                {
-                    break;
-                }
-            }
-        }
-
-        return (bestX, bestY);
-    }
-}
 
 [TestFixture]
 public class ApproximateLotCalculatorTests
@@ -83,7 +10,7 @@ public class ApproximateLotCalculatorTests
     [TestCase(0.73, 1, 10, 100)]
     public void CalculateBestApproximation_MySample(double qtyX, double qtyY, double lotSizeX, double lotSizeY)
     {
-        (var lotsX, var lotsY) = ApproximateLotCalculator.CalculateBestApproximationV2(qtyX, qtyY, lotSizeX, lotSizeY);
+        (var lotsX, var lotsY) = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY, maxLots: 20);
         Console.WriteLine($"LotsX={lotsX} LotsY={lotsY}");
     }
 
@@ -99,7 +26,9 @@ public class ApproximateLotCalculatorTests
         double lotSizeY = 1.0;
 
         // Act
-        var result = ApproximateLotCalculator.CalculateBestApproximationV2(qtyX, qtyY, lotSizeX, lotSizeY);
+        var result = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY);
+
+        Console.WriteLine($"LotsX={result.lotsX} LotsY={result.lotsY}");
 
         // Assert
         Assert.Multiple(() =>
@@ -122,7 +51,8 @@ public class ApproximateLotCalculatorTests
         double lotSizeY = 100.0;
 
         // Act
-        var result = ApproximateLotCalculator.CalculateBestApproximationV2(qtyX, qtyY, lotSizeX, lotSizeY);
+        var result = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY, 10);
+        Console.WriteLine($"LotsX={result.lotsX} LotsY={result.lotsY}");
 
         // Assert
         Assert.Multiple(() =>
@@ -145,7 +75,8 @@ public class ApproximateLotCalculatorTests
         double lotSizeY = 10.0;
 
         // Act
-        var result = ApproximateLotCalculator.CalculateBestApproximationV2(qtyX, qtyY, lotSizeX, lotSizeY);
+        var result = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY, 20);
+        Console.WriteLine($"LotsX={result.lotsX} LotsY={result.lotsY}");
 
         // Assert
         Assert.Multiple(() =>
@@ -165,8 +96,8 @@ public class ApproximateLotCalculatorTests
         double lotSizeY = 1.0;
 
         // Act
-        var result = ApproximateLotCalculator.CalculateBestApproximationV2(
-            qtyX, qtyY, lotSizeX, lotSizeY);
+        var result = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY);
+        Console.WriteLine($"LotsX={result.lotsX} LotsY={result.lotsY}");
 
         // Assert
         Assert.Multiple(() =>
@@ -184,8 +115,8 @@ public class ApproximateLotCalculatorTests
         double qtyY = 1.0;
 
         // Act
-        var result = ApproximateLotCalculator.CalculateBestApproximation(
-            qtyX, qtyY, lotSizeX: 1.0, lotSizeY: 1.0, maxLots: 500);
+        var result = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX: 1.0, lotSizeY: 1.0, maxLots: 500);
+        Console.WriteLine($"LotsX={result.lotsX} LotsY={result.lotsY}");
 
         // Assert
         Assert.Multiple(() =>
