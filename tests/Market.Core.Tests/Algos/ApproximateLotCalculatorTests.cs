@@ -14,6 +14,19 @@ public class ApproximateLotCalculatorTests
         Console.WriteLine($"LotsX={lotsX} LotsY={lotsY}");
     }
 
+    [TestCase(0.73)]
+    [TestCase(1.3)]
+    [TestCase(0.095)]
+    [TestCase(0.325)]
+    [TestCase(0.1)]
+    [TestCase(2.1)]
+    [TestCase(1.47)]
+    public void CalculateBestApproximation_MySampleBeta(double beta)
+    {
+        (var lotsX, var lotsY) = ApproximateLotCalculator.CalculateLots(beta);
+        Console.WriteLine($"Beta={beta} LotsX={lotsX} LotsY={lotsY}");
+    }
+
     [Test]
     public void CalculateBestApproximation_ExactRatio_ReturnsMinimalExactLots()
     {
