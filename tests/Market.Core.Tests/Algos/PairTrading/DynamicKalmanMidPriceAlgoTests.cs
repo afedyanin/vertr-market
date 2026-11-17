@@ -51,8 +51,8 @@ public class DynamicKalmanMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                        signal.XQty,
-                        signal.YQty);
+                        signal.XQtyLots,
+                        signal.YQtyLots);
                 }
 
                 i++;

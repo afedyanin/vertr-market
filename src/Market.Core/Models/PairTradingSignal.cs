@@ -15,17 +15,17 @@ public record PairTradingSignal
     public required OrderBookDepth BookY { get; set; }
 
     [Key(3)]
-    public decimal XQty { get; set; }
+    public int XQtyLots { get; set; }
 
     [Key(4)]
-    public decimal YQty { get; set; }
+    public int YQtyLots { get; set; }
 
     [Key(5)]
     public Dictionary<string, double> Params { get; } = [];
 
     public override string ToString()
     {
-        return $"StrategyId={StrategyId} AssetX[Id={BookX.AssetId};Qty={XQty}] AssetY[Id={BookY.AssetId};Qty={YQty}]";
+        return $"StrategyId={StrategyId} AssetX[Id={BookX.AssetId};Qty={XQtyLots}] AssetY[Id={BookY.AssetId};Qty={YQtyLots}]";
     }
 }
 

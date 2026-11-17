@@ -15,6 +15,7 @@ public record class AlgoMetadata
         public const string RequiredYQty = nameof(RequiredYQty);
         public const string FeeRateX = nameof(FeeRateX);
         public const string FeeRateY = nameof(FeeRateY);
+        public const string MaxLots = nameof(MaxLots);
     }
 
     public Guid StrategyId { get; init; }

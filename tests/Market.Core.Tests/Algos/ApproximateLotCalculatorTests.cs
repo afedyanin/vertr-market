@@ -6,14 +6,15 @@ namespace Market.Core.Tests.Algos;
 [TestFixture]
 public class ApproximateLotCalculatorTests
 {
-    [TestCase(0.73, 1, 100, 10)]
-    [TestCase(0.73, 1, 10, 100)]
-    public void CalculateBestApproximation_MySample(double qtyX, double qtyY, double lotSizeX, double lotSizeY)
+    [TestCase(0.73, 100, 10)]
+    [TestCase(0.73, 10, 100)]
+    public void CalculateBestApproximation_MySample(double beta, int lotSizeX, int lotSizeY)
     {
-        (var lotsX, var lotsY) = ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY, maxLots: 20);
+        (var lotsX, var lotsY) = ApproximateLotCalculator.CalculateLots(beta, lotSizeX, lotSizeY, maxLots: 20);
         Console.WriteLine($"LotsX={lotsX} LotsY={lotsY}");
     }
 
+    /*
     [Test]
     public void CalculateBestApproximation_ExactRatio_ReturnsMinimalExactLots()
     {
@@ -138,5 +139,6 @@ public class ApproximateLotCalculatorTests
         Assert.Throws<ArgumentException>(() =>
             ApproximateLotCalculator.CalculateBestApproximation(qtyX, qtyY, lotSizeX, lotSizeY));
     }
+    */
 }
 

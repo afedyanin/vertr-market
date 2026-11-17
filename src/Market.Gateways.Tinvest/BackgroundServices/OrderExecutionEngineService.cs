@@ -221,14 +221,14 @@ public class OrderExecutionEngineService : BackgroundService
 
         if (assetX is not null)
         {
-            requests.Add(CreateMarketRequest(signal.XQty, assetX));
+            requests.Add(CreateMarketRequest(signal.XQtyLots, assetX));
         }
 
         var assetY = _staticDataProvider.GetByAssetId(signal.BookY.AssetId);
 
         if (assetY is not null)
         {
-            requests.Add(CreateMarketRequest(signal.YQty, assetY));
+            requests.Add(CreateMarketRequest(signal.YQtyLots, assetY));
         }
 
         return requests;

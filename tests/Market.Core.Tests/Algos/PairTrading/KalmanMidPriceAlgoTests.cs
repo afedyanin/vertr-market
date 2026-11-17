@@ -44,8 +44,8 @@ public class KalmanMidPriceAlgoTests
                     signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                     signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                     signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                    signal.XQty.ToString("F5"),
-                    signal.YQty.ToString("F5"));
+                    signal.XQtyLots.ToString("F5"),
+                    signal.YQtyLots.ToString("F5"));
             }
         }
     }
@@ -78,8 +78,8 @@ public class KalmanMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.Beta)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.Spread)?.ToString("F5"),
                         signal.GetParam(SignalParamKeys.ZScore)?.ToString("F5"),
-                        signal.XQty.ToString("F5"),
-                        signal.YQty.ToString("F5"));
+                        signal.XQtyLots.ToString("F5"),
+                        signal.YQtyLots.ToString("F5"));
                 }
 
                 i++;
@@ -114,7 +114,7 @@ public class KalmanMidPriceAlgoTests
                     continue;
                 }
 
-                Console.WriteLine($"Signal: XQty={signal.XQty} YQty={signal.YQty} XBid={signal.BookX.BestBid} XAsk={signal.BookX.BestAsk} YBid={signal.BookY.BestBid} YAsk={signal.BookY.BestAsk}");
+                Console.WriteLine($"Signal: XQty={signal.XQtyLots} YQty={signal.YQtyLots} XBid={signal.BookX.BestBid} XAsk={signal.BookX.BestAsk} YBid={signal.BookY.BestBid} YAsk={signal.BookY.BestAsk}");
 
                 var portfolio = portfolioManager.GetOrCreate(signal.StrategyId);
                 var trades = orderExec.Execute(signal);

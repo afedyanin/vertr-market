@@ -129,8 +129,8 @@ public class DynamicKalmanVwapAlgo : PairTradingAlgoBase
             StrategyId = StrategyId,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
-            XQty = xQty,
-            YQty = yQty,
+            XQtyLots = xQty,
+            YQtyLots = yQty,
         };
 
         signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
@@ -170,18 +170,18 @@ public class DynamicKalmanVwapAlgo : PairTradingAlgoBase
                 xQty = -requiredYQty / (decimal)beta;
             }
         }
-        else if (_openYQty < 0 && zScoreBuy <= _exitThreshold)
+        else if (_openYQtyLots < 0 && zScoreBuy <= _exitThreshold)
         {
             // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
             // Поэтому мы отслеживаем zScoreBuy для выхода.
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
-        else if (_openYQty > 0 && zScoreSell >= -_exitThreshold)
+        else if (_openYQtyLots > 0 && zScoreSell >= -_exitThreshold)
         {
             // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
 
         return (xQty, yQty);

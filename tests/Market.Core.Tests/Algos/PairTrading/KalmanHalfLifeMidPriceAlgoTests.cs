@@ -63,8 +63,8 @@ public class KalmanHalfLifeMidPriceAlgoTests
                     signal.GetParam(SignalParamKeys.ZScoreSell)?.ToString("F5"),
                     halfLifeStr,
                     isCointegrated,
-                    signal.XQty,
-                    signal.YQty);
+                    signal.XQtyLots,
+                    signal.YQtyLots);
             }
         }
     }
@@ -117,8 +117,8 @@ public class KalmanHalfLifeMidPriceAlgoTests
                         signal.GetParam(SignalParamKeys.ZScoreSell)?.ToString("F5"),
                         halfLifeStr,
                         isCointegrated,
-                        signal.XQty,
-                        signal.YQty);
+                        signal.XQtyLots,
+                        signal.YQtyLots);
                 }
 
                 i++;

@@ -11,15 +11,15 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
     private readonly KalmanFilterEstimator _kalmanFilter;
     private readonly double _entryThreshold;
     private readonly double _exitThreshold;
-    private readonly decimal _requiredYQty;
     private readonly int _lotSizeX;
     private readonly int _lotSizeY;
+    private readonly int _maxLots;
 
     public KalmanMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
     {
         _lotSizeX = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeX, 1.0);
         _lotSizeY = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeY, 1.0);
-        _requiredYQty = (decimal)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);
+        _maxLots = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.MaxLots, 10);
         _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 0.2);
         _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.01);
 
@@ -81,8 +81,8 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             StrategyId = StrategyId,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
-            XQty = xQty,
-            YQty = yQty,
+            XQtyLots = xQty,
+            YQtyLots = yQty,
         };
 
         signal.Params[SignalParamKeys.PriceX] = priceX;
@@ -92,33 +92,35 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         signal.Params[SignalParamKeys.ZScore] = _kalmanFilter.ZScore;
         signal.Params[SignalParamKeys.Sigma] = _kalmanFilter.Sigma;
 
-        _openXQty += xQty;
-        _openYQty += yQty;
+        _openXQtyLots += xQty;
+        _openYQtyLots += yQty;
 
         return signal;
     }
 
-    private (decimal xQty, decimal yQty) GetQty()
+    private (int xQty, int yQty) GetQty()
     {
         var zScore = _kalmanFilter.ZScore;
-        var xQty = 0m;
-        var yQty = 0m;
+
+        (var xQty, var yQty) = ApproximateLotCalculator.CalculateLots(
+            _kalmanFilter.Beta,
+            _lotSizeX,
+            _lotSizeY,
+            _maxLots);
 
         if (zScore > _entryThreshold && !HasOpenPosition)
         {
-            yQty = -_requiredYQty;
-            xQty = _requiredYQty / (decimal)_kalmanFilter.Beta;
+            yQty *= -1;
         }
         else if (zScore < -_entryThreshold && !HasOpenPosition)
         {
-            yQty = _requiredYQty;
-            xQty = -_requiredYQty / (decimal)_kalmanFilter.Beta;
+            xQty *= -1;
         }
         else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
         {
             // Спред вернулся в норму, фиксируем прибыль
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
 
         return (xQty, yQty);

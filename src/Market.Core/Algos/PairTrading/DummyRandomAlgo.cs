@@ -44,8 +44,8 @@ public class DummyRandomAlgo : PairTradingAlgoBase
             StrategyId = StrategyId,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
-            XQty = xQty,
-            YQty = yQty,
+            XQtyLots = xQty,
+            YQtyLots = yQty,
         };
 
         return signal;
@@ -70,8 +70,8 @@ public class DummyRandomAlgo : PairTradingAlgoBase
         else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
         {
             // Спред вернулся в норму, фиксируем прибыль
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
 
         return (xQty, yQty);

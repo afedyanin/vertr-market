@@ -7,8 +7,8 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
     protected OrderBookDepth? _lastDepthX;
     protected OrderBookDepth? _lastDepthY;
 
-    protected decimal _openXQty;
-    protected decimal _openYQty;
+    protected int _openXQtyLots;
+    protected int _openYQtyLots;
 
     protected Dictionary<string, double> AlgoParams { get; }
 
@@ -16,7 +16,7 @@ public abstract class PairTradingAlgoBase : IPairTradingAlgo
     public ushort AssetY { get; }
     public Guid StrategyId { get; }
 
-    public bool HasOpenPosition => _openXQty != 0 || _openYQty != 0;
+    public bool HasOpenPosition => _openXQtyLots != 0 || _openYQtyLots != 0;
 
     protected PairTradingAlgoBase(AlgoMetadata metadata)
     {

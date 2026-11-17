@@ -61,8 +61,8 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
             StrategyId = StrategyId,
             BookX = _lastDepthX!,
             BookY = _lastDepthY!,
-            XQty = xQty,
-            YQty = yQty,
+            XQtyLots = xQty,
+            YQtyLots = yQty,
         };
 
         signal.Params[SignalParamKeys.Beta] = _kalmanFilter.Beta;
@@ -91,8 +91,8 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
         else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
         {
             // Спред вернулся в норму, фиксируем прибыль
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
 
         return (xQty, yQty);

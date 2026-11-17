@@ -104,8 +104,8 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             StrategyId = StrategyId,
             BookX = _lastDepthX,
             BookY = _lastDepthY,
-            XQty = xQty,
-            YQty = yQty,
+            XQtyLots = xQty,
+            YQtyLots = yQty,
         };
 
         signal.Params[SignalParamKeys.PriceX] = priceX;
@@ -118,8 +118,8 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         signal.Params[SignalParamKeys.HalfLifeSeconds] = _cointegration.HalfLife;
         signal.Params[SignalParamKeys.IsCointegrated] = _cointegration.IsCointegrated ? 1 : 0;
 
-        _openXQty += xQty;
-        _openYQty += yQty;
+        _openXQtyLots += xQty;
+        _openYQtyLots += yQty;
         _entryTime = HasOpenPosition ? LatestTimestamp() : null;
 
         return signal;
@@ -166,27 +166,27 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         else if (!isCointegrated)
         {
             // Выход: коинтеграция полностью исчезла
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
         else if (SecondsInTrade() > (halfLife * 2.5))
         {
             // Выход: позиция висит дольше, чем 2-3 периода полураспада
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
-        else if (_openYQty < 0 && zScoreBuy <= _exitThreshold)
+        else if (_openYQtyLots < 0 && zScoreBuy <= _exitThreshold)
         {
             // Выход из позиции Short Y / Long X означает, что нам нужно КУПИТЬ Y (по Ask) и ПРОДАТЬ X (по Bid).
             // Поэтому мы отслеживаем zScoreBuy для выхода.
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
-        else if (_openYQty > 0 && zScoreSell >= -_exitThreshold)
+        else if (_openYQtyLots > 0 && zScoreSell >= -_exitThreshold)
         {
             // Выход из позиции Long Y / Short X: ПРОДАЕМ Y (по Bid) и ПОКУПАЕМ X (по Ask).
-            yQty = -_openYQty;
-            xQty = -_openXQty;
+            yQty = -_openYQtyLots;
+            xQty = -_openXQtyLots;
         }
 
         return (xQty, yQty);
