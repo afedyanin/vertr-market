@@ -16,6 +16,7 @@ public record class AlgoMetadata
         public const string FeeRateX = nameof(FeeRateX);
         public const string FeeRateY = nameof(FeeRateY);
         public const string MaxLots = nameof(MaxLots);
+        public const string PriceRatio = nameof(PriceRatio); // PriceY = PriceRatio * PriceX
     }
 
     public Guid StrategyId { get; init; }

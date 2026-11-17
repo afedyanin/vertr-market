@@ -14,6 +14,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
     private readonly int _lotSizeX;
     private readonly int _lotSizeY;
     private readonly int _maxLots;
+    private readonly double _priceRatio;
 
     public KalmanMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
     {
@@ -22,6 +23,7 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
         _maxLots = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.MaxLots, 10);
         _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 0.2);
         _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.01);
+        _priceRatio = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.PriceRatio, 1.0);
 
         var initialBeta = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
         var initialErrorCovariance = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
@@ -63,9 +65,8 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
             return null;
         }
 
-        // Цена приходит за лот. Нормализуем к цене за единицу актива
-        var priceX = _lastDepthX.MidPrice!.Value / _lotSizeX;
-        var priceY = _lastDepthY.MidPrice!.Value / _lotSizeY;
+        var priceX = _lastDepthX.MidPrice!.Value * _priceRatio;
+        var priceY = _lastDepthY.MidPrice!.Value;
         _kalmanFilter.Update(priceX, priceY);
 
         (var xQty, var yQty) = GetQty();

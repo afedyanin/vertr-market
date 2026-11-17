@@ -18,6 +18,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
     private readonly int _lotSizeX;
     private readonly int _lotSizeY;
     private readonly int _maxLots;
+    private readonly double _priceRatio;
 
 
     public KalmanHalfLifeMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
@@ -27,6 +28,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         _lotSizeX = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeX, 1.0);
         _lotSizeY = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeY, 1.0);
         _maxLots = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.MaxLots, 10);
+        _priceRatio = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.PriceRatio, 1.0);
 
         var initialBeta = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
         var initialErrorCovariance = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
@@ -70,7 +72,7 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
             return null;
         }
 
-        var priceX = _lastDepthX.MidPrice!.Value;
+        var priceX = _lastDepthX.MidPrice!.Value * _priceRatio;
         var priceY = _lastDepthY.MidPrice!.Value;
 
         _kalmanFilter.Update(priceX, priceY);
