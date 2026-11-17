@@ -102,6 +102,12 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
     {
         var zScore = _kalmanFilter.ZScore;
 
+        if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
+        {
+            // Спред вернулся в норму, фиксируем прибыль
+            return (-_openXQtyLots, -_openYQtyLots);
+        }
+
         (var xQty, var yQty) = ApproximateLotCalculator.CalculateLots(
             _kalmanFilter.Beta,
             _lotSizeX,
@@ -110,19 +116,13 @@ public class KalmanMidPriceAlgo : PairTradingAlgoBase
 
         if (zScore > _entryThreshold && !HasOpenPosition)
         {
-            yQty *= -1;
+            return (xQty, -yQty);
         }
         else if (zScore < -_entryThreshold && !HasOpenPosition)
         {
-            xQty *= -1;
-        }
-        else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
-        {
-            // Спред вернулся в норму, фиксируем прибыль
-            yQty = -_openYQtyLots;
-            xQty = -_openXQtyLots;
+            return (-xQty, yQty);
         }
 
-        return (xQty, yQty);
+        return (0, 0);
     }
 }

@@ -249,16 +249,16 @@ public class OrderExecutionEngineService : BackgroundService
         return strategyId;
     }
 
-    private Tinkoff.InvestApi.V1.PostOrderRequest CreateMarketRequest(decimal qty, Core.Models.Asset asset)
+    private Tinkoff.InvestApi.V1.PostOrderRequest CreateMarketRequest(int qtyLots, Core.Models.Asset asset)
         => new Tinkoff.InvestApi.V1.PostOrderRequest
         {
             AccountId = _tinvestSettings.AccountId,
             OrderId = Guid.NewGuid().ToString(),
             InstrumentId = asset.ExternalId!,
-            Quantity = (long)Math.Abs(qty), // TODO: Convert to lots
+            Quantity = Math.Abs(qtyLots),
             Price = decimal.Zero, // Market order
             OrderType = OrderType.Market,
-            Direction = qty > 0 ? OrderDirection.Buy : OrderDirection.Sell,
+            Direction = qtyLots > 0 ? OrderDirection.Buy : OrderDirection.Sell,
             TimeInForce = TimeInForceType.TimeInForceUnspecified,
             PriceType = PriceType.Unspecified,
             ConfirmMarginTrade = false,

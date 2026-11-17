@@ -11,16 +11,22 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
 
     private readonly double _entryThreshold;
     private readonly double _exitThreshold;
-    private readonly decimal _requiredYQty;
 
     private readonly KalmanFilterEstimator _kalmanFilter;
     private readonly CointegrationEstimator _cointegration;
 
+    private readonly int _lotSizeX;
+    private readonly int _lotSizeY;
+    private readonly int _maxLots;
+
+
     public KalmanHalfLifeMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
     {
-        _requiredYQty = (decimal)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);
         _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 2.0);
         _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.2);
+        _lotSizeX = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeX, 1.0);
+        _lotSizeY = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeY, 1.0);
+        _maxLots = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.MaxLots, 10);
 
         var initialBeta = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialBeta, 1.0);
         var initialErrorCovariance = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.InitialErrorCovariance, 1.0);
@@ -138,29 +144,33 @@ public class KalmanHalfLifeMidPriceAlgo : PairTradingAlgoBase
         => _entryTime.HasValue ? (LatestTimestamp() - _entryTime.Value).TotalSeconds : 0.0;
 
 
-    private (decimal xQty, decimal yQty) GetQty(double? zScoreBuy, double? zScoreSell)
+    private (int xQty, int yQty) GetQty(double? zScoreBuy, double? zScoreSell)
     {
-        var beta = _kalmanFilter.Beta;
         var isCointegrated = _cointegration.IsCointegrated;
         var halfLife = _cointegration.HalfLife;
 
-        var xQty = 0m;
-        var yQty = 0m;
+        var xQty = 0;
+        var yQty = 0;
 
         if (!HasOpenPosition && isCointegrated && halfLife > 1.0 && halfLife < 60.0)
         {
+
+            (xQty, yQty) = ApproximateLotCalculator.CalculateLots(
+                _kalmanFilter.Beta,
+                _lotSizeX,
+                _lotSizeY,
+                _maxLots);
+
             // Вход в Short Y / Long X имеет смысл, только если спред ПРОДАЖИ (Sell) превысил верхний порог.
             // Мы будем бить по стакану: продавать Y по Bid и покупать X по Ask.
             if (zScoreSell > _entryThreshold)
             {
-                yQty = -_requiredYQty;
-                xQty = _requiredYQty / (decimal)beta;
+                return (xQty, -yQty);
             }
             // Вход в Long Y / Short X: покупаем Y по Ask, продаем X по Bid.
             else if (zScoreBuy < -_entryThreshold)
             {
-                yQty = _requiredYQty;
-                xQty = -_requiredYQty / (decimal)beta;
+                return (-xQty, yQty);
             }
         }
         else if (!isCointegrated)

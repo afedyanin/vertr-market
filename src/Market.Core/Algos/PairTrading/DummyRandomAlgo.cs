@@ -50,22 +50,18 @@ public class DummyRandomAlgo : PairTradingAlgoBase
 
         return signal;
     }
-    private (decimal xQty, decimal yQty) GetQty()
+    private (int xQty, int yQty) GetQty()
     {
-        var xQty = 0m;
-        var yQty = 0m;
-
         var zScore = Random.Shared.NextDouble() * ZscoreDelta * 2 - ZscoreDelta;
+        (var xQty, var yQty) = ApproximateLotCalculator.CalculateLots(0.85, 1, 1);
 
         if (zScore > _entryThreshold && !HasOpenPosition)
         {
-            yQty = -_requiredYQty;
-            xQty = _requiredYQty / _beta;
+            yQty *= -1;
         }
         else if (zScore < -_entryThreshold && !HasOpenPosition)
         {
-            yQty = _requiredYQty;
-            xQty = -_requiredYQty / _beta;
+            xQty *= -1;
         }
         else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
         {

@@ -7,13 +7,17 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
 {
     private readonly double _entryThreshold;
     private readonly double _exitThreshold;
-    private readonly decimal _requiredYQty;
+    private readonly int _lotSizeX;
+    private readonly int _lotSizeY;
+    private readonly int _maxLots;
 
     private readonly DynamicKalmanFilterEstimator _kalmanFilter;
 
     public DynamicKalmanMidPriceAlgo(AlgoMetadata metadata) : base(metadata)
     {
-        _requiredYQty = (decimal)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.RequiredYQty, 1.0);
+        _lotSizeX = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeX, 1.0);
+        _lotSizeY = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.LotSizeY, 1.0);
+        _maxLots = (int)AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.MaxLots, 10);
         _entryThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.EntryThreshold, 0.2);
         _exitThreshold = AlgoParams.GetValueOrDefault(AlgoMetadata.Keys.ExitThreshold, 0.01);
 
@@ -72,29 +76,31 @@ public class DynamicKalmanMidPriceAlgo : PairTradingAlgoBase
 
         return signal;
     }
-    private (decimal xQty, decimal yQty) GetQty()
+    private (int xQty, int yQty) GetQty()
     {
         var zScore = _kalmanFilter.ZScore;
-        var xQty = 0m;
-        var yQty = 0m;
+
+        if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
+        {
+            // Спред вернулся в норму, фиксируем прибыль
+            return (-_openXQtyLots, -_openYQtyLots);
+        }
+
+        (var xQty, var yQty) = ApproximateLotCalculator.CalculateLots(
+            _kalmanFilter.Beta,
+            _lotSizeX,
+            _lotSizeY,
+            _maxLots);
 
         if (zScore > _entryThreshold && !HasOpenPosition)
         {
-            yQty = -_requiredYQty;
-            xQty = _requiredYQty / (decimal)_kalmanFilter.Beta;
+            return (xQty, -yQty);
         }
         else if (zScore < -_entryThreshold && !HasOpenPosition)
         {
-            yQty = _requiredYQty;
-            xQty = -_requiredYQty / (decimal)_kalmanFilter.Beta;
-        }
-        else if (Math.Abs(zScore) < _exitThreshold && HasOpenPosition)
-        {
-            // Спред вернулся в норму, фиксируем прибыль
-            yQty = -_openYQtyLots;
-            xQty = -_openXQtyLots;
+            return (-xQty, yQty);
         }
 
-        return (xQty, yQty);
+        return (0, 0);
     }
 }
