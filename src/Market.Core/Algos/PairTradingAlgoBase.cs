@@ -1,6 +1,6 @@
 ﻿using Market.Core.Models;
 
-namespace Market.Core.Algos.PairTrading;
+namespace Market.Core.Algos;
 
 public abstract class PairTradingAlgoBase : IPairTradingAlgo
 {

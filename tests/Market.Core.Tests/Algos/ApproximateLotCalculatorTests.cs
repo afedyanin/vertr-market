@@ -1,4 +1,4 @@
-﻿using Market.Core.Algos;
+﻿using Market.Core.Algos.Common;
 
 namespace Market.Core.Tests.Algos;
 

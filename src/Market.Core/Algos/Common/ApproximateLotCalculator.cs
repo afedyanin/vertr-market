@@ -1,4 +1,4 @@
-﻿namespace Market.Core.Algos;
+﻿namespace Market.Core.Algos.Common;
 
 public static class ApproximateLotCalculator
 {

@@ -33,6 +33,7 @@ public static class SignalParamKeys
 {
     public const string PriceX = nameof(PriceX);
     public const string PriceY = nameof(PriceY);
+    public const string Alpha = nameof(Alpha);
     public const string Beta = nameof(Beta);
     public const string Spread = nameof(Spread);
     public const string ZScore = nameof(ZScore);

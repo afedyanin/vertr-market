@@ -1,4 +1,5 @@
-﻿using Market.Core.Models;
+﻿using Market.Core.Algos.Common;
+using Market.Core.Models;
 
 namespace Market.Core.Algos.PairTrading;
 
