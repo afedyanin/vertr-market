@@ -277,4 +277,58 @@ public class PairsKalmanFilterTests
             });
         }
     }
+
+    [Test]
+    public void Constructor_InvalidParameters_Throws()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PairsKalmanFilter(delta: 0.0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PairsKalmanFilter(delta: 1.0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PairsKalmanFilter(obsNoise: 0.0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PairsKalmanFilter(obsNoise: double.NaN));
+        });
+    }
+
+    [Test]
+    public void Update_NonFinitePrice_Throws()
+    {
+        var filter = new PairsKalmanFilter();
+
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<ArgumentException>(() => filter.Update(double.NaN, 100.0));
+            Assert.Throws<ArgumentException>(() => filter.Update(100.0, double.PositiveInfinity));
+        });
+    }
+
+    [Test]
+    public void Reset_RestoresInitialState()
+    {
+        // Arrange
+        var filter = new PairsKalmanFilter(delta: 1e-4, obsNoise: 1.0);
+        var fresh = new PairsKalmanFilter(delta: 1e-4, obsNoise: 1.0);
+
+        for (var i = 0; i < 200; i++)
+        {
+            var x = 100.0 + i * 0.1;
+            var y = 1.5 * x + 10.0;
+            _ = filter.Update(y, x);
+        }
+
+        var beforeReset = filter.Update(150.0, 100.0);
+        var firstFresh = fresh.Update(150.0, 100.0);
+
+        // Act
+        filter.Reset();
+        var afterReset = filter.Update(150.0, 100.0);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(beforeReset.Alpha, Is.Not.EqualTo(firstFresh.Alpha).Within(0.1));
+            Assert.That(afterReset.Beta, Is.EqualTo(firstFresh.Beta).Within(1e-12));
+            Assert.That(afterReset.Alpha, Is.EqualTo(firstFresh.Alpha).Within(1e-12));
+        });
+    }
 }

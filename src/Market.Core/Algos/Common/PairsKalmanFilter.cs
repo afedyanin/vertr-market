@@ -38,6 +38,16 @@ public class PairsKalmanFilter
     /// <param name="obsNoise">Дисперсия шума наблюдений R (обычно 1.0).</param>
     public PairsKalmanFilter(double delta = 1e-4, double obsNoise = 1.0)
     {
+        if (!double.IsFinite(delta) || delta <= 0.0 || delta >= 1.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(delta), delta, "Delta must be in the (0, 1) interval.");
+        }
+
+        if (!double.IsFinite(obsNoise) || obsNoise <= 0.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(obsNoise), obsNoise, "Observation noise must be positive and finite.");
+        }
+
         _r = obsNoise;
         _beta = 0.0;
         _alpha = 0.0;
@@ -52,10 +62,34 @@ public class PairsKalmanFilter
     }
 
     /// <summary>
+    /// Сбрасывает состояние фильтра в исходное. Полезно при обнаружении
+    /// численной неустойчивости или после разрушения коинтеграции.
+    /// </summary>
+    public void Reset()
+    {
+        _beta = 0.0;
+        _alpha = 0.0;
+        _p00 = 1000.0;
+        _p01 = 0.0;
+        _p10 = 0.0;
+        _p11 = 1000.0;
+    }
+
+    /// <summary>
     /// Обновление фильтра при поступлении новой пары цен (y, x).
     /// </summary>
     public StepResult Update(double y, double x)
     {
+        if (!double.IsFinite(y))
+        {
+            throw new ArgumentException("Price y must be a finite number.", nameof(y));
+        }
+
+        if (!double.IsFinite(x))
+        {
+            throw new ArgumentException("Price x must be a finite number.", nameof(x));
+        }
+
         // 1. Шаг прогнозирования (Predict): P_pred = P + Q
         double pp00 = _p00 + _q;
         double pp01 = _p01;
@@ -70,6 +104,13 @@ public class PairsKalmanFilter
         double s = x * (x * pp00 + pp10) + (x * pp01 + pp11) + _r;
 
         // 4. Коэффициент усиления Калмана: K = (P_pred * H^T) / S
+        // При вырожденной/нечисловой S обновление пропускается, чтобы не
+        // распространять NaN/Infinity по состоянию фильтра.
+        if (!double.IsFinite(s) || s <= 0.0)
+        {
+            return new StepResult(_beta, _alpha, spread, 0.0);
+        }
+
         double k0 = (pp00 * x + pp01) / s;
         double k1 = (pp10 * x + pp11) / s;
 

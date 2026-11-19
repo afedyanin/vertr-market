@@ -1,4 +1,5 @@
 ﻿using Market.Core.Algos.PairTrading;
+using Market.Core.Algos.PairTradingV2;
 using Market.Core.Models;
 
 namespace Market.Core.Algos;
@@ -13,6 +14,7 @@ public static class AlgoFactory
             nameof(KalmanHalfLifeMidPriceAlgo) => new KalmanHalfLifeMidPriceAlgo(algoMetadata),
             nameof(DynamicKalmanMidPriceAlgo) => new DynamicKalmanMidPriceAlgo(algoMetadata),
             nameof(DynamicKalmanVwapAlgo) => new DynamicKalmanVwapAlgo(algoMetadata),
+            nameof(KalmanFilterBasicStrategy) => new KalmanFilterBasicStrategy(algoMetadata),
             nameof(DummyRandomAlgo) => new DummyRandomAlgo(algoMetadata),
             _ => throw new NotImplementedException($"Unknown AlgoType={algoMetadata.AlgoType}"),
         };
