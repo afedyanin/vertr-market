@@ -36,7 +36,7 @@ internal sealed class OrderBooksStreamService : StreamServiceBase
             SubscriptionAction = SubscriptionAction.Subscribe,
         };
 
-        foreach (var sub in _tinvestSettings.Subscriptions)
+        foreach (var sub in _tinvestSettings.Subscriptions.Where(s => !string.IsNullOrWhiteSpace(s)))
         {
             var asset = staticDataProvider.GetByTicker(sub);
 

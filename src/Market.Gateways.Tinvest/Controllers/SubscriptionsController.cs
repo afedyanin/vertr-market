@@ -17,6 +17,7 @@ public class SubscriptionsController : ControllerBase
     [HttpGet()]
     public IActionResult GetSubscriptions()
     {
-        return Ok(_settings.Subscriptions);
+        var subscriptions = _settings.Subscriptions.Where(s => !string.IsNullOrWhiteSpace(s));
+        return Ok(subscriptions);
     }
 }

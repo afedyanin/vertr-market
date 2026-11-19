@@ -1,3 +1,5 @@
+name: vertr-market
+
 services:
 
   host:
@@ -10,7 +12,7 @@ services:
     networks:
       - infra_infra
     environment:
-      - ASPNETCORE_ENVIRONMENT=Docker 
+      - ASPNETCORE_ENVIRONMENT=Docker
 
   tinvest:
     image: vertr_market_gateways_tinvest_image
@@ -22,7 +24,18 @@ services:
     networks:
       - infra_infra
     environment:
-      - ASPNETCORE_ENVIRONMENT=Docker 
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__Redis=redis:6379
+      - TinvestSettings__InvestApiSettings__AccessToken=${TINVEST_TOKEN:?Set TINVEST_TOKEN in .env}
+      - TinvestSettings__AccountId=${TINVEST_ACCOUNT_ID:?Set TINVEST_ACCOUNT_ID in .env}
+      - TinvestSettings__StaticDataDirectory=JsonStaticDataTest
+      - TinvestSettings__Subscriptions__0=TQBR:AFKS
+      - TinvestSettings__Subscriptions__1=TQBR:AFLT
+      - TinvestSettings__Subscriptions__2=
+      - TinvestSettings__Subscriptions__3=
+      - TinvestSettings__Subscriptions__4=
+      - TinvestSettings__Subscriptions__5=
+      - TinvestSettings__Subscriptions__6=
 
 networks:
   infra_infra:

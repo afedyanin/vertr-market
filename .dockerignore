@@ -21,6 +21,8 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
+src/Market.Gateways.Tinvest/appsettings.Docker.json
+src/Market.Gateways.Tinvest/appsettings.Development.json
 LICENSE
 README.md
 !**/.gitignore

@@ -77,7 +77,9 @@ public class ApproximateLotCalculatorTests
     public void CalculateBestApproximation_IrrationalRatioPi_FindsClassic22To7Approximation()
     {
         // Act
-        var result = ApproximateLotCalculator.CalculateLots(Math.PI, 1, 1);
+        // maxLots должен быть не меньше 22, иначе ограничение x <= maxLots
+        // отсекает классическое приближение 22/7.
+        var result = ApproximateLotCalculator.CalculateLots(Math.PI, 1, 1, maxLots: 25);
         Console.WriteLine($"LotsX={result.lotsX} LotsY={result.lotsY}");
 
         // Assert
