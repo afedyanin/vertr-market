@@ -281,8 +281,9 @@ curl -X POST http://localhost:7001/algos \
 - сериализация MessagePack;
 - чтение — `Market.Core.FileStore.OrderBookFileReader.ReadAsync`.
 
-Файлы примера лежат в `tests/Market.Core.Tests/Data`. Готового бэктестера с
-циклом прогона в репозитории нет, но есть эмулятор исполнения
+Файлы примера лежат в `tests/Market.Core.Tests/Data`. Полный прогон с
+исполнением сигналов, сверкой позиции и закрытием открытых позиций в конце
+есть в `KalmanFilterBasicStrategyTestsBack`. Исполнение делает эмулятор
 `Market.Infrastructure.BacktestOrderExecution`: он принимает
 `PairTradingSignal` и возвращает `MyTrade[]`, исполняя заявки по уровням
 стакана. Проскальзывание и комиссия задаются в процентах, а
