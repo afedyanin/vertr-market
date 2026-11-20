@@ -156,9 +156,10 @@ dotnet run --project src/Market.Host
 | `src/Market.Infrastructure` | Redis publishers/subscribers, реализации репозиториев, общие сервисы |
 | `src/Market.ApiClient` | DTO-контракты ответов Host API. HTTP-клиент (Refit) пока не реализован |
 | `src/Market.FileWriter` | Утилита записи потока стаканов из Redis в `books/books_YYYY-MM-DD.bin.gz` |
+| `src/Market.BacktestEngine` | Консольный бэктестер: прогон стратегии по записанным стаканам в `Portfolio` JSON |
 | `tests/Market.Core.Tests` | NUnit-тесты ядра |
 | `tests/Market.Infrastructure.Tests` | NUnit-тесты инфраструктуры |
-| `tests/Market.ConsoleApp` | Консольная утилита для дампа Redis-потоков |
+| `tests/Market.BacktestEngine.Tests` | NUnit-тесты параметров и runner консольного бэктестера |
 | `tests/Market.Benchmarks` | NBomber-бенчмарк |
 
 ## HTTP API
@@ -254,7 +255,7 @@ curl -X POST http://localhost:7001/algos \
 
 | Канал | Публикует | Читает | Payload |
 |---|---|---|---|
-| `books:{assetId}` | `Market.Gateways.Tinvest` | `Market.Host`, `Market.FileWriter`, `Market.ConsoleApp` | `OrderBookDepth` |
+| `books:{assetId}` | `Market.Gateways.Tinvest` | `Market.Host`, `Market.FileWriter` | `OrderBookDepth` |
 | `trades:{assetId}` | `Market.Gateways.Tinvest` | `Market.Host` | `MyTrade` |
 | `signals:{assetX}:{assetY}` | `Market.Host` | `Market.Gateways.Tinvest` | `PairTradingSignal` |
 | `orders:requests:{assetId}` | `Market.Gateways.Tinvest` | внешние потребители | `PostOrderRequest` |
@@ -283,7 +284,8 @@ curl -X POST http://localhost:7001/algos \
 
 Файлы примера лежат в `tests/Market.Core.Tests/Data`. Полный прогон с
 исполнением сигналов, сверкой позиции и закрытием открытых позиций в конце
-есть в `KalmanFilterBasicStrategyTestsBack`. Исполнение делает эмулятор
+есть в `KalmanFilterBasicStrategyTestsBack` и в консольном
+`Market.BacktestEngine`. Исполнение делает эмулятор
 `Market.Infrastructure.BacktestOrderExecution`: он принимает
 `PairTradingSignal` и возвращает `MyTrade[]`, исполняя заявки по уровням
 стакана. Проскальзывание и комиссия задаются в процентах, а
@@ -317,12 +319,15 @@ dotnet test tests/Market.Core.Tests/Market.Core.Tests.csproj
 # Бенчмарк NBomber (около 60 секунд)
 dotnet run --project tests/Market.Benchmarks
 
-# Дамп Redis-потоков (нужен запущенный Redis)
-dotnet run --project tests/Market.ConsoleApp
+# Бэктест стратегии по записанным стаканам
+dotnet run --project src/Market.BacktestEngine -- \
+  --data tests/Market.Core.Tests/Data/books_2026-10-05.bin.gz \
+  --metadata src/Market.BacktestEngine/examples/kalman-filter-basic.json
 ```
 
-`Market.ConsoleApp` подписывается на `books:*`; закомментированные блоки в
-`Program.cs` можно включить для дампа `signals:*`.
+`Market.BacktestEngine` работает офлайн: читает файл стаканов, метаданные
+стратегии и сохраняет итоговый `Portfolio` в JSON. Подробности и параметры —
+в `src/Market.BacktestEngine/README.md`.
 
 ## Ограничения и известные проблемы
 

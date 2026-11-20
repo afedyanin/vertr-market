@@ -1,0 +1,12 @@
+{
+  "strategyId": "3fa85f64-5717-4562-b3fc-2c963f66afa8",
+  "assetX": 1,
+  "assetY": 5,
+  "algoType": "KalmanFilterBasicStrategy",
+  "algoParams": {
+    "EntryThreshold": 2.0,
+    "ExitThreshold": 0.5,
+    "MaxLots": 10,
+    "WarmupTicks": 50
+  }
+}

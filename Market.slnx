@@ -26,6 +26,7 @@
     <Project Path="src/Market.Infrastructure/Market.Infrastructure.csproj" Id="6372b09d-f724-404b-a277-6b8e9da0b388" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Market.BacktestEngine.Tests/Market.BacktestEngine.Tests.csproj" />
     <Project Path="tests/Market.Core.Tests/Market.Core.Tests.csproj" Id="d5820a11-7300-4b10-a60a-375db27e7967" />
     <Project Path="tests/Market.Infrastructure.Tests/Market.Infrastructure.Tests.csproj" Id="70fd05b1-a5d2-4e3d-88ec-e09fab6c20a6" />
   </Folder>

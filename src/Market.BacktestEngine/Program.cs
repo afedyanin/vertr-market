@@ -1,53 +1,90 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Serilog;
+﻿using Market.Core.FileStore;
+using Market.Infrastructure;
 
 namespace Market.BacktestEngine;
 
 internal static class Program
 {
-    public static async Task Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+        if (BacktestArgumentsParser.IsHelpRequested(args))
+        {
+            await Console.Out.WriteLineAsync(BacktestArgumentsParser.Usage).ConfigureAwait(false);
+            return 0;
+        }
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables()
-            .AddCommandLine(args) // MarketApiSettings:AssetId
-            .Build();
+        using var cancellation = new CancellationTokenSource();
 
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(configuration)
-            .CreateLogger();
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            cancellation.Cancel();
+        };
 
         try
         {
-            Log.Information("Starting host...");
+            var arguments = BacktestArgumentsParser.Parse(args);
 
-            var builder = Host.CreateDefaultBuilder(args);
-
-            builder.ConfigureServices((context, services) =>
+            if (!File.Exists(arguments.DataFilePath))
             {
-            });
+                throw new BacktestConfigurationException(
+                    $"Файл исторических данных не найден: {arguments.DataFilePath}");
+            }
 
-            builder.UseEnvironment(environment);
-            builder.UseSerilog();
+            var metadata = AlgoMetadataLoader.Load(arguments.AlgoMetadataFilePath);
+            var algo = AlgoMetadataLoader.CreateStrategy(metadata);
 
-            using var host = builder.Build();
+            var executionOptions = new BacktestExecutionOptions
+            {
+                SlippagePercent = arguments.SlippagePercent,
+                CommissionPercent = arguments.CommissionPercent,
+            };
 
-            await host.RunAsync();
+            await Console.Out.WriteLineAsync(
+                $"Бэктест: algo={metadata.AlgoType}, assetX={metadata.AssetX}, assetY={metadata.AssetY}, " +
+                $"data={arguments.DataFilePath}").ConfigureAwait(false);
 
-            Log.Information("Stopping host...");
+            var result = await BacktestRunner.RunAsync(
+                new BacktestRequest(
+                    algo,
+                    OrderBookFileReader.ReadAsync(arguments.DataFilePath, cancellation.Token),
+                    executionOptions,
+                    arguments.FromUtc,
+                    arguments.ToUtc),
+                cancellation.Token).ConfigureAwait(false);
+
+            await PortfolioJsonWriter.WriteAsync(
+                arguments.OutputFilePath,
+                result.Portfolio,
+                cancellation.Token).ConfigureAwait(false);
+
+            var cash = result.Portfolio.Positions.Sum(position => position.Cash);
+            var outputPath = Path.GetFullPath(arguments.OutputFilePath);
+
+            await Console.Out.WriteLineAsync(
+                $"Готово: books={result.ProcessedBooks}, signals={result.SignalCount}, " +
+                $"trades={result.TradeCount}, liquidationTrades={result.LiquidationTradeCount}, " +
+                $"cash={cash:0.####}, commission={result.Portfolio.Commission:0.####}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Портфель сохранён: {outputPath}").ConfigureAwait(false);
+
+            return 0;
+        }
+        catch (OperationCanceledException)
+        {
+            await Console.Error.WriteLineAsync("Бэктест отменён.").ConfigureAwait(false);
+            return 130;
+        }
+        catch (BacktestConfigurationException ex)
+        {
+            await Console.Error.WriteLineAsync($"Ошибка конфигурации: {ex.Message}").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync().ConfigureAwait(false);
+            await Console.Error.WriteLineAsync(BacktestArgumentsParser.Usage).ConfigureAwait(false);
+            return 2;
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "Host fatal exception. Message={Message}", ex.Message);
-        }
-        finally
-        {
-            await Log.CloseAndFlushAsync();
+            await Console.Error.WriteLineAsync($"Бэктест завершился ошибкой: {ex.Message}").ConfigureAwait(false);
+            return 1;
         }
     }
 }
