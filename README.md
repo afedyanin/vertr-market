@@ -234,6 +234,8 @@ curl -X POST http://localhost:7001/algos \
 | `TinvestSettings:DataStreamEnabled` | `TinvestSettings__DataStreamEnabled` | `true` | Подписка на стаканы |
 | `TinvestSettings:TradesStreamEnabled` | `TinvestSettings__TradesStreamEnabled` | `true` | Подписка на сделки |
 | `TinvestSettings:StaticDataDirectory` | `TinvestSettings__StaticDataDirectory` | `JsonStaticData` | Каталог JSON-справочников |
+| `TinvestSettings:OrderRequestTimeout` | `TinvestSettings__OrderRequestTimeout` | `10s` | Таймаут запроса ордера |
+| `TinvestSettings:SignalMaxAge` | `TinvestSettings__SignalMaxAge` | `5s` | Устаревшие сигналы отбрасываются |
 | `MarketApiSettings:BaseUrl` | `MarketApiSettings__BaseUrl` | — | Сейчас не используется |
 | `TinvestSettings:OutputDirectory` | — | `tinvest` | Сейчас не используется |
 | `TinvestSettings:TradeAggergationInterval` | — | `5s` | Сейчас не используется |
@@ -254,11 +256,18 @@ curl -X POST http://localhost:7001/algos \
 | `signals:{assetX}:{assetY}` | `Market.Host` | `Market.Gateways.Tinvest` | `PairTradingSignal` |
 | `orders:requests:{assetId}` | `Market.Gateways.Tinvest` | внешние потребители | `PostOrderRequest` |
 | `orders:responses:{assetId}` | `Market.Gateways.Tinvest` | внешние потребители | ответ T-Invest |
+| `orders:errors:{assetId}` | `Market.Gateways.Tinvest` | внешние потребители | `OrderErrorEvent` (ошибка/таймаут) |
 | `orders:trades:{assetId}` | `Market.Gateways.Tinvest` | внешние потребители | `OrderTrades` |
 
 Публикация выполняется с `CommandFlags.FireAndForget`, поэтому доставка не
 гарантируется. Это pub/sub, а не очередь: при отсутствии подписчика сообщение
 теряется.
+
+Если одна нога пары отклонена биржей, исполненная нога закрывается обратным
+рыночным ордером. Если состояние второй ноги неизвестно (таймаут, сетевой
+сбой), автоматическое хеджирование не выполняется — сервис пишет
+`Critical` и останавливает хост, чтобы позиция не была закрыта дважды без
+участия оператора.
 
 ## Формат файлов order books
 

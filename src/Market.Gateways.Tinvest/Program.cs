@@ -46,7 +46,9 @@ public static class Program
         builder.Services.AddSingleton(sp => Channel.CreateUnbounded<MyTrade>(
             new UnboundedChannelOptions()
             {
-                SingleWriter = true, // OrderExecutionEngineService
+                // Пишут две задачи OrderExecutionEngineService: обработка сделок
+                // и обработка результатов отправки ордеров.
+                SingleWriter = false,
                 SingleReader = true, // RedisMyTradesPublisherService
             }));
 

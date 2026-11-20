@@ -21,4 +21,17 @@ public class TinvestSettings
     public TimeSpan TradeAggergationInterval { get; set; } = TimeSpan.FromSeconds(5);
 
     public string AccountId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Таймаут запроса к T-Invest на выставление/отмену ордера.
+    /// <see cref="TimeSpan.Zero"/> отключает таймаут.
+    /// </summary>
+    public TimeSpan OrderRequestTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Максимальный возраст торгового сигнала. Устаревшие сигналы
+    /// отбрасываются, чтобы не входить по уже ушедшему спреду.
+    /// <see cref="TimeSpan.Zero"/> отключает проверку.
+    /// </summary>
+    public TimeSpan SignalMaxAge { get; set; } = TimeSpan.FromSeconds(5);
 }

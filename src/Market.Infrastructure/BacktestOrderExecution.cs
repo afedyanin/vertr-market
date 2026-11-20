@@ -1,6 +1,6 @@
 ﻿using Market.Core.Models;
 
-namespace Market.BacktestEngine;
+namespace Market.Infrastructure;
 
 public class BacktestOrderExecution
 {
