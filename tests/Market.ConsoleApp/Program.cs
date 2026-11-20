@@ -1,5 +1,5 @@
 ﻿using System.Threading.Channels;
-using Market.ConsoleApp.BackgroundServices;
+using Market.BacktestEngine.BackgroundServices;
 using Market.Core.Models;
 using Market.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using StackExchange.Redis;
 
-namespace Market.ConsoleApp;
+namespace Market.BacktestEngine;
 
 internal static class Program
 {

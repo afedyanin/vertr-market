@@ -4,7 +4,7 @@ using Market.Core.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Market.ConsoleApp.BackgroundServices;
+namespace Market.BacktestEngine.BackgroundServices;
 
 public class DumpOrderBooksService : BackgroundService
 {

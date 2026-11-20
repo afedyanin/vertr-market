@@ -1,6 +1,8 @@
-﻿namespace Market.Core.Models;
+﻿using Market.Core.Models;
 
-public class OrderExecution : IOrderExecutionEngine
+namespace Market.BacktestEngine;
+
+public class BacktestOrderExecution
 {
     public IEnumerable<MyTrade> Execute(PairTradingSignal signal)
     {
@@ -36,7 +38,6 @@ public class OrderExecution : IOrderExecutionEngine
 
         var trade = new MyTrade()
         {
-            // SourceId = sourceId, // TODO: Нужен другой способ матчить трейд к стратегии
             StrategyId = strategyId,
             Timestamp = orderBook.Timestamp,
             AssetId = orderBook.AssetId,
