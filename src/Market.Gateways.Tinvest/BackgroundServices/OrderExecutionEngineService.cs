@@ -365,7 +365,10 @@ public sealed class OrderExecutionEngineService : BackgroundService
                 return new LegResult(leg, LegOutcome.DefinitelyFailed, response, response.Message);
             }
 
-            _orderId2RequestId[response.OrderId] = new OrderMapping(response.OrderRequestId, DateTimeOffset.UtcNow);
+            _orderId2RequestId[response.OrderId] = new OrderMapping(
+                response.OrderRequestId,
+                DateTimeOffset.UtcNow,
+                ToDecimal(response.ExecutedCommission));
 
             // Сделки могли прийти раньше ответа на PostOrder.
             PublishTrades(_pendingTrades.TryDrain(response.OrderId, strategyId));
@@ -452,7 +455,10 @@ public sealed class OrderExecutionEngineService : BackgroundService
                 await PublishResponseAsync(compensationLeg, compensationResponse).ConfigureAwait(false);
 
                 _orderId2RequestId[compensationResponse.OrderId] =
-                    new OrderMapping(compensationResponse.OrderRequestId, DateTimeOffset.UtcNow);
+                    new OrderMapping(
+                        compensationResponse.OrderRequestId,
+                        DateTimeOffset.UtcNow,
+                        ToDecimal(compensationResponse.ExecutedCommission));
 
                 _logger.LogCritical(
                     "Unhedged leg compensated. StrategyId={StrategyId} OriginalOrderId={OriginalOrderId} CompensationOrderId={CompensationOrderId} Lots={Lots}",
@@ -589,6 +595,17 @@ public sealed class OrderExecutionEngineService : BackgroundService
 
     private void PublishTrades(IReadOnlyList<MyTrade> trades)
     {
+        // Комиссия приходит в ответе PostOrder на весь ордер, а сделки — по
+        // одной. Учитываем её ровно один раз и распределяем по сделкам
+        // пропорционально объёму, чтобы не искажать отдельные трейды.
+        if (trades.Count > 0
+            && trades[0] is { OrderId: { } orderId, Commission: 0m }
+            && _orderId2RequestId.TryGetValue(orderId, out var mapping)
+            && mapping.Commission.TryTake(out var commission))
+        {
+            trades = CommissionAllocator.Distribute(trades, commission);
+        }
+
         foreach (var trade in trades)
         {
             if (!_myTradesWriter.TryWrite(trade))
@@ -675,6 +692,11 @@ public sealed class OrderExecutionEngineService : BackgroundService
             ConfirmMarginTrade = false,
         };
 
+    private static decimal ToDecimal(MoneyValue? value)
+        => value is null
+            ? 0m
+            : Math.Max(0m, value.Units + (value.Nano / 1_000_000_000m));
+
     private static bool IsDefiniteFailure(StatusCode statusCode) => statusCode is
         StatusCode.InvalidArgument or
         StatusCode.FailedPrecondition or
@@ -687,7 +709,18 @@ public sealed class OrderExecutionEngineService : BackgroundService
 
     private readonly record struct StrategyMapping(Guid StrategyId, DateTimeOffset CreatedAt);
 
-    private readonly record struct OrderMapping(string RequestId, DateTimeOffset CreatedAt);
+    /// <summary>
+    /// Связь ордера T-Invest с запросом и комиссией, которую нужно один раз
+    /// отнести к сделкам этого ордера.
+    /// </summary>
+    private sealed class OrderMapping(string requestId, DateTimeOffset createdAt, decimal commission)
+    {
+        public string RequestId { get; } = requestId;
+
+        public DateTimeOffset CreatedAt { get; } = createdAt;
+
+        public OrderCommission Commission { get; } = new(commission);
+    }
 
     private sealed record LegRequest(
         Tinkoff.InvestApi.V1.PostOrderRequest Request,

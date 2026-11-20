@@ -1,12 +1,6 @@
-﻿using System.Threading.Channels;
-using Market.BacktestEngine.BackgroundServices;
-using Market.Core.Models;
-using Market.Infrastructure.BackgroundServices;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using StackExchange.Redis;
 
 namespace Market.BacktestEngine;
 
@@ -36,18 +30,6 @@ internal static class Program
 
             builder.ConfigureServices((context, services) =>
             {
-                // Redis consumers
-                var redisConnectionString = configuration.GetConnectionString("Redis");
-                services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString!));
-
-                // Hosted Service
-                services.AddSingleton(sp => Channel.CreateUnbounded<OrderBookDepth>());
-                services.AddHostedService<RedisOrderBooksSubscriberService>();
-                services.AddHostedService<DumpOrderBooksService>();
-
-                //services.AddSingleton(sp => Channel.CreateUnbounded<PairTradingSignal>());
-                //services.AddHostedService<RedisTradingSignalsPublisherService>();
-                //services.AddHostedService<DumpTradingSignalsService>();
             });
 
             builder.UseEnvironment(environment);

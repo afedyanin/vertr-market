@@ -281,9 +281,16 @@ curl -X POST http://localhost:7001/algos \
 - сериализация MessagePack;
 - чтение — `Market.Core.FileStore.OrderBookFileReader.ReadAsync`.
 
-Файлы примера лежат в `tests/Market.Core.Tests/Data`. Готового бэктестера в
-репозитории нет: файлы предназначены для воспроизведения и анализа рыночных
-данных.
+Файлы примера лежат в `tests/Market.Core.Tests/Data`. Готового бэктестера с
+циклом прогона в репозитории нет, но есть эмулятор исполнения
+`Market.Infrastructure.BacktestOrderExecution`: он принимает
+`PairTradingSignal` и возвращает `MyTrade[]`, исполняя заявки по уровням
+стакана. Проскальзывание и комиссия задаются в процентах, а
+`BacktestExecutionOptions` управляет дроблением на трейды
+(`MaxTradeLots`) и долей доступной ликвидности (`MaxLevelParticipation`).
+Проскальзывание меняет цену исполнения, комиссия пишется в отдельное поле
+`MyTrade.Commission` и уменьшает `Cash` портфеля.
+Если ликвидности в стакане не хватает, заявка исполняется частично.
 
 ## Наблюдаемость
 

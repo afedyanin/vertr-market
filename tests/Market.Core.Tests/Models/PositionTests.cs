@@ -35,6 +35,33 @@ public class PositionTests
         PrintStatus(pos, "Buy 15 @ 95");   // Ожидаем Long, Qty: 5, Price: 95, Cash: -200
     }
 
+    [Test]
+    public void CommissionReducesCashAndAccumulates()
+    {
+        // Arrange
+        var pos = new Position();
+
+        // Act
+        pos.Update(10, 100, 1.5m);
+        pos.Update(-4, 110, 0.5m);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(pos.Commission, Is.EqualTo(2m));
+            Assert.That(pos.Cash, Is.EqualTo(-562m));
+            Assert.That(pos.Quantity, Is.EqualTo(6m));
+        });
+    }
+
+    [Test]
+    public void NegativeCommission_Throws()
+    {
+        var pos = new Position();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => pos.Update(1, 100, -0.01m));
+    }
+
     private static void PrintStatus(Position position, string action)
     {
         Console.WriteLine($"После [{action}]: State={position.State,-5} | Qty={position.Quantity,-4} | AvgPrice={position.Price,-6} | Cash={position.Cash}");

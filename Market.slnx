@@ -18,6 +18,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Market.ApiClient/Market.ApiClient.csproj" Id="9601a41a-39dd-403f-a1da-f6ae1bf8a604" />
+    <Project Path="src/Market.BacktestEngine/Market.BacktestEngine.csproj" />
     <Project Path="src/Market.Core/Market.Core.csproj" Id="f0162eba-8f10-4e8f-884c-baad07945a5f" />
     <Project Path="src/Market.FileWriter/Market.FileWriter.csproj" Id="612a2849-9549-4137-aed0-bade6a27f57d" />
     <Project Path="src/Market.Gateways.Tinvest/Market.Gateways.Tinvest.csproj" Id="cfb503f7-4d8a-4a0a-9e06-9dffc24fad02" />
@@ -25,8 +26,6 @@
     <Project Path="src/Market.Infrastructure/Market.Infrastructure.csproj" Id="6372b09d-f724-404b-a277-6b8e9da0b388" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Market.Benchmarks/Market.Benchmarks.csproj" Id="2c9cac3c-1eba-43e1-8a44-311f91f25e6c" />
-    <Project Path="tests/Market.ConsoleApp/Market.BacktestEngine.csproj" />
     <Project Path="tests/Market.Core.Tests/Market.Core.Tests.csproj" Id="d5820a11-7300-4b10-a60a-375db27e7967" />
     <Project Path="tests/Market.Infrastructure.Tests/Market.Infrastructure.Tests.csproj" Id="70fd05b1-a5d2-4e3d-88ec-e09fab6c20a6" />
   </Folder>

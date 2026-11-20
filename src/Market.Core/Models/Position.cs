@@ -11,15 +11,26 @@ public class Position
     public decimal Cash { get; private set; } = 0;
 
     /// <summary>
+    /// Суммарная комиссия, уплаченная по сделкам этой позиции.
+    /// </summary>
+    public decimal Commission { get; private set; } = 0;
+
+    /// <summary>
     /// Обновляет состояние позиции при исполнении новой сделки.
     /// </summary>
     /// <param name="tradeQty">Объем сделки (положительный для Buy, отрицательный для Sell)</param>
     /// <param name="tradePrice">Цена сделки (должна быть > 0)</param>
-    public void Update(decimal tradeQty, decimal tradePrice)
+    /// <param name="commission">Комиссия по сделке в валюте счёта (неотрицательная)</param>
+    public void Update(decimal tradeQty, decimal tradePrice, decimal commission = 0)
     {
         if (tradePrice <= 0)
         {
             throw new ArgumentException("Цена сделки должна быть больше нуля.", nameof(tradePrice));
+        }
+
+        if (commission < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(commission), commission, "Комиссия не может быть отрицательной.");
         }
 
         if (tradeQty == 0)
@@ -29,7 +40,9 @@ public class Position
 
         lock (_lock)
         {
-            Cash -= tradeQty * tradePrice;
+            // Комиссия всегда уменьшает денежный поток, независимо от направления сделки.
+            Cash -= tradeQty * tradePrice + commission;
+            Commission += commission;
             var newQty = Quantity + tradeQty;
 
             switch (State)

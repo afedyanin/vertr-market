@@ -10,4 +10,10 @@ public record MyTrade
     public DateTime Timestamp { get; init; }
     public decimal Qty { get; init; }
     public decimal Price { get; init; }
+
+    /// <summary>
+    /// Комиссия по сделке в валюте счёта. Величина неотрицательная и
+    /// уменьшает денежный поток портфеля.
+    /// </summary>
+    public decimal Commission { get; init; }
 }

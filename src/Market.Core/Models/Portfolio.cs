@@ -14,6 +14,11 @@ public class Portfolio
 
     public ImmutableArray<MyTrade> Trades => [.. _trades];
 
+    /// <summary>
+    /// Суммарная комиссия по всем сделкам портфеля.
+    /// </summary>
+    public decimal Commission { get; private set; } = 0;
+
     public Position? Get(ushort assetId)
     {
         _ = _positions.TryGetValue(assetId, out var position);
@@ -22,14 +27,17 @@ public class Portfolio
 
     public Position Update(MyTrade trade)
     {
-        _trades.Add(trade);
-
         var position = _positions.GetOrAdd(trade.AssetId, new Position
         {
             AssetId = trade.AssetId,
         });
 
-        position.Update(trade.Qty, trade.Price);
+        // Сначала применяем сделку к позиции: если она невалидна, не
+        // оставляем её в истории и не начисляем комиссию.
+        position.Update(trade.Qty, trade.Price, trade.Commission);
+
+        _trades.Add(trade);
+        Commission += trade.Commission;
         return position;
     }
 }
