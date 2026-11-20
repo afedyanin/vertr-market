@@ -15,6 +15,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
     }
 
     private readonly IAlgoMetadataRepository _algoMetadataRepository;
+    private readonly IStrategyRegistry _strategyRegistry;
     private readonly OrderBooksTopic _orderBooksTopic;
     private readonly ChannelWriter<PairTradingSignal> _signalWriter;
     private readonly ILoggerFactory _loggerFactory;
@@ -26,11 +27,13 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
 
     public PairTradingStrategyService(
         IAlgoMetadataRepository algoMetadataRepository,
+        IStrategyRegistry strategyRegistry,
         Channel<OrderBookDepth> orderBookChannel,
         Channel<PairTradingSignal> signalsChannel,
         ILoggerFactory loggerFactory)
     {
         _algoMetadataRepository = algoMetadataRepository;
+        _strategyRegistry = strategyRegistry;
         _algoMetadataRepository.OnSaved += OnAlgoSaved;
         _algoMetadataRepository.OnDeleted += OnAlgoDeleted;
 
@@ -109,6 +112,7 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
             return;
         }
 
+        _strategyRegistry.Remove(algoMetadata.StrategyId);
         taskInfo.TokenSource.Cancel();
     }
 
@@ -119,6 +123,10 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
         var reader = _orderBooksTopic.Subscribe();
         var wrapper = new PairTradingStrategyWrapper(algo, reader, _signalWriter, _loggerFactory);
         var task = wrapper.ExecuteAsync(cts.Token);
+
+        // Стратегия должна быть доступна потоку исполнения до того, как
+        // придут первые сделки по её сигналам.
+        _strategyRegistry.Register(algo);
 
         var info = new TaskInfo
         {
@@ -143,6 +151,12 @@ public class PairTradingStrategyService : BackgroundService, IAsyncDisposable
         try
         {
             var taskInfos = _strategyTasks.Values;
+
+            foreach (var strategyId in _strategyTasks.Keys)
+            {
+                _strategyRegistry.Remove(strategyId);
+            }
+
             _ = taskInfos.Select(ti => ti.TokenSource.CancelAsync());
             await Task.WhenAll(taskInfos.Select(ti => ti.ExecutingTask));
         }

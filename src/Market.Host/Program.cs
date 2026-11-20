@@ -85,6 +85,7 @@ public static class Program
         // Repositories
         builder.Services.AddAlgoMetadataRepository();
         builder.Services.AddPortfolioRepository();
+        builder.Services.AddStrategyRegistry();
 
         // Hosted services
         builder.Services.AddHostedService<PairTradingStrategyService>();

@@ -25,6 +25,13 @@ public static class InfrastructureRegistrar
         return services;
     }
 
+    public static IServiceCollection AddStrategyRegistry(this IServiceCollection services)
+    {
+        services.AddSingleton<IStrategyRegistry, StrategyRegistry>();
+        services.AddSingleton<PositionReconciler>();
+        return services;
+    }
+
     public static IServiceCollection AddStaticDataProvider(this IServiceCollection services)
     {
         services.AddSingleton<JsonStaticDataProvider>();

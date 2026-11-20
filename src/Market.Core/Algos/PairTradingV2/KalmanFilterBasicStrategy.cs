@@ -10,7 +10,7 @@ namespace Market.Core.Algos.PairTradingV2;
 /// по событию Y (зависимая нога), X используется как последняя известная цена.
 /// Это исключает двойное обновление фильтра на одну и ту же пару стаканов.
 /// </summary>
-public class KalmanFilterBasicStrategy : PairTradingAlgoBase
+public class KalmanFilterBasicStrategy : PairTradingAlgoBase, IPositionReconcilable
 {
     private readonly object _sync = new();
     private readonly PairsKalmanFilter _kalmanFilter;
